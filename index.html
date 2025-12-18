@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGrid Web Component</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #f5f5f5;
+    }
+    h1 { color: #333; margin-bottom: 0.5rem; }
+    p { color: #666; margin-bottom: 1.5rem; }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #333;
+      font-size: 1.25rem;
+      border-bottom: 2px solid #0078d4;
+      padding-bottom: 0.5rem;
+    }
+    ul { padding-left: 1.5rem; }
+    li { margin: 0.75rem 0; }
+    a {
+      color: #0078d4;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.5rem;
+      list-style: none;
+      padding: 0;
+    }
+    .feature-list li {
+      background: #f5f5f5;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>WebGrid Web Component</h1>
+  <p>A feature-rich data grid built as a native web component.</p>
+
+  <div class="card">
+    <h2>Examples</h2>
+    <ul>
+      <li>
+        <a href="examples/basic.html"><strong>Basic Grid</strong></a>
+        - Sorting, filtering, pagination, and custom formatting
+      </li>
+      <li>
+        <a href="examples/editable.html"><strong>Editable Grid</strong></a>
+        - All 7 editor types: text, number, checkbox, select, combobox, autocomplete, date
+      </li>
+      <li>
+        <a href="examples/context-menu.html"><strong>Context Menu</strong></a>
+        - Right-click menu with dynamic labels, visibility, and disabled states
+      </li>
+      <li>
+        <a href="examples/row-toolbar.html"><strong>Row Toolbar</strong></a>
+        - Floating action toolbar on row hover
+      </li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Features</h2>
+    <ul class="feature-list">
+      <li>Sorting</li>
+      <li>Filtering</li>
+      <li>Pagination</li>
+      <li>Inline Editing</li>
+      <li>7 Editor Types</li>
+      <li>Validation</li>
+      <li>Context Menu</li>
+      <li>Row Toolbar</li>
+      <li>Navigate Mode</li>
+      <li>Keyboard Navigation</li>
+      <li>Dark Mode Support</li>
+      <li>Zero Dependencies</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Quick Start</h2>
+    <pre><code>&lt;script type="module"&gt;
+  import './src/index.js'
+&lt;/script&gt;
+
+&lt;web-grid id="grid"&gt;&lt;/web-grid&gt;
+
+&lt;script type="module"&gt;
+  const grid = document.getElementById('grid')
+  grid.items = [{ id: 1, name: 'Alice' }]
+  grid.columns = [
+    { field: 'id', title: 'ID' },
+    { field: 'name', title: 'Name', sortable: true }
+  ]
+&lt;/script&gt;</code></pre>
+  </div>
+
+  <div class="card">
+    <h2>Documentation</h2>
+    <p>See <a href="README.md">README.md</a> for full API documentation.</p>
+  </div>
+</body>
+</html>

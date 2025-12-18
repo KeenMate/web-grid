@@ -1,0 +1,38 @@
+/* ==============================================================================
+   BASE STYLES
+   Container and table base styles
+   ============================================================================== */
+
+.web-grid-container {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.web-grid {
+  width: 100%;
+  border-collapse: collapse;
+  border: var(--wg-table-border);
+  background: var(--wg-table-bg);
+  font-size: var(--wg-font-size);
+  line-height: var(--wg-line-height);
+  table-layout: fixed;
+}
+
+/* Striped rows */
+.web-grid.striped tbody tr:nth-child(even) {
+  background: var(--wg-row-stripe-bg);
+}
+
+/* Hoverable rows */
+.web-grid.hoverable tbody tr:hover {
+  background: var(--wg-row-hover-bg);
+}
+
+/* Empty message */
+.empty-message {
+  text-align: center;
+  padding: calc(var(--wg-design-unit) * 6px);
+  color: var(--wg-text-color-2);
+  font-style: italic;
+}

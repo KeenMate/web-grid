@@ -1,0 +1,137 @@
+/* ==============================================================================
+   TABLE STYLES
+   Headers, filter row, pagination
+   ============================================================================== */
+
+/* ==========================================================================
+   COLUMN HEADERS
+   ========================================================================== */
+
+.column-header {
+  background: var(--wg-header-bg);
+  color: var(--wg-text-color-1);
+  font-weight: var(--wg-font-weight-semibold);
+  padding: var(--wg-cell-padding);
+  border-bottom: var(--wg-header-border);
+  text-align: left;
+  user-select: none;
+}
+
+.column-header.sortable {
+  cursor: pointer;
+}
+
+.column-header.sortable:hover {
+  background: var(--wg-layer-3);
+}
+
+.column-header.sorted {
+  background: var(--wg-layer-3);
+}
+
+.column-header-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: space-between;
+}
+
+.sort-indicator {
+  font-size: 10px;
+  opacity: 0.8;
+  min-width: 12px;
+  text-align: center;
+}
+
+.sort-placeholder {
+  opacity: 0.3;
+}
+
+.header-info-icon {
+  font-size: 12px;
+  color: var(--wg-accent-color);
+  cursor: help;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+.header-info-icon:hover {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   FILTER ROW
+   ========================================================================== */
+
+.filter-row th {
+  padding: calc(var(--wg-design-unit) * 1px) calc(var(--wg-design-unit) * 2px);
+  background: var(--wg-layer-1);
+  border-bottom: var(--wg-row-border);
+}
+
+.filter-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--wg-stroke-rest);
+  border-radius: var(--wg-border-radius);
+  background: var(--wg-layer-1);
+  color: var(--wg-text-color-1);
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: var(--wg-accent-color);
+  box-shadow: 0 0 0 1px var(--wg-accent-color);
+}
+
+/* ==========================================================================
+   PAGINATION
+   ========================================================================== */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: calc(var(--wg-design-unit) * 3px);
+  border-top: var(--wg-row-border);
+  background: var(--wg-layer-1);
+}
+
+.pagination-btn {
+  padding: 6px 16px;
+  background: var(--wg-layer-1);
+  border: 1px solid var(--wg-stroke-rest);
+  border-radius: var(--wg-border-radius);
+  color: var(--wg-text-color-1);
+  font-size: var(--wg-font-size);
+  cursor: pointer;
+  transition: all var(--wg-transition-fast);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--wg-layer-2);
+  border-color: var(--wg-stroke-hover);
+}
+
+.pagination-btn:active:not(:disabled) {
+  background: var(--wg-layer-3);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: var(--wg-font-size);
+  color: var(--wg-text-color-1);
+}
+
+.item-count {
+  font-size: 12px;
+  color: var(--wg-text-color-2);
+  margin-left: 4px;
+}

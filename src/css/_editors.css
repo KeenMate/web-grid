@@ -1,0 +1,185 @@
+/* ==============================================================================
+   EDITOR STYLES
+   All inline editor types (text, number, checkbox, select, combobox, autocomplete)
+   ============================================================================== */
+
+.grid-cell-editor {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   TEXT & NUMBER INPUT
+   ========================================================================== */
+
+.cell-input {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--wg-text-color-1);
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.cell-input:focus {
+  outline: none;
+}
+
+.cell-input::placeholder {
+  color: var(--wg-text-color-2);
+  opacity: 0.7;
+}
+
+/* Hide number input spinners for consistent alignment */
+.cell-input[type="number"]::-webkit-outer-spin-button,
+.cell-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.cell-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* ==========================================================================
+   CHECKBOX
+   ========================================================================== */
+
+.cell-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--wg-accent-color);
+}
+
+/* Remove extra padding for checkbox editor to prevent row height jump */
+.grid-cell-editor:has(.cell-checkbox) {
+  padding: 0 12px;
+  justify-content: flex-start;
+}
+
+/* ==========================================================================
+   SELECT TRIGGER
+   ========================================================================== */
+
+.cell-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  padding: 0;
+  background: transparent;
+  color: var(--wg-text-color-1);
+  font: inherit;
+}
+
+.cell-select-trigger:focus {
+  outline: none;
+}
+
+.cell-select-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-select-arrow {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   COMBOBOX
+   ========================================================================== */
+
+.cell-combobox-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.cell-combobox-input {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  padding-right: 16px;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--wg-text-color-1);
+  font: inherit;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.cell-combobox-input:focus {
+  outline: none;
+}
+
+.cell-combobox-wrapper .cell-select-arrow {
+  position: absolute;
+  right: 0;
+}
+
+/* ==========================================================================
+   AUTOCOMPLETE
+   ========================================================================== */
+
+.cell-autocomplete-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.cell-autocomplete-input {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  padding-right: 20px;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--wg-text-color-1);
+  font: inherit;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.cell-autocomplete-input:focus {
+  outline: none;
+}
+
+.cell-autocomplete-input::placeholder {
+  color: var(--wg-text-color-2);
+  opacity: 0.7;
+}
+
+.cell-loading-indicator {
+  position: absolute;
+  right: 4px;
+  font-size: 10px;
+  color: var(--wg-text-color-2);
+  animation: pulse 1s infinite;
+}

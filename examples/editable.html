@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGrid - Editable Example</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #f5f5f5;
+    }
+    .example-nav {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding: 0.75rem 1rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .example-nav a {
+      color: #0078d4;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .example-nav a:hover { background: #f0f0f0; }
+    .example-nav a.active { background: #0078d4; color: white; }
+    .example-nav .sep { color: #ccc; }
+    [data-theme="dark"] .example-nav { background: #2d2d2d; }
+    [data-theme="dark"] .example-nav a { color: #6db3f2; }
+    [data-theme="dark"] .example-nav a:hover { background: #3d3d3d; }
+    [data-theme="dark"] .example-nav a.active { background: #0078d4; color: white; }
+    h1 { color: #333; margin-bottom: 0.5rem; }
+    p { color: #666; margin-bottom: 1.5rem; }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #333;
+      font-size: 1.25rem;
+      border-bottom: 2px solid #0078d4;
+      padding-bottom: 0.5rem;
+    }
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    select, button {
+      padding: 0.5rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      background: #0078d4;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover { background: #106ebe; }
+    .log {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 1rem;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .log-entry { margin: 4px 0; padding: 4px; border-bottom: 1px solid #eee; }
+    .log-entry.error { background: #fff0f0; color: #d00; }
+    .log-entry.success { background: #f0fff0; color: #0a0; }
+    [data-theme="dark"] body { background: #1a1a1a; }
+    [data-theme="dark"] .card { background: #2d2d2d; color: #e0e0e0; }
+    [data-theme="dark"] h1, [data-theme="dark"] h2 { color: #e0e0e0; }
+    [data-theme="dark"] .log { background: #252525; border-color: #444; }
+  </style>
+</head>
+<body>
+  <nav class="example-nav">
+    <a href="../index.html">← Home</a>
+    <span class="sep">|</span>
+    <a href="basic.html">Basic</a>
+    <a href="editable.html" class="active">Editable</a>
+    <a href="context-menu.html">Context Menu</a>
+    <a href="row-toolbar.html">Row Toolbar</a>
+  </nav>
+
+  <h1>WebGrid - Editable Example</h1>
+  <p>Demonstrates all editor types and validation features.</p>
+
+  <div class="card">
+    <h2>Controls</h2>
+    <div class="controls">
+      <label>
+        Edit Trigger:
+        <select id="editTrigger">
+          <option value="dblclick">Double Click</option>
+          <option value="click">Single Click</option>
+          <option value="navigate">Navigate Mode (Spreadsheet)</option>
+        </select>
+      </label>
+      <label>
+        <input type="checkbox" id="darkMode"> Dark Mode
+      </label>
+      <button id="addRow">+ Add Row</button>
+      <button id="resetData">Reset Data</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>All Editor Types</h2>
+    <p style="color: var(--neutral-foreground-hint, #666); margin-bottom: 1rem;">
+      Double-click (or use selected trigger) to edit. Tab between cells. Escape to cancel.
+    </p>
+    <web-grid id="grid" striped hoverable editable></web-grid>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="card">
+    <h2>Editor Types Reference</h2>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="background: #f5f5f5;">
+          <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Type</th>
+          <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Column</th>
+          <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding: 8px;">text</td><td>Name, Email</td><td>Basic text input</td></tr>
+        <tr><td style="padding: 8px;">number</td><td>Age, Salary</td><td>Number input with min/max</td></tr>
+        <tr><td style="padding: 8px;">checkbox</td><td>Active</td><td>Boolean toggle</td></tr>
+        <tr><td style="padding: 8px;">select</td><td>Department</td><td>Dropdown with fixed options</td></tr>
+        <tr><td style="padding: 8px;">combobox</td><td>Role</td><td>Filterable dropdown</td></tr>
+        <tr><td style="padding: 8px;">date</td><td>Start Date</td><td>Date picker</td></tr>
+        <tr><td style="padding: 8px;">autocomplete</td><td>Manager</td><td>Async search dropdown</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import '../src/index.js'
+
+    // Sample data
+    const departments = [
+      { value: 'engineering', label: 'Engineering' },
+      { value: 'sales', label: 'Sales' },
+      { value: 'marketing', label: 'Marketing' },
+      { value: 'hr', label: 'Human Resources' },
+      { value: 'finance', label: 'Finance' }
+    ]
+
+    const roles = [
+      { value: 'developer', label: 'Developer' },
+      { value: 'senior_developer', label: 'Senior Developer' },
+      { value: 'lead', label: 'Tech Lead' },
+      { value: 'manager', label: 'Manager' },
+      { value: 'director', label: 'Director' },
+      { value: 'vp', label: 'VP' },
+      { value: 'analyst', label: 'Analyst' },
+      { value: 'designer', label: 'Designer' }
+    ]
+
+    const managers = [
+      { value: 'john_doe', label: 'John Doe' },
+      { value: 'jane_smith', label: 'Jane Smith' },
+      { value: 'mike_wilson', label: 'Mike Wilson' },
+      { value: 'sarah_connor', label: 'Sarah Connor' },
+      { value: 'james_bond', label: 'James Bond' },
+      { value: 'mary_jones', label: 'Mary Jones' },
+      { value: 'peter_parker', label: 'Peter Parker' },
+      { value: 'bruce_wayne', label: 'Bruce Wayne' }
+    ]
+
+    function generateData() {
+      return [
+        { id: 1, name: 'Alice Johnson', email: 'alice@example.com', age: 28, salary: 85000, active: true, department: 'engineering', role: 'developer', startDate: '2022-03-15', manager: 'john_doe' },
+        { id: 2, name: 'Bob Smith', email: 'bob@example.com', age: 34, salary: 95000, active: true, department: 'engineering', role: 'senior_developer', startDate: '2020-07-01', manager: 'jane_smith' },
+        { id: 3, name: 'Carol White', email: 'carol@example.com', age: 26, salary: 72000, active: false, department: 'marketing', role: 'analyst', startDate: '2023-01-10', manager: 'mike_wilson' },
+        { id: 4, name: 'David Brown', email: 'david@example.com', age: 42, salary: 120000, active: true, department: 'sales', role: 'manager', startDate: '2018-05-20', manager: null },
+        { id: 5, name: 'Eve Davis', email: 'eve@example.com', age: 31, salary: 88000, active: true, department: 'hr', role: 'analyst', startDate: '2021-09-12', manager: 'sarah_connor' }
+      ]
+    }
+
+    let data = generateData()
+
+    const columns = [
+      {
+        field: 'id',
+        title: 'ID',
+        width: '60px',
+        align: 'center'
+      },
+      {
+        field: 'name',
+        title: 'Name',
+        minWidth: '120px',
+        maxWidth: '200px',
+        editable: true,
+        editor: 'text',
+        editorOptions: { placeholder: 'Enter name...', maxLength: 50 },
+        onbeforecommit: ({ value }) => {
+          if (!value || value.trim().length < 2) {
+            return 'Name must be at least 2 characters'
+          }
+          return true
+        }
+      },
+      {
+        field: 'email',
+        title: 'Email',
+        minWidth: '150px',
+        maxWidth: '250px',
+        textOverflow: 'ellipsis',
+        editable: true,
+        editor: 'text',
+        editorOptions: { placeholder: 'email@example.com', inputMode: 'email' },
+        beforePasteCallback: (value) => value?.toLowerCase().trim(),
+        onbeforecommit: ({ value }) => {
+          if (!value || !value.includes('@')) {
+            return 'Please enter a valid email'
+          }
+          return true
+        }
+      },
+      {
+        field: 'age',
+        title: 'Age',
+        width: '80px',
+        align: 'center',
+        editable: true,
+        editor: 'number',
+        editorOptions: { min: 18, max: 100 },
+        onbeforecommit: ({ value }) => {
+          if (value < 18 || value > 100) {
+            return 'Age must be between 18 and 100'
+          }
+          return true
+        }
+      },
+      {
+        field: 'salary',
+        title: 'Salary',
+        width: '120px',
+        align: 'right',
+        editable: true,
+        editor: 'number',
+        editorOptions: { min: 0, step: 1000 },
+        format: (v) => v ? `$${v.toLocaleString()}` : ''
+      },
+      {
+        field: 'active',
+        title: 'Active',
+        width: '80px',
+        align: 'center',
+        editable: true,
+        editor: 'checkbox',
+        format: (v) => v ? '✓' : '✗'
+      },
+      {
+        field: 'department',
+        title: 'Department',
+        width: '140px',
+        editable: true,
+        editor: 'select',
+        editorOptions: { options: departments, allowEmpty: true, emptyLabel: '-- Select --' },
+        format: (v) => departments.find(d => d.value === v)?.label || v
+      },
+      {
+        field: 'role',
+        title: 'Role',
+        width: '150px',
+        editable: true,
+        editor: 'combobox',
+        editorOptions: { options: roles, placeholder: 'Select or type...' },
+        format: (v) => roles.find(r => r.value === v)?.label || v
+      },
+      {
+        field: 'startDate',
+        title: 'Start Date',
+        width: '130px',
+        editable: true,
+        editor: 'date',
+        format: (v) => v ? new Date(v).toLocaleDateString() : ''
+      },
+      {
+        field: 'manager',
+        title: 'Manager',
+        width: '150px',
+        editable: true,
+        editor: 'autocomplete',
+        editorOptions: {
+          placeholder: 'Search manager...',
+          minSearchLength: 1,
+          onSearch: async (query) => {
+            // Simulate async API call
+            await new Promise(r => setTimeout(r, 200))
+            return managers.filter(m =>
+              m.label.toLowerCase().includes(query.toLowerCase())
+            )
+          }
+        },
+        format: (v) => managers.find(m => m.value === v)?.label || v || ''
+      }
+    ]
+
+    // Initialize grid
+    const grid = document.getElementById('grid')
+    const logEl = document.getElementById('log')
+
+    grid.items = data
+    grid.columns = columns
+
+    // Logging
+    function log(message, type = 'info') {
+      const entry = document.createElement('div')
+      entry.className = `log-entry ${type}`
+      entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`
+      logEl.insertBefore(entry, logEl.firstChild)
+      if (logEl.children.length > 20) logEl.removeChild(logEl.lastChild)
+    }
+
+    // Events
+    grid.addEventListener('rowchange', (e) => {
+      const { rowIndex, field, newValue, isValid, validationError } = e.detail
+      if (isValid) {
+        // Apply to data
+        data[rowIndex][field] = newValue
+        log(`Updated row ${rowIndex + 1}, ${field} = ${JSON.stringify(newValue)}`, 'success')
+      } else {
+        log(`Validation failed: ${validationError}`, 'error')
+      }
+    })
+
+    grid.addEventListener('roweditstart', (e) => {
+      log(`Editing row ${e.detail.rowIndex + 1}, field: ${e.detail.field}`)
+    })
+
+    // Controls
+    document.getElementById('editTrigger').addEventListener('change', (e) => {
+      grid.editTrigger = e.target.value
+      grid.scheduleRender()
+      log(`Edit trigger changed to: ${e.target.value}`)
+    })
+
+    document.getElementById('darkMode').addEventListener('change', (e) => {
+      document.documentElement.dataset.theme = e.target.checked ? 'dark' : 'light'
+    })
+
+    document.getElementById('addRow').addEventListener('click', () => {
+      const newId = Math.max(...data.map(d => d.id)) + 1
+      data.push({
+        id: newId,
+        name: '',
+        email: '',
+        age: 25,
+        salary: 50000,
+        active: true,
+        department: '',
+        role: '',
+        startDate: new Date().toISOString().split('T')[0],
+        manager: null
+      })
+      grid.items = [...data]
+      log(`Added new row with ID ${newId}`)
+    })
+
+    document.getElementById('resetData').addEventListener('click', () => {
+      data = generateData()
+      grid.items = data
+      log('Data reset to original')
+    })
+  </script>
+</body>
+</html>

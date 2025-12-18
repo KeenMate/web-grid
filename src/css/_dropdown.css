@@ -1,0 +1,46 @@
+/* ==============================================================================
+   DROPDOWN STYLES
+   Dropdown positioning and option styling for select/combobox/autocomplete
+   ============================================================================== */
+
+.cell-dropdown {
+  background: var(--wg-dropdown-bg);
+  border: var(--wg-dropdown-border);
+  border-radius: var(--wg-border-radius);
+  box-shadow: var(--wg-dropdown-shadow);
+  max-height: 200px;
+  overflow-y: auto;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: var(--wg-z-dropdown);
+}
+
+.cell-dropdown-option {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--wg-text-color-1);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.cell-dropdown-option:hover,
+.cell-dropdown-option.highlighted {
+  background: var(--wg-fill-hover);
+}
+
+.cell-dropdown-empty {
+  padding: 8px 12px;
+  color: var(--wg-text-color-2);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Positioning region */
+.positioning-region {
+  z-index: var(--wg-z-dropdown);
+}
