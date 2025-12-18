@@ -1,11 +1,11 @@
-# QuickGrid Web Component
+# @keenmate/web-grid
 
-A feature-rich, high-performance data grid web component with sorting, filtering, pagination, inline editing, row toolbar, and context menu support.
+A feature-rich, zero-dependency data grid web component with sorting, filtering, pagination, inline editing, row toolbar, and context menu support.
 
 ## Installation
 
 ```bash
-npm install quick-grid-wc
+npm install @keenmate/web-grid
 ```
 
 ## Usage
@@ -14,10 +14,10 @@ npm install quick-grid-wc
 
 ```html
 <script type="module">
-  import 'quick-grid-wc'
+  import '@keenmate/web-grid'
 </script>
 
-<quick-grid id="grid"></quick-grid>
+<web-grid id="grid"></web-grid>
 
 <script type="module">
   const grid = document.getElementById('grid')
@@ -33,16 +33,27 @@ npm install quick-grid-wc
 </script>
 ```
 
-### Script Tag (IIFE)
+### UMD (Script Tag)
 
 ```html
-<script src="dist/quick-grid.iife.js"></script>
-<quick-grid id="grid"></quick-grid>
+<script src="dist/web-grid.umd.js"></script>
+<web-grid id="grid"></web-grid>
 ```
 
-## API Reference
+## Features
 
-### Properties
+- **Sorting** - Click column headers to sort ascending/descending
+- **Filtering** - Per-column text input filters
+- **Pagination** - Configurable page size with navigation
+- **Inline Editing** - 7 editor types with validation support
+- **Navigate Mode** - Spreadsheet-like keyboard navigation
+- **Row Toolbar** - Floating action buttons on hover
+- **Context Menu** - Right-click menu with dynamic options
+- **Dark Mode** - Built-in dark theme support
+- **Zero Dependencies** - Pure JavaScript web component
+- **Shadow DOM** - Encapsulated styles
+
+## Properties
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -50,7 +61,7 @@ npm install quick-grid-wc
 | `columns` | `Array<Column>` | `[]` | Column definitions |
 | `sortable` | `boolean` | `false` | Enable column sorting |
 | `filterable` | `boolean` | `false` | Enable column filtering |
-| `paginate` | `boolean` | `false` | Enable pagination |
+| `pageable` | `boolean` | `false` | Enable pagination |
 | `pageSize` | `number` | `10` | Rows per page |
 | `editable` | `boolean` | `false` | Enable cell editing |
 | `editTrigger` | `string` | `'dblclick'` | Edit trigger: `'click'`, `'dblclick'`, `'navigate'` |
@@ -60,213 +71,197 @@ npm install quick-grid-wc
 | `rowToolbar` | `Array` | `[]` | Toolbar items configuration |
 | `toolbarTrigger` | `string` | `'hover'` | Toolbar trigger: `'hover'`, `'button'` |
 | `contextMenu` | `Array` | `[]` | Context menu items |
+| `checkboxAlwaysEditable` | `boolean` | `true` | Checkboxes toggle without entering edit mode |
 
-### Column Definition
+## Column Definition
 
 ```javascript
 {
   field: 'fieldName',           // Data field name (required)
   title: 'Column Title',        // Display title
-  width: '100px',               // Column width (CSS value)
+  width: '100px',               // Column width
   minWidth: '50px',             // Minimum width
   maxWidth: '300px',            // Maximum width
-  align: 'left',                // Text alignment: 'left', 'center', 'right'
-  sortable: true,               // Enable sorting for this column
-  filterable: true,             // Enable filtering for this column
-  editable: true,               // Enable editing for this column
-  editor: 'text',               // Editor type (see Editor Types)
-  editorOptions: {},            // Editor-specific options
-  format: (value, row) => '',   // Value formatter function
-  onbeforecommit: (ctx) => true // Validation function
+  align: 'left',                // 'left', 'center', 'right'
+  textOverflow: 'wrap',         // 'wrap' or 'ellipsis'
+  sortable: true,               // Enable sorting
+  filterable: true,             // Enable filtering
+  editable: true,               // Enable editing
+  editor: 'text',               // Editor type
+  editorOptions: {},            // Editor options
+  format: (value, row) => '',   // Value formatter
+  template: (value, row, col) => '', // Custom cell template
+  onbeforecommit: (ctx) => true,     // Validation
+  beforeCopyCallback: (value, row) => value,  // Transform before copy
+  beforePasteCallback: (value, row) => value  // Process pasted value
 }
 ```
 
-### Editor Types
+## Editor Types
 
 | Type | Description | Options |
 |------|-------------|---------|
 | `text` | Text input | `placeholder`, `maxLength`, `inputMode` |
 | `number` | Number input | `min`, `max`, `step` |
 | `checkbox` | Boolean toggle | - |
-| `select` | Dropdown list | `options`, `allowEmpty`, `emptyLabel` |
-| `combobox` | Filterable dropdown | `options`, `placeholder` |
-| `autocomplete` | Async search dropdown | `search(query)`, `placeholder`, `minLength` |
+| `select` | Dropdown list | `options`, `allowEmpty`, `emptyLabel`, `showOnFocus` |
+| `combobox` | Filterable dropdown | `options`, `placeholder`, `showOnFocus` |
+| `autocomplete` | Async search | `onSearch(query)`, `placeholder`, `minSearchLength`, `showOnFocus` |
 | `date` | Date picker | `min`, `max` |
 
-### Row Toolbar Items
+### Editor Options
+
+```javascript
+// Select/Combobox options
+editorOptions: {
+  options: [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' }
+  ],
+  valueMember: 'value',    // Property for value (default: 'value')
+  displayMember: 'label',  // Property for display (default: 'label')
+  allowEmpty: true,        // Allow empty selection (select only)
+  emptyLabel: '-- Select --',
+  showOnFocus: true        // Auto-open when navigating with arrows
+}
+
+// Autocomplete
+editorOptions: {
+  placeholder: 'Search...',
+  minSearchLength: 1,
+  onSearch: async (query) => {
+    // Return array of { value, label } objects
+    return await fetchResults(query)
+  }
+}
+```
+
+## Row Toolbar
 
 Predefined items: `'add'`, `'delete'`, `'duplicate'`, `'moveUp'`, `'moveDown'`
-
-Custom items:
-```javascript
-{
-  id: 'custom',
-  icon: '🔧',
-  title: 'Custom Action',
-  danger: false   // Red styling for destructive actions
-}
-```
-
-### Context Menu Items
-
-```javascript
-{
-  id: 'view',
-  label: 'View Details',           // String or function: (ctx) => string
-  icon: '👁️',
-  visible: (ctx) => true,          // Show/hide based on context
-  disabled: (ctx) => false,        // Enable/disable based on context
-  danger: false,                   // Red styling for destructive actions
-  dividerBefore: false,            // Add separator line above
-  onclick: (ctx) => {}             // Click handler
-}
-```
-
-Context object (`ctx`):
-- `row` - The row data object
-- `rowIndex` - Row index in filtered data
-- `column` - Column definition
-- `field` - Field name
-- `cellValue` - Current cell value
-
-### Events
-
-| Event | Detail | Description |
-|-------|--------|-------------|
-| `rowchange` | `{ rowIndex, field, oldValue, newValue, row, isValid, validationError }` | Cell value changed |
-| `roweditstart` | `{ rowIndex, field, row }` | Cell editing started |
-| `roweditend` | `{ rowIndex, field, row, committed }` | Cell editing ended |
-| `rowaction` | `{ action, rowIndex, row }` | Row toolbar action clicked |
-| `contextmenuopen` | `{ row, rowIndex, column, cellValue }` | Context menu opened |
-| `sort` | `{ field, direction }` | Column sorted |
-| `filter` | `{ filters }` | Filter applied |
-| `page` | `{ page, pageSize }` | Page changed |
-
-### Methods
-
-| Method | Description |
-|--------|-------------|
-| `scheduleRender()` | Request a re-render |
-| `startEdit(rowIndex, field)` | Start editing a cell |
-| `commitEdit()` | Commit current edit |
-| `cancelEdit()` | Cancel current edit |
-
-## Examples
-
-### Basic Grid
-
-```javascript
-grid.items = data
-grid.columns = [
-  { field: 'id', title: 'ID' },
-  { field: 'name', title: 'Name', sortable: true }
-]
-grid.sortable = true
-```
-
-### Editable Grid
-
-```javascript
-grid.editable = true
-grid.columns = [
-  { field: 'name', title: 'Name', editable: true, editor: 'text' },
-  {
-    field: 'status',
-    title: 'Status',
-    editable: true,
-    editor: 'select',
-    editorOptions: {
-      options: [
-        { value: 'active', label: 'Active' },
-        { value: 'inactive', label: 'Inactive' }
-      ]
-    }
-  }
-]
-
-grid.addEventListener('rowchange', (e) => {
-  const { rowIndex, field, newValue } = e.detail
-  // Update your data store
-})
-```
-
-### Row Toolbar
 
 ```javascript
 grid.showRowToolbar = true
 grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
 
-grid.addEventListener('rowaction', (e) => {
-  const { action, rowIndex, row } = e.detail
-  switch (action) {
-    case 'add':
-      // Add new row
-      break
-    case 'delete':
-      // Delete row
-      break
+// Custom items
+grid.rowToolbar = [
+  'add',
+  {
+    id: 'custom',
+    icon: '🔧',
+    title: 'Custom Action',
+    danger: false,
+    onclick: ({ row, rowIndex }) => { /* ... */ }
   }
-})
+]
 ```
 
-### Context Menu
+## Context Menu
 
 ```javascript
 grid.contextMenu = [
   {
     id: 'view',
-    label: 'View Details',
+    label: 'View Details',           // String or (ctx) => string
     icon: '👁️',
-    onclick: (ctx) => console.log('View:', ctx.row)
-  },
-  {
-    id: 'copy',
-    label: (ctx) => `Copy "${ctx.column.title}"`,
-    icon: '📋',
-    onclick: (ctx) => navigator.clipboard.writeText(String(ctx.cellValue))
-  },
-  {
-    id: 'delete',
-    label: 'Delete',
-    icon: '🗑️',
-    danger: true,
-    dividerBefore: true,
-    disabled: (ctx) => ctx.row.protected,
-    onclick: (ctx) => deleteRow(ctx.rowIndex)
+    visible: (ctx) => true,          // Show/hide
+    disabled: (ctx) => false,        // Enable/disable
+    danger: false,                   // Red styling
+    dividerBefore: false,            // Separator line
+    onclick: (ctx) => {}
   }
 ]
 ```
 
-### Validation
+Context object (`ctx`): `row`, `rowIndex`, `column`, `field`, `cellValue`
+
+## Events
+
+| Event | Detail | Description |
+|-------|--------|-------------|
+| `rowchange` | `{ rowIndex, field, oldValue, newValue, row, isValid, validationError }` | Cell changed |
+| `roweditstart` | `{ rowIndex, field, row }` | Edit started |
+| `roweditend` | `{ rowIndex, field, row, committed }` | Edit ended |
+| `rowaction` | `{ action, rowIndex, row }` | Toolbar action |
+| `contextmenuopen` | `{ row, rowIndex, column, cellValue }` | Menu opened |
+| `sort` | `{ field, direction }` | Column sorted |
+| `filter` | `{ filters }` | Filter applied |
+| `pagechange` | `{ page, pageSize }` | Page changed |
+
+## Validation
 
 ```javascript
 {
   field: 'email',
-  title: 'Email',
   editable: true,
   editor: 'text',
-  onbeforecommit: ({ value }) => {
+  onbeforecommit: async ({ value, oldValue, row, field }) => {
     if (!value || !value.includes('@')) {
-      return 'Please enter a valid email'
+      return 'Please enter a valid email'  // Return error message
     }
-    return true
+    return true  // Valid
   }
 }
 ```
 
 ## Styling
 
-QuickGrid uses CSS custom properties for theming. Override these to customize appearance:
+WebGrid uses CSS custom properties with a 3-tier inheritance system:
 
 ```css
-quick-grid {
-  --neutral-stroke-rest: #e0e0e0;
-  --neutral-fill-rest: #f5f5f5;
-  --neutral-fill-hover: #ebebeb;
-  --neutral-foreground-rest: #333;
-  --accent-fill-rest: #0078d4;
-  --accent-foreground-rest: white;
+web-grid {
+  /* Override component variables directly */
+  --wg-accent-color: #10b981;
+  --wg-border-radius: 8px;
 }
+
+/* Or set base variables for all KeenMate components */
+:root {
+  --base-accent-color: #10b981;
+  --base-border-radius: 8px;
+}
+```
+
+### Key Variables
+
+| Variable | Description |
+|----------|-------------|
+| `--wg-accent-color` | Primary accent color |
+| `--wg-text-color-1` | Primary text color |
+| `--wg-text-color-2` | Secondary text color |
+| `--wg-layer-1` | Background color |
+| `--wg-layer-2` | Alternate row/header background |
+| `--wg-border-color` | Border color |
+| `--wg-border-radius` | Border radius |
+
+### Dark Mode
+
+```html
+<!-- Using attribute -->
+<web-grid theme="dark"></web-grid>
+
+<!-- Or via parent context -->
+<div data-theme="dark">
+  <web-grid></web-grid>
+</div>
+```
+
+## Examples
+
+See the `examples/` directory:
+- `basic.html` - Sorting, filtering, pagination
+- `editable.html` - All editor types and validation
+- `context-menu.html` - Right-click context menu
+- `row-toolbar.html` - Floating row actions
+
+## Development
+
+```bash
+npm install        # Install dependencies
+npm run dev        # Start dev server (port 12500)
+npm run build      # Build to dist/
+npm run package    # Build and create tarball
 ```
 
 ## Browser Support
@@ -274,19 +269,6 @@ quick-grid {
 - Chrome/Edge 88+
 - Firefox 78+
 - Safari 14+
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
-
-# Build for production
-npm run build
-```
 
 ## License
 

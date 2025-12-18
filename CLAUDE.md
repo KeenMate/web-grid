@@ -1,88 +1,79 @@
-# CLAUDE.md
+WebGrid - Data Grid Web Component
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Package: @keenmate/web-grid
+Element: <web-grid>
+Class: WebGrid
 
-## Project Status: Conversion Complete
+Build & Dev
+- npm run dev - starts Vite dev server on port 12500
+- npm run build - builds to dist/
+- npm run package - builds and creates tarball
+- Output: dist/web-grid.js (ES), dist/web-grid.umd.js (UMD), dist/style.css
 
-**QuickGrid has been converted from Svelte 5 to Pure JavaScript Web Components.**
+Project Structure
+- src/web-grid.js - main component class (WebGrid extends BaseComponent)
+- src/base-component.js - base web component class with Shadow DOM
+- src/positioning-region.js - dropdown/popup positioning utility component
+- src/grid-edit-behavior.js - shared editing behavior mixin
+- src/utils.js - template helpers (html, when, map, escapeHtml, etc.)
+- src/index.js - main entry point, exports and registers components
+- src/css/ - CSS files imported via Vite ?inline for Shadow DOM
 
-The original Svelte files are preserved in the repository for comparison.
+CSS Architecture
+- Variables use --wg- prefix (e.g., --wg-accent-color)
+- 3-tier inheritance: --wg-* -> --base-* -> hardcoded fallback
+- Allows parent projects to set --base-accent-color etc. to theme the grid
+- Files: _variables.css, _base.css, _table.css, _cells.css, _editors.css, _dropdown.css, _context-menu.css, _row-toolbar.css
 
-### Web Component Files
-- `src/base-component.js` - Reactive base class with batched rendering
-- `src/utils.js` - HTML templating, helpers
-- `src/styles.js` - All CSS styles extracted
-- `src/positioning-region.js` - Dropdown positioning utility
-- `src/grid-cell-editor.js` - All 7 editor types
-- `src/quick-grid.js` - Main grid component
-- `src/index.js` - Entry point (registers `<quick-grid>`)
+Features Implemented
+- Sorting (click headers, ascending/descending toggle)
+- Filtering (per-column text input filters)
+- Pagination (configurable page size)
+- Striped rows, hoverable rows
+- Dark mode support (theme="dark" attribute or data-theme="dark" on parent)
 
-### Build & Run
-```bash
-npm install          # Install dependencies
-npm run dev          # Start dev server on port 3000
-npm run build        # Build minified bundles to dist/
-```
+Editing Features
+- Edit triggers: click, dblclick, navigate (spreadsheet mode)
+- Editor types: text, number, checkbox, select, combobox, autocomplete, date
+- Validation via onbeforecommit callback (sync or async)
+- Navigate mode: arrow keys move between cells, type to edit, Enter/Tab to commit
+- Checkbox: always toggleable in navigate mode (no edit mode entry)
+- showOnFocus option for dropdowns: controls auto-open when navigating with arrows
 
-### Examples
-- `examples/basic.html` - Basic grid with sorting, filtering, pagination
-- `examples/editable.html` - All editor types and validation
-- `examples/context-menu.html` - Right-click context menu
-- `examples/row-toolbar.html` - Floating row action toolbar
+Row Toolbar
+- Floating toolbar appears on row hover or button click
+- Predefined actions: add, delete, duplicate, moveUp, moveDown
+- Custom actions supported with icon/title/onclick
+- Toolbar trigger modes: hover, button
 
-### Original Svelte Files (Preserved)
-- `QuickGrid.svelte` - Original Svelte 5 component
-- `GridCellEditor.svelte` - Original editor component
-- `PositioningRegion.svelte` - Original positioning component
-- `Icon.svelte` - Original icon loader
+Context Menu
+- Right-click to open
+- Dynamic labels (function returning string)
+- Conditional visibility and disabled states
+- Danger styling for destructive actions
+- Keyboard navigation (arrows, Enter, Escape)
 
-## Project Overview
+Clipboard
+- Copy/paste with Ctrl+C/Ctrl+V in navigate mode
+- beforeCopyCallback - transform value before copying
+- beforePasteCallback - process/clean pasted value
 
-This is a Svelte 5 component library containing a feature-rich data grid (`QuickGrid`) and supporting components. The components use FluentUI web components and design tokens for styling.
+Events
+- rowchange - cell value changed (includes validation result)
+- roweditstart / roweditend - edit lifecycle
+- rowaction - toolbar action clicked
+- contextmenuopen - context menu opened
+- sort, filter, pagechange - grid state changes
 
-## Technology Stack
+Key Implementation Details
+- Shadow DOM for style encapsulation
+- Custom element registered as 'web-grid'
+- Uses positioning-region for dropdown placement
+- Inline CSS via Vite ?inline import
+- No external dependencies (zero dependencies)
 
-- **Svelte 5** with runes (`$state`, `$derived`, `$effect`, `$props`, `$bindable`)
-- **TypeScript** with generics support (`<script lang="ts" generics="T">`)
-- **FluentUI Web Components** for menu/context menu functionality
-- **FluentUI SVG Icons** loaded dynamically via fetch
-
-## Components
-
-### QuickGrid.svelte
-The main data grid component with extensive features:
-- **Sorting/Filtering/Pagination**: Built-in data manipulation
-- **Inline Editing**: Multiple editor types (text, number, checkbox, select, combobox, autocomplete, date, custom)
-- **Edit Triggers**: click, dblclick, button, always, navigate (spreadsheet-like keyboard navigation)
-- **Validation**: Both legacy `validate` function and newer `onbeforecommit` callback with transform support
-- **Draft Row System**: Tracks user edits separately from original data via `draftRows` Map
-- **Row Toolbar**: Floating action toolbar with predefined (add/delete/duplicate/moveUp/moveDown) or custom items
-- **Context Menu**: Right-click menu using FluentUI components
-- **Snippets**: Uses Svelte 5 snippets for custom cell rendering (`column.snippet`)
-
-### PositioningRegion.svelte
-Utility component for positioning overlays (dropdowns, tooltips) relative to an anchor element. Supports:
-- Positions: bottom, left, right, top (with automatic fallback)
-- Alignment: center, top
-
-### Icon.svelte
-FluentUI icon loader that dynamically fetches SVG icons from `@fluentui/svg-icons`. Features:
-- Size variants: 16, 20, 24, 28, 32, 48
-- Icon variants: regular, filled
-- Color presets mapping to FluentUI CSS variables
-- Hover effect (switch regular/filled on hover)
-
-## Key Patterns
-
-### Editing Flow
-1. `startEdit()` creates a draft row clone if none exists
-2. User edits update the draft row (not original data)
-3. `commitEdit()` runs validation via `onbeforecommit` or legacy `validate`
-4. `onrowchange` callback fires with both `row` (original) and `draftRow` (with changes)
-5. Consumer decides whether to apply changes to original data
-
-### Navigate Mode (editTrigger="navigate")
-Spreadsheet-like editing with arrow key navigation between editable cells. Tab/Enter commit and move, Escape cancels. Typing printable characters starts editing.
-
-### External Imports
-Components reference types from `../types/index.js` (SlotType) and import `GridCellEditor.svelte` as a sibling component.
+Examples
+- examples/basic.html - sorting, filtering, pagination
+- examples/editable.html - all 7 editor types
+- examples/context-menu.html - right-click menu
+- examples/row-toolbar.html - floating action buttons
