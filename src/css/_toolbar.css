@@ -1,0 +1,138 @@
+/* ==============================================================================
+   ROW TOOLBAR STYLES
+   Floating row action toolbar
+   ============================================================================== */
+
+.wg__toolbar-container {
+	position: fixed;
+	z-index: var(--wg-z-toolbar, 1000);
+}
+
+.wg__toolbar {
+	display: flex;
+	flex-direction: column-reverse;
+	gap: 0;
+	padding: 0;
+	background: var(--wg-toolbar-background, var(--base-layer-floating, #fff));
+	border: 1px solid var(--wg-toolbar-border, var(--base-stroke-default, #e0e0e0));
+	border-radius: var(--wg-border-radius, 4px);
+	box-shadow: var(--wg-toolbar-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+}
+
+.wg__toolbar-row {
+	display: flex;
+	gap: 2px;
+	align-items: center;
+	/* Match grid row height: vertical padding (design-unit * 2 * 2) + line-height (~21px) */
+	height: calc(var(--wg-design-unit, 4) * 4px + 21px);
+	padding: 0 4px;
+}
+
+.wg__toolbar-row + .wg__toolbar-row {
+	border-top: 1px solid var(--wg-toolbar-border, var(--base-stroke-default, #e0e0e0));
+}
+
+.wg__toolbar-divider {
+	width: 1px;
+	height: 16px;
+	background: var(--wg-toolbar-divider-color, var(--base-stroke-strong, #c0c0c0));
+	margin: 0 4px;
+	flex-shrink: 0;
+}
+
+.wg__toolbar-btn {
+	min-width: var(--wg-toolbar-btn-min-width, 24px);
+	height: 100%;
+	border: none;
+	border-radius: var(--wg-border-radius, 4px);
+	background: transparent;
+	color: var(--wg-toolbar-btn-color, var(--base-text-color-primary, #1a1a1a));
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	font-size: var(--wg-toolbar-btn-font-size, 14px);
+	font-weight: 500;
+	padding: 0 6px;
+	transition: background 0.1s ease;
+}
+
+.wg__toolbar-btn:hover {
+	background: var(--wg-toolbar-btn-hover-bg, var(--base-layer-hover, #f5f5f5));
+}
+
+.wg__toolbar-btn:active {
+	background: var(--wg-toolbar-btn-active-bg, var(--base-layer-active, #e8e8e8));
+}
+
+.wg__toolbar-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.wg__toolbar-btn:disabled:hover {
+	background: transparent;
+}
+
+.wg__toolbar-btn--danger:hover {
+	background: var(--wg-toolbar-btn-danger-bg, var(--base-error-background, #fef2f2));
+	color: var(--wg-toolbar-btn-danger-color, var(--base-error-color, #d32f2f));
+}
+
+.wg__toolbar-label {
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+/* ==========================================================================
+   ACTIONS COLUMN (for button trigger mode)
+   ========================================================================== */
+
+.wg__actions-column {
+	width: 24px;
+	min-width: 24px;
+	max-width: 24px;
+	padding: 0 !important;
+	text-align: center;
+}
+
+.wg__header .wg__actions-column {
+	background: var(--wg-header-background, var(--base-layer-02, #f5f5f5));
+}
+
+.wg__filter-row .wg__actions-column {
+	background: var(--wg-background, var(--base-layer-01, #fff));
+}
+
+/* ==========================================================================
+   TOOLBAR TRIGGER BUTTON (in each row for button mode)
+   ========================================================================== */
+
+.wg__toolbar-trigger {
+	position: relative;
+	padding: 0;
+	background: transparent;
+	border: none;
+	border-radius: var(--wg-border-radius, 4px);
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 1;
+	color: var(--wg-toolbar-trigger-color, var(--base-text-color-secondary, #707070));
+}
+
+/* Larger invisible hitbox for easier clicking */
+.wg__toolbar-trigger::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: var(--wg-dropdown-toggle-hitbox, 24px);
+	height: 48px;
+}
+
+.wg__toolbar-trigger:hover,
+.wg__toolbar-trigger--active {
+	color: var(--wg-toolbar-trigger-hover-color, var(--base-text-color-primary, #242424));
+}

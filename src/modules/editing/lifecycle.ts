@@ -1,0 +1,192 @@
+// =============================================================================
+// Editing Lifecycle Module
+// Commit, blur handling, focus after commit/cancel
+// =============================================================================
+
+import type { GridContext } from '../types.js'
+import type { DateOutputFormat } from '../../types.js'
+import { moveFocus } from '../navigation/index.js'
+
+/**
+ * Convert date input value (YYYY-MM-DD) to the specified output format
+ */
+function convertDateValue(dateString: string, outputFormat: string): Date | string | number | null {
+	if (!dateString) return null
+
+	// Parse YYYY-MM-DD format (use local date to avoid timezone shifts)
+	const [year, month, day] = dateString.split('-').map(Number)
+	const date = new Date(year, month - 1, day)
+	if (isNaN(date.getTime())) return null
+
+	switch (outputFormat as DateOutputFormat) {
+		case 'date':
+			return date
+		case 'timestamp':
+			return date.getTime()
+		case 'iso':
+		default:
+			// Return just the date part (YYYY-MM-DD) for cleaner display
+			return dateString
+	}
+}
+
+/**
+ * Commit the value from the current editor
+ */
+export function commitCurrentEditor<T>(
+	ctx: GridContext<T>,
+	editor: HTMLElement
+): void {
+	const rowIndex = parseInt(editor.dataset.row || '0', 10)
+	const field = editor.dataset.field || ''
+
+	let value: unknown
+	if (editor instanceof HTMLInputElement) {
+		if (editor.type === 'checkbox') {
+			const trueValue = JSON.parse(editor.dataset.trueValue || 'true')
+			const falseValue = JSON.parse(editor.dataset.falseValue || 'false')
+			value = editor.checked ? trueValue : falseValue
+		} else if (editor.classList.contains('wg__editor--number')) {
+			// Number editor uses type="text" with inputmode="numeric" for cursor control
+			value = editor.value === '' ? null : parseFloat(editor.value)
+		} else if (editor.type === 'date') {
+			value = convertDateValue(editor.value, editor.dataset.outputFormat || 'iso')
+		} else {
+			value = editor.value
+		}
+	} else if (editor instanceof HTMLSelectElement) {
+		value = editor.value
+	}
+
+	ctx.grid.commitEdit(rowIndex, field, value)
+}
+
+/**
+ * Handle checkbox change (commits immediately)
+ */
+export function handleCheckboxChange<T>(
+	ctx: GridContext<T>,
+	checkbox: HTMLInputElement
+): void {
+	commitCurrentEditor(ctx, checkbox)
+}
+
+/**
+ * Toggle checkbox value and move to next row (for Space key in Focused state)
+ */
+export function toggleCheckboxAndMove<T>(
+	ctx: GridContext<T>,
+	rowIndex: number,
+	colIndex: number
+): void {
+	const column = ctx.grid.columns[colIndex]
+	if (!column) return
+
+	const field = String(column.field)
+	const item = ctx.grid.displayItems[rowIndex]
+	if (!item) return
+
+	const opts = column.editorOptions || {}
+	const trueValue = opts.trueValue ?? true
+	const falseValue = opts.falseValue ?? false
+	const currentValue = (item as Record<string, unknown>)[field]
+	const newValue = currentValue === trueValue ? falseValue : trueValue
+
+	// Commit the toggle
+	ctx.grid.commitEdit(rowIndex, field, newValue)
+
+	// Move to next row
+	const displayItems = ctx.grid.displayItems
+	if (rowIndex < displayItems.length - 1) {
+		requestAnimationFrame(() => {
+			moveFocus(ctx, rowIndex + 1, colIndex)
+		})
+	}
+}
+
+/**
+ * Handle editor blur (commit for text/number inputs)
+ */
+export function handleEditorBlur<T>(
+	ctx: GridContext<T>,
+	input: HTMLInputElement
+): void {
+	// Skip if keyboard already handled the commit
+	if (ctx.isCommittingFromKeyboard) {
+		return
+	}
+	// Only commit if we're still in edit mode (not already cancelled)
+	if (ctx.grid.editingCell) {
+		commitCurrentEditor(ctx, input)
+	}
+}
+
+/**
+ * Move focus after committing an edit
+ */
+export function moveFocusAfterCommit<T>(
+	ctx: GridContext<T>,
+	rowIndex: number,
+	field: string,
+	direction: 'down' | 'up' | 'next' | 'prev'
+): void {
+	const columns = ctx.grid.columns
+	const colIndex = columns.findIndex(c => String(c.field) === field)
+	const displayItems = ctx.grid.displayItems
+
+	let targetRow = rowIndex
+	let targetCol = colIndex
+
+	if (direction === 'down') {
+		// Move to same column, next row
+		targetRow = Math.min(rowIndex + 1, displayItems.length - 1)
+	} else if (direction === 'up') {
+		// Move to same column, previous row
+		targetRow = Math.max(rowIndex - 1, 0)
+	} else {
+		// Use existing Tab navigation logic
+		const editableCols = ctx.grid.getEditableColumns()
+		const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
+
+		if (direction === 'next') {
+			if (currentEditableIndex >= 0 && currentEditableIndex < editableCols.length - 1) {
+				targetCol = editableCols[currentEditableIndex + 1].index
+			} else if (rowIndex < displayItems.length - 1) {
+				targetRow = rowIndex + 1
+				targetCol = editableCols[0].index
+			}
+		} else { // prev
+			if (currentEditableIndex > 0) {
+				targetCol = editableCols[currentEditableIndex - 1].index
+			} else if (rowIndex > 0) {
+				targetRow = rowIndex - 1
+				targetCol = editableCols[editableCols.length - 1].index
+			}
+		}
+	}
+
+	// Use requestAnimationFrame to focus after editor is removed from DOM
+	requestAnimationFrame(() => {
+		moveFocus(ctx, targetRow, targetCol)
+		ctx.isCommittingFromKeyboard = false
+	})
+}
+
+/**
+ * Focus cell after cancelling edit
+ */
+export function focusCellAfterCancel<T>(
+	ctx: GridContext<T>,
+	rowIndex: number,
+	field: string
+): void {
+	const columns = ctx.grid.columns
+	const colIndex = columns.findIndex(c => String(c.field) === field)
+	if (colIndex >= 0) {
+		// Use requestAnimationFrame to focus after editor is removed from DOM
+		requestAnimationFrame(() => {
+			moveFocus(ctx, rowIndex, colIndex)
+			ctx.isCommittingFromKeyboard = false
+		})
+	}
+}

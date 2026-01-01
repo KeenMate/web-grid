@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGrid - Custom Styling Examples</title>
+    <link rel="stylesheet" href="examples-shared.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">← Back to Examples</a>
+            <h1>Custom Styling Examples</h1>
+            <p class="subtitle">Dynamic cell and row styling based on data values</p>
+        </header>
+
+        <div class="card">
+            <h2>Rainbow Salary + Inactive Rows</h2>
+            <p>Demonstrates <code>cellClassCallback</code> for value-based cell styling and <code>rowClassCallback</code> for row-level styling.</p>
+
+            <ul>
+                <li><strong>Salary column:</strong> Rainbow gradient from red (low) through yellow/green to purple (high)</li>
+                <li><strong>Inactive rows:</strong> Grayed out with reduced opacity</li>
+            </ul>
+
+            <web-grid id="grid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
+        </div>
+
+        <div class="card">
+            <h2>How It Works</h2>
+
+            <h3>1. cellClassCallback (Column-level)</h3>
+            <p>Returns a CSS class based on cell value and row data:</p>
+            <pre><code>{
+    field: 'salary',
+    cellClassCallback: (value, row) =&gt; {
+        if (value &lt; 65000) return 'salary-1'
+        if (value &lt; 72000) return 'salary-2'
+        // ... more ranges
+        return 'salary-7'
+    }
+}</code></pre>
+
+            <h3>2. rowClassCallback (Grid-level)</h3>
+            <p>Returns a CSS class for the entire row:</p>
+            <pre><code>grid.rowClassCallback = (row, index) =&gt; {
+    if (row.status === 'Inactive') return 'row-inactive'
+    return null
+}</code></pre>
+
+            <h3>3. customStylesCallback (Required for Shadow DOM)</h3>
+            <p>Injects CSS into the shadow root:</p>
+            <pre><code>grid.customStylesCallback = () =&gt; `
+    .salary-1 { background: #fee2e2 !important; }
+    .salary-2 { background: #ffedd5 !important; }
+    .row-inactive { opacity: 0.5; }
+`</code></pre>
+        </div>
+
+        <footer>
+            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import './src/index.ts'
+
+        // Sample employee data with varied salaries and statuses
+        const sampleData = [
+            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, sex: 'F', status: 'Active' },
+            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, sex: 'M', status: 'Active' },
+            { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 92000, sex: 'F', status: 'Active' },
+            { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, sex: 'M', status: 'Inactive' },
+            { id: 5, name: 'Eva Martinez', department: 'HR', salary: 65000, sex: 'F', status: 'Active' },
+            { id: 6, name: 'Frank Lee', department: 'Engineering', salary: 88000, sex: 'M', status: 'Active' },
+            { id: 7, name: 'Grace Kim', department: 'Marketing', salary: 75000, sex: 'F', status: 'Inactive' },
+            { id: 8, name: 'Henry Chen', department: 'Sales', salary: 71000, sex: 'M', status: 'Active' },
+            { id: 9, name: 'Ivy Wang', department: 'Engineering', salary: 98000, sex: 'F', status: 'Active' },
+            { id: 10, name: 'Jack Davis', department: 'HR', salary: 62000, sex: 'M', status: 'Active' },
+            { id: 11, name: 'Karen Wilson', department: 'Engineering', salary: 89000, sex: 'F', status: 'Active' },
+            { id: 12, name: 'Leo Garcia', department: 'Marketing', salary: 73000, sex: 'M', status: 'Inactive' },
+            { id: 13, name: 'Maria Lopez', department: 'Finance', salary: 85000, sex: 'F', status: 'Active' },
+            { id: 14, name: 'Frosty McSnowface', department: 'Sales', salary: 67000, sex: 'snowman', status: 'Active' },
+            { id: 15, name: 'Olivia Moore', department: 'Engineering', salary: 102000, sex: 'F', status: 'Active' },
+        ]
+
+        // Helper function to get salary color class (rainbow gradient)
+        function getSalaryClass(salary) {
+            // Range: ~60k to ~100k mapped to rainbow colors
+            if (salary < 65000) return 'salary-1'  // Red
+            if (salary < 70000) return 'salary-2'  // Orange
+            if (salary < 75000) return 'salary-3'  // Yellow
+            if (salary < 80000) return 'salary-4'  // Light Green
+            if (salary < 85000) return 'salary-5'  // Green
+            if (salary < 90000) return 'salary-6'  // Cyan
+            if (salary < 95000) return 'salary-7'  // Blue
+            return 'salary-8'                       // Purple
+        }
+
+        // Column definitions
+        const columns = [
+            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'name', title: 'Name', width: '180px' },
+            { field: 'department', title: 'Department', width: '140px' },
+            {
+                field: 'salary',
+                title: 'Salary',
+                width: '120px',
+                align: 'right',
+                formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : '',
+                // Dynamic cell styling based on salary value
+                cellClassCallback: (value, row) => getSalaryClass(value)
+            },
+            {
+                field: 'sex',
+                title: 'Sex',
+                width: '60px',
+                align: 'center',
+                // Use templateCallback to render Font Awesome icons
+                templateCallback: (row) => {
+                    if (row.sex === 'M') return '<i class="fa-solid fa-mars sex-male"></i>'
+                    if (row.sex === 'F') return '<i class="fa-solid fa-venus sex-female"></i>'
+                    if (row.sex === 'snowman') return '<i class="fa-solid fa-snowman sex-snowman"></i>'
+                    return '<i class="fa-solid fa-mars-and-venus sex-other"></i>'
+                }
+            },
+            {
+                field: 'status',
+                title: 'Status',
+                width: '100px',
+                align: 'center'
+            }
+        ]
+
+        // Initialize grid
+        const grid = document.getElementById('grid')
+        grid.items = sampleData
+        grid.columns = columns
+        grid.striped = false  // Disable striping to better show custom colors
+        grid.hoverable = true
+
+        // Dynamic row styling - gray out inactive employees
+        grid.rowClassCallback = (row, index) => {
+            if (row.status === 'Inactive') return 'row-inactive'
+            return null
+        }
+
+        // Inject custom styles into Shadow DOM
+        grid.customStylesCallback = () => `
+            /* Import Font Awesome */
+            @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+
+            /* Rainbow salary gradient */
+            .salary-1 { background-color: #fee2e2 !important; color: #991b1b; }  /* Red */
+            .salary-2 { background-color: #ffedd5 !important; color: #9a3412; }  /* Orange */
+            .salary-3 { background-color: #fef9c3 !important; color: #854d0e; }  /* Yellow */
+            .salary-4 { background-color: #ecfccb !important; color: #3f6212; }  /* Light Green */
+            .salary-5 { background-color: #d1fae5 !important; color: #065f46; }  /* Green */
+            .salary-6 { background-color: #cffafe !important; color: #0e7490; }  /* Cyan */
+            .salary-7 { background-color: #dbeafe !important; color: #1e40af; }  /* Blue */
+            .salary-8 { background-color: #ede9fe !important; color: #5b21b6; }  /* Purple */
+
+            /* Sex icons */
+            .sex-male { color: #3b82f6; font-size: 1.2em; }
+            .sex-female { color: #ec4899; font-size: 1.2em; }
+            .sex-other { color: #8b5cf6; font-size: 1.2em; }
+            .sex-snowman { color: #06b6d4; font-size: 1.2em; }
+
+            /* Inactive row styling */
+            .row-inactive {
+                opacity: 0.5;
+            }
+            .row-inactive td {
+                background-color: #e5e7eb !important;
+                color: #6b7280 !important;
+            }
+        `
+    </script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+// =============================================================================
+// Navigation Focus Module
+// Low-level focus management utilities
+// =============================================================================
+
+import type { FocusedCell } from '../../types.js'
+import type { GridContext } from '../types.js'
+
+/**
+ * Focus a cell element in the DOM
+ * In virtual scroll mode, only scroll if cell is outside viewport (minimal scroll)
+ */
+export function focusCellElement<T>(
+	ctx: GridContext<T>,
+	rowIndex: number,
+	colIndex: number
+): void {
+	// In virtual scroll mode: only scroll if row is outside viewport
+	if (ctx.grid.shouldUseVirtualScroll()) {
+		ensureRowVisibleMinimal(ctx, rowIndex)
+		// If row is already visible, focus immediately
+		const cell = ctx.shadow.querySelector(
+			`[data-row="${rowIndex}"][data-col="${colIndex}"]`
+		) as HTMLElement
+		if (cell) {
+			cell.focus({ preventScroll: true })
+		}
+		// If not visible, scroll triggered re-render which will focus via renderVirtualRows
+		return
+	}
+
+	// Normal mode: focus the cell and scroll into view
+	const cell = ctx.shadow.querySelector(
+		`[data-row="${rowIndex}"][data-col="${colIndex}"]`
+	) as HTMLElement
+	if (!cell) return
+
+	cell.focus({ preventScroll: true })
+
+	// Let scrollIntoView handle the main scrolling (both axes)
+	cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+
+	// After scrollIntoView, check if cell is STILL obscured by sticky header
+	const header = ctx.shadow.querySelector('.wg__header') as HTMLElement
+	const scrollContainer = ctx.shadow.querySelector('.wg') as HTMLElement
+
+	if (header && scrollContainer) {
+		const headerRect = header.getBoundingClientRect()
+		const cellRect = cell.getBoundingClientRect()
+
+		// If cell is still under the header, adjust
+		if (cellRect.top < headerRect.bottom) {
+			const scrollAmount = cellRect.top - headerRect.bottom - 4
+			scrollContainer.scrollBy({ top: scrollAmount, behavior: 'instant' })
+		}
+	}
+}
+
+/**
+ * Ensure a row is visible with minimal scrolling (only if outside viewport)
+ * Used for arrow key navigation - doesn't reposition, just ensures visibility
+ */
+function ensureRowVisibleMinimal<T>(ctx: GridContext<T>, rowIndex: number): void {
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!container) return
+
+	const rowHeight = ctx.grid.virtualScrollRowHeight
+	const scrollTop = container.scrollTop
+	const viewportHeight = container.clientHeight
+
+	// Account for sticky header
+	const header = ctx.shadow.querySelector('.wg__header') as HTMLElement
+	const headerHeight = header?.offsetHeight || 0
+
+	const rowTop = rowIndex * rowHeight
+	const rowBottom = rowTop + rowHeight
+	const visibleTop = scrollTop + headerHeight
+	const visibleBottom = scrollTop + viewportHeight
+
+	// Only scroll if row is outside viewport
+	if (rowTop < visibleTop) {
+		// Row is above viewport - scroll up to show it
+		container.scrollTop = rowTop - headerHeight
+	} else if (rowBottom > visibleBottom) {
+		// Row is below viewport - scroll down to show it
+		container.scrollTop = rowBottom - viewportHeight
+	}
+	// If row is visible, don't scroll at all
+}
+
+/**
+ * Scroll to position a row as the second visible row (for PageUp/PageDown)
+ * Exported so keyboard handlers can use it directly
+ */
+export function scrollToRowPosition<T>(ctx: GridContext<T>, rowIndex: number): void {
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!container) return
+
+	const rowHeight = ctx.grid.virtualScrollRowHeight
+
+	// Position target row as second visible row (rowIndex - 1 at top)
+	// This gives one row of context above the target
+	const targetScrollTop = Math.max(0, (rowIndex - 1) * rowHeight)
+
+	// Clamp to valid range
+	const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight)
+	container.scrollTop = Math.min(targetScrollTop, maxScroll)
+}
+
+/**
+ * Update focus visual state surgically (without full re-render)
+ * This directly manipulates CSS classes on existing DOM elements
+ */
+export function updateFocusVisual<T>(
+	ctx: GridContext<T>,
+	oldFocus: FocusedCell | null,
+	newFocus: FocusedCell | null
+): void {
+	// Remove focus from old cell
+	if (oldFocus) {
+		const oldCell = ctx.shadow.querySelector(
+			`[data-row="${oldFocus.rowIndex}"][data-col="${oldFocus.colIndex}"]`
+		) as HTMLElement
+		oldCell?.classList.remove('wg__cell--focused')
+	}
+
+	// Add focus to new cell
+	if (newFocus) {
+		const newCell = ctx.shadow.querySelector(
+			`[data-row="${newFocus.rowIndex}"][data-col="${newFocus.colIndex}"]`
+		) as HTMLElement
+		newCell?.classList.add('wg__cell--focused')
+	}
+}
+
+/**
+ * Surgically remove the editing visual (blue border) from current editing cell.
+ * Call this BEFORE cancelEdit() to ensure the DOM class is removed immediately,
+ * rather than waiting for the async re-render.
+ */
+export function clearEditingVisual<T>(ctx: GridContext<T>): void {
+	const editingCell = ctx.grid.editingCell
+	if (editingCell) {
+		const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+		const cell = ctx.shadow.querySelector(
+			`[data-row="${editingCell.rowIndex}"][data-col="${colIndex}"]`
+		) as HTMLElement
+		if (cell) {
+			cell.classList.remove('wg__cell--editing')
+		}
+	}
+}
+
+/**
+ * Handle cell focus event
+ */
+export function handleCellFocus<T>(
+	ctx: GridContext<T>,
+	rowIndex: number,
+	colIndex: number
+): void {
+	if (!ctx.grid.isNavigateMode) return
+
+	const oldFocus = ctx.grid.focusedCell
+	const newFocus = { rowIndex, colIndex }
+
+	ctx.grid.setFocusedCell(rowIndex, colIndex)  // Just updates state (no re-render)
+	updateFocusVisual(ctx, oldFocus, newFocus)     // Updates DOM directly
+}
+
+/**
+ * Helper to move focus to a new cell with surgical DOM updates
+ */
+export function moveFocus<T>(
+	ctx: GridContext<T>,
+	newRowIndex: number,
+	newColIndex: number
+): void {
+	const oldFocus = ctx.grid.focusedCell
+	const newFocus = { rowIndex: newRowIndex, colIndex: newColIndex }
+
+	ctx.grid.setFocusedCell(newRowIndex, newColIndex)
+	updateFocusVisual(ctx, oldFocus, newFocus)
+	focusCellElement(ctx, newRowIndex, newColIndex)
+}
+
+/**
+ * Try to start editing a cell (checks if editable first)
+ */
+export function tryStartEdit<T>(
+	ctx: GridContext<T>,
+	rowIndex: number,
+	colIndex: number,
+	options?: { initialSearchQuery?: string; cursorPosition?: number }
+): void {
+	const columns = ctx.grid.columns
+	const column = columns[colIndex]
+	if (!column) return
+
+	// Check if cell is editable
+	if (!ctx.grid.isCellEditable(column)) {
+		return
+	}
+
+	const field = String(column.field)
+	ctx.grid.startEdit(rowIndex, field, options)
+}
+
+/**
+ * Calculate cursor position from a click event using binary search (v3 pattern)
+ */
+export function getCursorPositionFromClick(
+	event: MouseEvent,
+	cell: HTMLElement
+): number | null {
+	// Find the text span inside the cell (matches v3's .cell-content > span pattern)
+	const textSpan = cell.querySelector('.wg__cell-text') as HTMLElement
+	if (!textSpan) return null
+
+	const text = textSpan.textContent || ''
+	if (!text.length) return 0
+
+	const clickX = event.clientX
+	const spanRect = textSpan.getBoundingClientRect()
+
+	// If click is before the text, position at start
+	if (clickX <= spanRect.left) return 0
+	// If click is after the text, position at end
+	if (clickX >= spanRect.right) return text.length
+
+	// Find text node
+	const textNode = textSpan.firstChild
+	if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return null
+
+	// Binary search for the character position
+	const range = document.createRange()
+	let low = 0
+	let high = text.length
+
+	try {
+		while (low < high) {
+			const mid = Math.floor((low + high) / 2)
+			range.setStart(textNode, 0)
+			range.setEnd(textNode, mid)
+			const rect = range.getBoundingClientRect()
+
+			if (rect.right < clickX) {
+				low = mid + 1
+			} else {
+				high = mid
+			}
+		}
+
+		// Fine-tune: check if click is closer to before or after this character
+		if (low > 0 && low < text.length) {
+			range.setStart(textNode, low - 1)
+			range.setEnd(textNode, low)
+			const charRect = range.getBoundingClientRect()
+			const charMidpoint = charRect.left + charRect.width / 2
+			if (clickX < charMidpoint) {
+				low--
+			}
+		}
+	} catch {
+		return text.length
+	}
+
+	return low
+}
+
+/**
+ * Handle focus leaving the table
+ */
+export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void {
+	const relatedTarget = e.relatedTarget as HTMLElement
+	const table = ctx.shadow.querySelector('.wg__table')
+	if (!relatedTarget || !table?.contains(relatedTarget)) {
+		const oldFocus = ctx.grid.focusedCell
+		ctx.grid.clearFocusedCell()
+		updateFocusVisual(ctx, oldFocus, null)
+	}
+}

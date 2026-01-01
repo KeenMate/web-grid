@@ -1,0 +1,120 @@
+// =============================================================================
+// Dropdown Rendering
+// Render dropdown overlay using Floating UI for positioning
+// =============================================================================
+
+import { computePosition, flip, offset, size } from '@floating-ui/dom'
+import type { EditorOption, EditorOptions, OptionRenderContext } from '../../types.js'
+import type { GridContext } from '../types.js'
+import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled } from './options.js'
+
+/**
+ * Render dropdown overlay using Floating UI for positioning
+ * Returns the dropdown element so caller can attach listeners
+ */
+export function renderDropdown<T>(
+	ctx: GridContext<T>,
+	anchor: HTMLElement,
+	options: EditorOption[],
+	opts: EditorOptions
+): HTMLElement {
+	// Remove existing dropdown
+	removeDropdown(ctx)
+
+	const dropdown = document.createElement('div')
+	dropdown.className = 'wg__dropdown'
+
+	// Set base styles (position will be set by Floating UI)
+	dropdown.style.cssText = `
+		position: fixed;
+		top: 0;
+		left: 0;
+		max-height: 200px;
+		overflow-y: auto;
+		z-index: 1000;
+	`
+
+	// Render options
+	if (options.length === 0) {
+		dropdown.innerHTML = `<div class="wg__dropdown-empty">${ctx.isSearching ? 'Searching...' : 'No options'}</div>`
+	} else {
+		// Get current value for isSelected check
+		const editingCell = ctx.grid.editingCell
+		const currentValue = editingCell
+			? (ctx.grid.displayItems[editingCell.rowIndex] as Record<string, unknown>)?.[editingCell.field]
+			: undefined
+
+		dropdown.innerHTML = options.map((opt, i) => {
+			const isHighlighted = i === ctx.highlightedIndex
+			const isSelected = getOptionValue(opt, opts) === currentValue
+			const disabled = isOptionDisabled(opt, opts)
+
+			// Custom render callback
+			if (opts.renderOptionCallback) {
+				const context: OptionRenderContext = { index: i, isHighlighted, isSelected, isDisabled: disabled }
+				return opts.renderOptionCallback(opt, context)
+			}
+
+			// Default rendering with icon/subtitle support
+			const label = getOptionLabel(opt, opts)
+			const icon = getOptionIcon(opt, opts)
+			const subtitle = getOptionSubtitle(opt, opts)
+
+			const classes = ['wg__dropdown-option']
+			if (isHighlighted) classes.push('wg__dropdown-option--highlighted')
+			if (isSelected) classes.push('wg__dropdown-option--selected')
+			if (disabled) classes.push('wg__dropdown-option--disabled')
+
+			const iconHtml = icon ? `<span class="wg__dropdown-option-icon">${ctx.escapeHtml(icon)}</span>` : ''
+			const subtitleHtml = subtitle ? `<span class="wg__dropdown-option-subtitle">${ctx.escapeHtml(subtitle)}</span>` : ''
+
+			return `<div class="${classes.join(' ')}" data-index="${i}" ${disabled ? 'data-disabled="true"' : ''}>
+				${iconHtml}
+				<div class="wg__dropdown-option-content">
+					<span class="wg__dropdown-option-label">${ctx.escapeHtml(label)}</span>
+					${subtitleHtml}
+				</div>
+			</div>`
+		}).join('')
+	}
+
+	// Append to shadow DOM
+	ctx.shadow.appendChild(dropdown)
+	ctx.dropdownOpen = true
+
+	// Use Floating UI to position the dropdown
+	computePosition(anchor, dropdown, {
+		strategy: 'fixed',
+		placement: 'bottom-start',
+		middleware: [
+			// Add 1px gap to prevent sub-pixel overlap with cell border
+			offset(1),
+			flip({ fallbackPlacements: ['top-start'] }),
+			size({
+				apply({ rects }) {
+					Object.assign(dropdown.style, {
+						width: `${rects.reference.width}px`
+					})
+				}
+			})
+		]
+	}).then(({ x, y }) => {
+		Object.assign(dropdown.style, {
+			left: `${x}px`,
+			top: `${y}px`
+		})
+	})
+
+	return dropdown
+}
+
+/**
+ * Remove dropdown from DOM
+ */
+export function removeDropdown<T>(ctx: GridContext<T>): void {
+	const existing = ctx.shadow.querySelector('.wg__dropdown')
+	existing?.remove()
+	ctx.dropdownOpen = false
+	ctx.highlightedIndex = -1
+	ctx.filterText = ''  // Clear filter when dropdown closes
+}

@@ -1,0 +1,1064 @@
+/* ==============================================================================
+   BASE STYLES
+   ==============================================================================
+   Foundation styles: FOUC prevention and layout containers
+*/
+
+/* ==============================================================================
+   FOUC PREVENTION
+   ==============================================================================
+   Prevent Flash of Unstyled Content by hiding undefined custom elements
+   Keep element visible to prevent layout shift, but hide any text content
+*/
+web-grid:not(:defined) {
+  display: block;
+  min-height: calc(10 * var(--wg-rem));
+  color: transparent !important;
+  background: transparent;
+}
+
+/* ==============================================================================
+   CONTAINER
+   ==============================================================================
+*/
+.wg {
+  position: relative;
+  width: 100%;
+  max-height: inherit;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: var(--wg-table-border);
+}
+
+/* ==============================================================================
+   TABLE
+   ==============================================================================
+*/
+.wg__table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: var(--wg-table-background);
+  font-size: var(--wg-font-size-base);
+  line-height: var(--wg-line-height-base);
+}
+
+/* ==============================================================================
+   HEADER
+   ==============================================================================
+*/
+.wg__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--wg-header-background);
+  color: var(--wg-header-color);
+  font-weight: var(--wg-header-font-weight);
+  padding: var(--wg-header-padding);
+  border-bottom: var(--wg-header-border);
+  text-align: left;
+  user-select: none;
+}
+
+.wg__header--sortable {
+  cursor: pointer;
+}
+
+.wg__header--sortable:hover {
+  background: var(--wg-header-background-hover);
+}
+
+.wg__header--sorted {
+  background: var(--wg-header-background-sorted);
+}
+
+/* Header Content Layout */
+.wg__header-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: space-between;
+}
+
+.wg__header-title {
+  flex: 1;
+}
+
+/* Sort Indicator */
+.wg__sort-indicator {
+  font-size: var(--wg-sort-indicator-size);
+  opacity: var(--wg-sort-indicator-opacity);
+  min-width: 16px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+}
+
+.wg__sort-placeholder {
+  opacity: var(--wg-sort-placeholder-opacity);
+}
+
+.wg__sort-priority {
+  font-size: var(--wg-sort-priority-size);
+  font-weight: 600;
+  margin-left: 2px;
+  vertical-align: super;
+  line-height: 1;
+}
+
+/* Header Info Icon */
+.wg__header-info {
+  display: inline-flex;
+  align-items: center;
+  color: var(--wg-accent-color);
+  cursor: help;
+  opacity: 0.7;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.wg__header-info:hover {
+  opacity: 1;
+}
+
+/* ==============================================================================
+   FILTER ROW
+   ==============================================================================
+*/
+.wg__filter-row th {
+  padding: var(--wg-filter-padding);
+  background: var(--wg-filter-background);
+  border-bottom: var(--wg-filter-border);
+}
+
+.wg__filter-input {
+  width: 100%;
+  padding: var(--wg-filter-input-padding);
+  border: var(--wg-filter-input-border);
+  border-radius: var(--wg-filter-input-border-radius);
+  background: var(--wg-layer-1);
+  color: var(--wg-text-color-1);
+  font-size: var(--wg-filter-input-font-size);
+  box-sizing: border-box;
+}
+
+.wg__filter-input:focus {
+  outline: none;
+  border: var(--wg-filter-input-border-focus);
+  box-shadow: 0 0 0 1px var(--wg-accent-color);
+}
+
+/* ==============================================================================
+   ROWS
+   ==============================================================================
+*/
+.wg__table tbody tr {
+  border-bottom: var(--wg-row-border);
+}
+
+/* ==============================================================================
+   CELLS
+   ==============================================================================
+*/
+.wg__cell {
+  padding: var(--wg-cell-padding);
+  color: var(--wg-cell-color);
+  /* Account for sticky header when scrolling into view */
+  scroll-margin-top: 3rem;
+  scroll-margin-bottom: 0.5rem;
+}
+
+/* Cell text - prevent selection flash on double-click */
+.wg__cell-text {
+  user-select: none;
+}
+
+/* Text overflow ellipsis */
+.wg__cell--ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==============================================================================
+   EDITABLE CELLS
+   ==============================================================================
+*/
+.wg__cell--editable {
+  cursor: pointer;
+  position: relative;
+}
+
+.wg__cell--editable:hover {
+  background: var(--wg-cell-background-hover);
+}
+
+/* Dashed border on hover for editable cells */
+.wg__cell--editable:hover::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1px dashed var(--wg-stroke-input);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* ==============================================================================
+   NAVIGATE MODE (keyboard navigation)
+   ==============================================================================
+*/
+.wg--navigate-mode .wg__cell {
+  cursor: cell;
+}
+
+/* Remove browser default focus outline - we handle it with .wg__cell--focused */
+.wg--navigate-mode .wg__cell:focus {
+  outline: none;
+}
+
+/* Focused cell styling - Excel-like green border for ALL cells */
+.wg--navigate-mode .wg__cell.wg__cell--focused {
+  outline: 2px solid var(--wg-focus-border-color, #217346);
+  outline-offset: -2px;
+}
+
+/* Hide hover border when cell is focused */
+.wg__cell--focused::after {
+  display: none;
+}
+
+/* ==============================================================================
+   EDITING CELLS
+   ==============================================================================
+*/
+.wg__cell--editing {
+  position: relative;
+  background: var(--wg-layer-1);
+  outline: 2px solid var(--wg-accent-color);
+  outline-offset: -2px;
+}
+
+/* Hide the dashed hover border when editing */
+.wg__cell--editing::after {
+  display: none;
+}
+
+/* ==============================================================================
+   INVALID CELLS
+   ==============================================================================
+*/
+.wg__cell--invalid {
+  background: var(--wg-error-background, #fee);
+  box-shadow: inset 0 0 0 2px var(--wg-error-color, #c00);
+}
+
+/* ==============================================================================
+   READ-ONLY CELLS (permanent styling, not focus-related)
+   ==============================================================================
+*/
+.wg--navigate-mode .wg__cell:not(.wg__cell--editable) {
+  background: var(--wg-cell-readonly-background, #f5f5f5);
+}
+
+/* ==============================================================================
+   EDITORS
+   ==============================================================================
+*/
+.wg__editor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  padding: var(--wg-cell-padding);
+  border: none;
+  background: transparent;  /* Transparent - cell provides background */
+  color: var(--wg-text-color-1);
+  font-size: var(--wg-font-size-base);
+  font-family: inherit;
+  line-height: inherit;
+  box-sizing: border-box;
+}
+
+.wg__editor:focus,
+.wg__editor:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Text Editor */
+.wg__editor--text {
+  text-align: inherit;
+}
+
+/* Number Editor */
+.wg__editor--number {
+  text-align: right;
+}
+
+/* Date Editor */
+.wg__editor--date {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  background: var(--wg-editor-background);
+}
+
+.wg__date-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  padding: var(--wg-cell-padding-block) var(--wg-cell-padding-inline);
+  outline: none;
+  color: inherit;
+}
+
+.wg__date-trigger {
+  width: var(--wg-date-trigger-size, 28px);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--wg-text-secondary, #666);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.wg__date-trigger:hover {
+  color: var(--wg-accent-color, #0078d4);
+  background: var(--wg-layer-hover, rgba(0, 0, 0, 0.05));
+}
+
+/* Checkbox Editor */
+.wg__editor--checkbox {
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* Custom Editor */
+.wg__editor--custom {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  background: var(--wg-editor-background);
+  padding: var(--wg-cell-padding-block) var(--wg-cell-padding-inline);
+  cursor: pointer;
+}
+
+.wg__editor--custom:focus {
+  outline: none;
+}
+
+.wg__custom-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  cursor: pointer;
+}
+
+/* ==============================================================================
+   SELECT TRIGGER (custom dropdown trigger like v3)
+   ==============================================================================
+*/
+.wg__select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: transparent;
+}
+
+.wg__select-trigger:focus,
+.wg__select-trigger:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.wg__select-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wg__select-toggle {
+  position: relative;
+  font-size: var(--wg-dropdown-toggle-size);
+  opacity: 0.6;
+  margin-left: 4px;
+  flex-shrink: 0;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Larger invisible hitbox for easier clicking */
+.wg__select-toggle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--wg-dropdown-toggle-hitbox);
+  height: 48px;
+}
+
+/* Dropdown cell in display mode (read-only, same layout as editor) */
+.wg__cell-dropdown-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Toggle visibility: on-focus mode - hide by default, show on hover/focus */
+.wg__cell-dropdown-display--toggle-on-focus .wg__select-toggle {
+  opacity: 0;
+  /* transition: opacity var(--wg-transition-fast); */
+}
+
+.wg__cell:hover .wg__cell-dropdown-display--toggle-on-focus .wg__select-toggle {
+  opacity: 0.6;
+}
+
+.wg__cell--focused .wg__cell-dropdown-display--toggle-on-focus .wg__select-toggle {
+  opacity: 0.6;
+}
+
+/* Date cell in display mode (same pattern as dropdown) */
+.wg__cell-date-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+}
+
+.wg__cell-date-display .wg__date-trigger {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+/* Larger invisible hitbox for easier clicking */
+.wg__cell-date-display .wg__date-trigger::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--wg-dropdown-toggle-hitbox);
+  height: 48px;
+}
+
+/* Toggle visibility: on-focus mode - hide by default, show on hover/focus */
+.wg__cell-date-display--toggle-on-focus .wg__date-trigger {
+  opacity: 0;
+}
+
+.wg__cell:hover .wg__cell-date-display--toggle-on-focus .wg__date-trigger {
+  opacity: 0.6;
+}
+
+.wg__cell--focused .wg__cell-date-display--toggle-on-focus .wg__date-trigger {
+  opacity: 0.6;
+}
+
+/* ==============================================================================
+   MODIFIERS
+   ==============================================================================
+*/
+
+/* Striped rows */
+.wg--striped tbody tr:nth-child(even) {
+  background: var(--wg-row-background-even);
+}
+
+/* Hoverable rows */
+.wg--hoverable tbody tr:hover {
+  background: var(--wg-row-background-hover);
+}
+
+/* ==============================================================================
+   EMPTY STATE
+   ==============================================================================
+*/
+.wg__empty {
+  text-align: center;
+  padding: var(--wg-empty-padding);
+  color: var(--wg-empty-color);
+  font-style: italic;
+}
+
+/* ==============================================================================
+   PAGINATION
+   ==============================================================================
+*/
+.wg__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wg-pagination-gap);
+  padding: var(--wg-pagination-padding);
+  border-top: var(--wg-pagination-border);
+  background: var(--wg-pagination-background);
+}
+
+.wg__pagination-btn {
+  padding: var(--wg-pagination-btn-padding);
+  background: var(--wg-pagination-btn-background);
+  border: var(--wg-pagination-btn-border);
+  border-radius: var(--wg-pagination-btn-border-radius);
+  color: var(--wg-cell-color);
+  font-size: var(--wg-font-size-base);
+  cursor: pointer;
+  transition: all var(--wg-transition-fast);
+}
+
+.wg__pagination-btn:hover:not(:disabled) {
+  background: var(--wg-pagination-btn-background-hover);
+  border: var(--wg-pagination-btn-border-hover);
+}
+
+.wg__pagination-btn:active:not(:disabled) {
+  background: var(--wg-pagination-btn-background-active);
+}
+
+.wg__pagination-btn:disabled {
+  opacity: var(--wg-pagination-btn-disabled-opacity);
+  cursor: not-allowed;
+}
+
+.wg__pagination-info {
+  font-size: var(--wg-font-size-base);
+  color: var(--wg-cell-color);
+}
+
+.wg__pagination-count {
+  font-size: var(--wg-font-size-sm);
+  color: var(--wg-text-color-3);
+  margin-left: 4px;
+}
+
+.wg__pagination-pagesize {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wg__pagination-select {
+  padding: 4px 8px;
+  background: var(--wg-pagination-btn-background);
+  border: var(--wg-pagination-btn-border);
+  border-radius: var(--wg-pagination-btn-border-radius);
+  color: var(--wg-cell-color);
+  font-size: var(--wg-font-size-base);
+  cursor: pointer;
+}
+
+.wg__pagination-select:hover {
+  background: var(--wg-pagination-btn-background-hover);
+  border: var(--wg-pagination-btn-border-hover);
+}
+
+.wg__pagination-select:focus {
+  outline: 2px solid var(--wg-accent-color);
+  outline-offset: -2px;
+}
+
+.wg__pagination-label {
+  font-size: var(--wg-font-size-sm);
+  color: var(--wg-text-color-3);
+}
+
+/* Pagination alignment modifiers */
+.wg__pagination--left {
+  justify-content: flex-start;
+}
+
+.wg__pagination--right {
+  justify-content: flex-end;
+}
+
+/* Top pagination: border on bottom instead of top */
+.wg__pagination--top {
+  border-top: none;
+  border-bottom: var(--wg-pagination-border);
+}
+
+/* ==============================================================================
+   SUMMARY
+   ==============================================================================
+*/
+.wg__summary {
+  display: flex;
+  align-items: center;
+  padding: var(--wg-pagination-padding);
+  border-top: var(--wg-pagination-border);
+  background: var(--wg-pagination-background);
+  font-size: var(--wg-font-size-base);
+  color: var(--wg-cell-color);
+}
+
+.wg__summary--left {
+  justify-content: flex-start;
+}
+
+.wg__summary--right {
+  justify-content: flex-end;
+}
+
+.wg__summary--top {
+  border-top: none;
+  border-bottom: var(--wg-pagination-border);
+}
+
+/* ==============================================================================
+   FOOTER (wrapper for summary + pagination at same position)
+   ==============================================================================
+*/
+.wg__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: var(--wg-pagination-border);
+  background: var(--wg-pagination-background);
+}
+
+.wg__footer--top {
+  border-top: none;
+  border-bottom: var(--wg-pagination-border);
+}
+
+/* When inside footer, remove individual borders */
+.wg__footer .wg__summary,
+.wg__footer .wg__pagination {
+  border: none;
+}
+
+/* Summary is on left in footer */
+.wg__footer .wg__summary {
+  flex: 0 0 auto;
+}
+
+/* Pagination aligns to right in footer */
+.wg__footer .wg__pagination {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* ==============================================================================
+   ROW NUMBER COLUMN
+   ==============================================================================
+*/
+.wg__row-number-header,
+.wg__row-number {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+  color: var(--wg-text-color-secondary);
+  background: var(--wg-header-background);
+  user-select: none;
+  font-size: var(--wg-font-size-sm);
+}
+
+.wg__row-number {
+  border-right: var(--wg-cell-border);
+}
+
+/* ==============================================================================
+   ACTIONS COLUMN (for button trigger mode)
+   ==============================================================================
+*/
+.wg__actions-column {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  padding: 0 !important;
+  text-align: center;
+}
+
+thead .wg__actions-column {
+  background: var(--wg-header-background);
+  border-bottom: var(--wg-header-border);
+}
+
+.wg__filter-row .wg__actions-column {
+  background: var(--wg-filter-background);
+  border-bottom: var(--wg-filter-border);
+}
+
+/* ==============================================================================
+   DARK MODE SUPPORT
+   ==============================================================================
+   Dark mode is controlled by setting [data-theme="dark"] on an ancestor
+   or by using @media (prefers-color-scheme: dark)
+*/
+@media (prefers-color-scheme: dark) {
+  :host {
+    --wg-layer-1: #1f1f1f;
+    --wg-layer-2: #2b2b2b;
+    --wg-layer-3: #333333;
+    --wg-layer-floating: #2b2b2b;
+    --wg-text-color-1: #e0e0e0;
+    --wg-text-color-2: #c0c0c0;
+    --wg-text-color-3: #a0a0a0;
+    --wg-stroke-color: #3d3d3d;
+    --wg-stroke-color-hover: #5a5a5a;
+    --wg-stroke-input: #5a5a5a;
+    --wg-fill-secondary-hover: #3a3a3a;
+    --wg-fill-secondary-active: #4a4a4a;
+    --wg-error-background: #442726;
+    --wg-error-color: #f87c86;
+  }
+}
+
+/* Explicit dark mode via data-theme attribute */
+:host([data-theme="dark"]),
+[data-theme="dark"] :host {
+  --wg-layer-1: #1f1f1f;
+  --wg-layer-2: #2b2b2b;
+  --wg-layer-3: #333333;
+  --wg-layer-floating: #2b2b2b;
+  --wg-text-color-1: #e0e0e0;
+  --wg-text-color-2: #c0c0c0;
+  --wg-text-color-3: #a0a0a0;
+  --wg-stroke-color: #3d3d3d;
+  --wg-stroke-color-hover: #5a5a5a;
+  --wg-stroke-input: #5a5a5a;
+  --wg-fill-secondary-hover: #3a3a3a;
+  --wg-fill-secondary-active: #4a4a4a;
+  --wg-error-background: #442726;
+  --wg-error-color: #f87c86;
+}
+
+/* ==============================================================================
+   COMBOBOX / AUTOCOMPLETE EDITORS
+   ==============================================================================
+*/
+.wg__editor--combobox,
+.wg__editor--autocomplete {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: var(--wg-cell-padding);
+  padding-right: 0;  /* Arrow handles right side */
+  background: transparent;  /* Transparent - cell provides background */
+  box-sizing: border-box;
+}
+
+.wg__combobox-input,
+.wg__autocomplete-input {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  padding-right: 24px;  /* Space for arrow */
+  border: none;
+  background: transparent;
+  color: var(--wg-text-color-1);
+  font-size: var(--wg-font-size-base);
+  font-family: inherit;
+  line-height: var(--wg-line-height-base);
+  outline: none;
+  box-sizing: border-box;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.wg__combobox-input:focus,
+.wg__autocomplete-input:focus {
+  outline: none;
+}
+
+.wg__combobox-toggle {
+  position: absolute;
+  right: var(--wg-dropdown-toggle-right);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--wg-dropdown-toggle-size);
+  color: var(--wg-text-color-2);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Larger invisible hitbox for easier clicking */
+.wg__combobox-toggle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--wg-dropdown-toggle-hitbox);
+  height: 48px;
+}
+
+.wg__loading-indicator {
+  position: absolute;
+  right: var(--wg-dropdown-toggle-right);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  animation: wg-pulse 1s infinite;
+}
+
+@keyframes wg-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ==============================================================================
+   DROPDOWN
+   ==============================================================================
+*/
+.wg__dropdown {
+  background: var(--wg-layer-1, #fff);
+  border: 1px solid var(--wg-stroke-color, #d1d1d1);
+  border-radius: 4px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.14);
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: var(--wg-font-size-base);
+  font-family: inherit;
+  line-height: var(--wg-line-height-base);
+}
+
+.wg__dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-spacing-sm);
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--wg-text-color-1);
+}
+
+.wg__dropdown-option:hover,
+.wg__dropdown-option--highlighted {
+  background: var(--wg-fill-secondary-hover, #f0f0f0);
+}
+
+.wg__dropdown-option--selected {
+  background: var(--wg-accent-color-light, #e6f2ff);
+}
+
+.wg__dropdown-option--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.wg__dropdown-option-icon {
+  flex-shrink: 0;
+  width: 1.5em;
+  text-align: center;
+}
+
+.wg__dropdown-option-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.wg__dropdown-option-label {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wg__dropdown-option-subtitle {
+  display: block;
+  font-size: var(--wg-font-size-sm);
+  color: var(--wg-text-color-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wg__dropdown-empty {
+  padding: 8px 12px;
+  color: var(--wg-text-color-2);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ==============================================================================
+   TOOLTIP (Floating UI positioned)
+   ============================================================================== */
+.wg__tooltip {
+  position: fixed;
+  z-index: var(--wg-z-tooltip, 10000);
+  max-width: 300px;
+  padding: 6px 10px;
+  background: var(--wg-tooltip-background, #333);
+  color: var(--wg-tooltip-color, #fff);
+  font-size: var(--wg-font-size-sm);
+  line-height: 1.4;
+  border-radius: var(--wg-border-radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--wg-transition-fast);
+}
+
+.wg__tooltip--visible {
+  opacity: 1;
+}
+
+.wg__tooltip-arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--wg-tooltip-background, #333);
+  transform: rotate(45deg);
+}
+
+/* Arrow positioning based on tooltip placement */
+.wg__tooltip[data-placement^="top"] .wg__tooltip-arrow {
+  bottom: -4px;
+}
+
+.wg__tooltip[data-placement^="bottom"] .wg__tooltip-arrow {
+  top: -4px;
+}
+
+.wg__tooltip[data-placement^="left"] .wg__tooltip-arrow {
+  right: -4px;
+}
+
+.wg__tooltip[data-placement^="right"] .wg__tooltip-arrow {
+  left: -4px;
+}
+
+/* ==============================================================================
+   VIRTUAL SCROLL
+   ==============================================================================
+*/
+.wg--virtual-scroll {
+  /* No special container styles needed, spacers handle sizing */
+}
+
+/* Spacer rows - invisible rows that maintain scroll height */
+.wg__spacer-top,
+.wg__spacer-bottom {
+  /* Height is set inline via style attribute */
+}
+
+.wg__spacer-top td,
+.wg__spacer-bottom td {
+  padding: 0;
+  border: none;
+  background: transparent;
+  height: inherit;  /* Inherit height from parent TR */
+  line-height: 0;   /* Prevent any text/content from affecting height */
+}
+
+/* ==============================================================================
+   INFINITE SCROLL
+   ==============================================================================
+*/
+/* Loading indicator at the bottom (optional - consumer can style their own) */
+.wg__loading-more {
+  text-align: center;
+  padding: var(--wg-cell-padding);
+  color: var(--wg-text-color-2);
+  font-size: var(--wg-font-size-sm);
+}
+
+/* ==============================================================================
+   GO TO ROW DIALOG (Ctrl+G)
+   ==============================================================================
+*/
+.wg__goto-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.wg__goto-dialog {
+  background: var(--wg-layer-1);
+  border-radius: var(--wg-border-radius);
+  padding: var(--wg-spacing-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 250px;
+}
+
+.wg__goto-label {
+  display: block;
+  margin-bottom: var(--wg-spacing-sm);
+  font-size: var(--wg-font-size-base);
+  color: var(--wg-text-color-1);
+}
+
+.wg__goto-input {
+  width: 100%;
+  padding: var(--wg-spacing-sm) var(--wg-spacing-md);
+  border: 1px solid var(--wg-stroke-1);
+  border-radius: var(--wg-border-radius);
+  font-size: var(--wg-font-size-base);
+  margin-bottom: var(--wg-spacing-md);
+  box-sizing: border-box;
+}
+
+.wg__goto-input:focus {
+  outline: none;
+  border-color: var(--wg-accent-color);
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+.wg__goto-buttons {
+  display: flex;
+  gap: var(--wg-spacing-sm);
+  justify-content: flex-end;
+}
+
+.wg__goto-btn {
+  padding: var(--wg-spacing-sm) var(--wg-spacing-md);
+  border: 1px solid var(--wg-stroke-1);
+  border-radius: var(--wg-border-radius);
+  font-size: var(--wg-font-size-sm);
+  cursor: pointer;
+  background: var(--wg-layer-1);
+  color: var(--wg-text-color-1);
+}
+
+.wg__goto-btn:hover {
+  background: var(--wg-layer-2);
+}
+
+.wg__goto-btn--go {
+  background: var(--wg-accent-color);
+  border-color: var(--wg-accent-color);
+  color: white;
+}
+
+.wg__goto-btn--go:hover {
+  background: var(--wg-accent-color-hover, #106ebe);
+}

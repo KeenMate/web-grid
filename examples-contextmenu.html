@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGrid - Context Menu</title>
+    <link rel="stylesheet" href="examples-shared.css">
+    <style>
+        .action-message {
+            padding: 12px 16px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            font-weight: 500;
+            animation: fadeIn 0.2s ease;
+            margin-bottom: 1rem;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .conversion-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 1.5rem;
+            min-width: 320px;
+            z-index: 10000;
+        }
+        .conversion-dialog h3 {
+            margin: 0 0 1rem 0;
+        }
+        .conversion-dialog .product-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .conversion-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            background: #f5f5f5;
+            margin-bottom: 0.5rem;
+        }
+        .conversion-row.highlight {
+            background: #667eea;
+            color: white;
+        }
+        .currency-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .currency-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .conversion-arrow {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #999;
+        }
+        .rate-info {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+        }
+        .dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+        .dialog-actions button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+        }
+        .dialog-actions button:hover {
+            background: #5a67d8;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">← Back to Examples</a>
+            <h1>Context Menu</h1>
+            <p class="subtitle">Right-click context menus with dynamic items, conditional visibility, and cell awareness</p>
+        </header>
+
+        <div id="actionMessage" class="action-message hidden"></div>
+
+        <div class="card">
+            <h2>Read-Only Grid with Context Menu</h2>
+            <p style="color: #666; margin-bottom: 1rem;">
+                Right-click any cell to see the context menu. Try "Copy Cell" to see dynamic labels based on column.
+                Right-click the Price column to see the "Convert to Euro" option.
+            </p>
+            <web-grid id="grid1" striped hoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+        </div>
+
+        <div class="card">
+            <h2>Editable Grid with Context Menu</h2>
+            <p style="color: #666; margin-bottom: 1rem;">
+                Right-click to see context-aware options. Note: "Delete" is disabled for active products,
+                "Restock" only appears for low-stock items (stock &lt; 20).
+            </p>
+            <web-grid id="grid2" striped hoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>Context Menu API</h2>
+                <h3>Grid Properties</h3>
+                <table class="props-table">
+                    <tr><td><code>contextMenu</code></td><td>Array of menu item configurations</td></tr>
+                    <tr><td><code>oncontextmenuopen</code></td><td>Callback fired when context menu opens</td></tr>
+                </table>
+
+                <h3 style="margin-top: 1rem;">ContextMenuItem Properties</h3>
+                <table class="props-table">
+                    <tr><td><code>id</code></td><td>Unique identifier</td></tr>
+                    <tr><td><code>label</code></td><td>Display text (string or function)</td></tr>
+                    <tr><td><code>icon</code></td><td>Emoji or HTML icon (string or function)</td></tr>
+                    <tr><td><code>disabled</code></td><td>Disable state (boolean or function)</td></tr>
+                    <tr><td><code>visible</code></td><td>Visibility (boolean or function)</td></tr>
+                    <tr><td><code>danger</code></td><td>Red styling for destructive actions</td></tr>
+                    <tr><td><code>dividerBefore</code></td><td>Add divider line before item</td></tr>
+                    <tr><td><code>onclick</code></td><td>Click handler receiving context</td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>Context Object</h2>
+                <p>The context passed to callbacks:</p>
+                <table class="props-table">
+                    <tr><td><code>row</code></td><td>The row data object</td></tr>
+                    <tr><td><code>rowIndex</code></td><td>Index of the row</td></tr>
+                    <tr><td><code>colIndex</code></td><td>Index of the column</td></tr>
+                    <tr><td><code>column</code></td><td>The column definition</td></tr>
+                    <tr><td><code>cellValue</code></td><td>The value of the clicked cell</td></tr>
+                </table>
+
+                <div class="code-block" style="margin-top: 1rem;">
+                    <pre>grid.contextMenu = [
+    {
+        id: 'copy',
+        label: (ctx) => `Copy "${ctx.column.title}"`,
+        icon: '📋',
+        onclick: (ctx) => {
+            navigator.clipboard.writeText(
+                String(ctx.cellValue)
+            )
+        }
+    },
+    {
+        id: 'delete',
+        label: 'Delete',
+        icon: '🗑️',
+        danger: true,
+        dividerBefore: true,
+        disabled: (ctx) => ctx.row.isProtected,
+        onclick: (ctx) => deleteRow(ctx.rowIndex)
+    }
+]</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currency Conversion Dialog -->
+    <div id="conversionOverlay" class="dialog-overlay hidden" onclick="closeConversionDialog()"></div>
+    <div id="conversionDialog" class="conversion-dialog hidden">
+        <h3>Currency Conversion</h3>
+        <div id="conversionContent"></div>
+        <div class="dialog-actions">
+            <button onclick="closeConversionDialog()">Close</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import './src/index.ts'
+
+        const USD_TO_EUR = 0.92
+
+        let products = [
+            { id: 1, name: 'Laptop Pro', category: 'Electronics', price: 1299, stock: 15, active: true },
+            { id: 2, name: 'Wireless Mouse', category: 'Electronics', price: 49, stock: 120, active: true },
+            { id: 3, name: 'Office Chair', category: 'Furniture', price: 299, stock: 8, active: true },
+            { id: 4, name: 'Standing Desk', category: 'Furniture', price: 599, stock: 3, active: false },
+            { id: 5, name: 'Monitor 27"', category: 'Electronics', price: 449, stock: 22, active: true },
+            { id: 6, name: 'Keyboard RGB', category: 'Electronics', price: 89, stock: 65, active: true },
+            { id: 7, name: 'Desk Lamp', category: 'Furniture', price: 45, stock: 0, active: false },
+            { id: 8, name: 'Webcam HD', category: 'Electronics', price: 79, stock: 34, active: true }
+        ]
+
+        // Message display
+        function showMessage(message) {
+            const el = document.getElementById('actionMessage')
+            el.textContent = message
+            el.classList.remove('hidden')
+            setTimeout(() => el.classList.add('hidden'), 3000)
+        }
+        window.showMessage = showMessage
+
+        // Conversion dialog
+        function showConversionDialog(productName, priceUsd) {
+            const eurPrice = (priceUsd * USD_TO_EUR).toFixed(2)
+            document.getElementById('conversionContent').innerHTML = `
+                <div class="product-name">${productName}</div>
+                <div class="conversion-row">
+                    <span class="currency-label">USD</span>
+                    <span class="currency-value">$${priceUsd.toFixed(2)}</span>
+                </div>
+                <div class="conversion-arrow">↓</div>
+                <div class="conversion-row highlight">
+                    <span class="currency-label">EUR</span>
+                    <span class="currency-value">€${eurPrice}</span>
+                </div>
+                <p class="rate-info">Exchange rate: 1 USD = ${USD_TO_EUR} EUR</p>
+            `
+            document.getElementById('conversionOverlay').classList.remove('hidden')
+            document.getElementById('conversionDialog').classList.remove('hidden')
+        }
+        window.closeConversionDialog = function() {
+            document.getElementById('conversionOverlay').classList.add('hidden')
+            document.getElementById('conversionDialog').classList.add('hidden')
+        }
+
+        // Read-only columns
+        const readOnlyColumns = [
+            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'name', title: 'Product Name', sortable: true },
+            { field: 'category', title: 'Category', sortable: true, width: '120px' },
+            { field: 'price', title: 'Price', width: '100px', align: 'right', formatCallback: (v) => `$${v.toFixed(2)}` },
+            { field: 'stock', title: 'Stock', width: '80px', align: 'center' },
+            { field: 'active', title: 'Status', width: '80px', align: 'center', formatCallback: (v) => v ? '✓' : '✗' }
+        ]
+
+        // Read-only context menu
+        const readOnlyContextMenu = [
+            {
+                id: 'view',
+                label: 'View Details',
+                icon: '👁️',
+                onclick: (ctx) => {
+                    showMessage(`Viewing: ${ctx.row.name} (ID: ${ctx.row.id})`)
+                }
+            },
+            {
+                id: 'copy-cell',
+                label: (ctx) => `Copy "${ctx.column.title}"`,
+                icon: '📋',
+                onclick: (ctx) => {
+                    navigator.clipboard.writeText(String(ctx.cellValue))
+                    showMessage(`Copied: ${ctx.cellValue}`)
+                }
+            },
+            {
+                id: 'copy-row',
+                label: 'Copy Row as JSON',
+                icon: '📄',
+                onclick: (ctx) => {
+                    navigator.clipboard.writeText(JSON.stringify(ctx.row, null, 2))
+                    showMessage('Row copied as JSON')
+                }
+            },
+            {
+                id: 'convert-eur',
+                label: 'Convert to Euro',
+                icon: '💶',
+                visible: (ctx) => ctx.column.field === 'price',
+                onclick: (ctx) => {
+                    showConversionDialog(ctx.row.name, ctx.row.price)
+                }
+            },
+            {
+                id: 'export',
+                label: 'Export to CSV',
+                icon: '📊',
+                dividerBefore: true,
+                onclick: (ctx) => {
+                    showMessage(`Would export: ${ctx.row.name}`)
+                }
+            }
+        ]
+
+        // Initialize read-only grid
+        const grid1 = document.getElementById('grid1')
+        grid1.items = products
+        grid1.columns = readOnlyColumns
+        grid1.contextMenu = readOnlyContextMenu
+        grid1.oncontextmenuopen = (ctx) => {
+            console.log('Context menu opened:', ctx)
+        }
+
+        // =============================================================
+        // Editable Grid with Context Menu
+        // =============================================================
+
+        const editableColumns = [
+            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'name', title: 'Product Name', sortable: true, editable: true, editor: 'text' },
+            {
+                field: 'category',
+                title: 'Category',
+                width: '130px',
+                sortable: true,
+                editable: true,
+                editor: 'select',
+                editorOptions: {
+                    options: [
+                        { value: 'Electronics', label: 'Electronics' },
+                        { value: 'Furniture', label: 'Furniture' },
+                        { value: 'Accessories', label: 'Accessories' }
+                    ]
+                }
+            },
+            {
+                field: 'price',
+                title: 'Price',
+                width: '100px',
+                align: 'right',
+                editable: true,
+                editor: 'number',
+                formatCallback: (v) => `$${v.toFixed(2)}`
+            },
+            {
+                field: 'stock',
+                title: 'Stock',
+                width: '80px',
+                align: 'center',
+                editable: true,
+                editor: 'number'
+            },
+            {
+                field: 'active',
+                title: 'Active',
+                width: '80px',
+                align: 'center',
+                editable: true,
+                editor: 'checkbox'
+            }
+        ]
+
+        // Editable context menu with conditional items
+        const editableContextMenu = [
+            {
+                id: 'edit',
+                label: 'Edit Cell',
+                icon: '✏️',
+                onclick: (ctx) => {
+                    showMessage(`Double-click the cell to edit "${ctx.column.title}"`)
+                }
+            },
+            {
+                id: 'duplicate',
+                label: 'Duplicate Row',
+                icon: '📑',
+                onclick: (ctx) => {
+                    const newProduct = { ...ctx.row, id: Math.max(...products.map(p => p.id)) + 1 }
+                    products = [...products.slice(0, ctx.rowIndex + 1), newProduct, ...products.slice(ctx.rowIndex + 1)]
+                    grid2.items = products
+                    showMessage(`Duplicated: ${ctx.row.name}`)
+                }
+            },
+            {
+                id: 'toggle-active',
+                label: (ctx) => ctx.row.active ? 'Deactivate' : 'Activate',
+                icon: '🔄',
+                onclick: (ctx) => {
+                    products[ctx.rowIndex].active = !products[ctx.rowIndex].active
+                    grid2.items = [...products]
+                    showMessage(`${ctx.row.name} is now ${products[ctx.rowIndex].active ? 'active' : 'inactive'}`)
+                }
+            },
+            {
+                id: 'restock',
+                label: 'Restock (+10)',
+                icon: '📦',
+                visible: (ctx) => ctx.row.stock < 20,
+                onclick: (ctx) => {
+                    products[ctx.rowIndex].stock += 10
+                    grid2.items = [...products]
+                    showMessage(`${ctx.row.name} stock increased to ${products[ctx.rowIndex].stock}`)
+                }
+            },
+            {
+                id: 'delete',
+                label: 'Delete',
+                icon: '🗑️',
+                danger: true,
+                dividerBefore: true,
+                disabled: (ctx) => ctx.row.active,
+                onclick: (ctx) => {
+                    products = products.filter((_, i) => i !== ctx.rowIndex)
+                    grid2.items = products
+                    showMessage(`Deleted: ${ctx.row.name}`)
+                }
+            }
+        ]
+
+        // Initialize editable grid
+        const grid2 = document.getElementById('grid2')
+        grid2.items = products
+        grid2.columns = editableColumns
+        grid2.editable = true
+        grid2.editTrigger = 'dblclick'
+        grid2.contextMenu = editableContextMenu
+
+        grid2.onrowchange = (detail) => {
+            if (detail.isValid) {
+                products[detail.rowIndex] = { ...products[detail.rowIndex], [detail.field]: detail.newValue }
+            }
+        }
+    </script>
+</body>
+</html>
