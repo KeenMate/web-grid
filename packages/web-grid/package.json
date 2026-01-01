@@ -1,0 +1,70 @@
+{
+	"name": "@keenmate/web-grid",
+	"version": "0.1.0",
+	"description": "Framework-agnostic data grid web component with sorting, filtering, editing, and keyboard navigation",
+	"type": "module",
+	"main": "./dist/web-grid.umd.js",
+	"module": "./dist/web-grid.js",
+	"types": "./dist/index.d.ts",
+	"style": "./dist/style.css",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/web-grid.js",
+			"require": "./dist/web-grid.umd.js",
+			"default": "./dist/web-grid.js"
+		},
+		"./style.css": "./dist/style.css",
+		"./css": "./src/css/main.css",
+		"./dist/*": "./dist/*",
+		"./src/css/*": "./src/css/*",
+		"./package.json": "./package.json"
+	},
+	"sideEffects": [
+		"./dist/web-grid.js",
+		"./dist/web-grid.umd.js",
+		"*.css"
+	],
+	"files": [
+		"dist",
+		"src/css"
+	],
+	"scripts": {
+		"dev": "vite --port 12500",
+		"build": "npm run clean:dist && tsc && vite build",
+		"build:types": "tsc",
+		"preview": "vite preview",
+		"clean": "rimraf dist --glob \"*.tgz\"",
+		"clean:dist": "rimraf dist"
+	},
+	"keywords": [
+		"grid",
+		"data-grid",
+		"table",
+		"datagrid",
+		"editable",
+		"sortable",
+		"filterable",
+		"web-component",
+		"custom-element",
+		"keenmate"
+	],
+	"author": "KeenMate",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/KeenMate/web-grid.git"
+	},
+	"bugs": {
+		"url": "https://github.com/KeenMate/web-grid/issues"
+	},
+	"homepage": "https://github.com/KeenMate/web-grid#readme",
+	"devDependencies": {
+		"rimraf": "^5.0.5",
+		"typescript": "^5.3.3",
+		"vite": "^5.0.8"
+	},
+	"dependencies": {
+		"@floating-ui/dom": "^1.7.4"
+	}
+}

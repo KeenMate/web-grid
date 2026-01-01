@@ -1,17 +1,43 @@
-# Web-Grid-4 Project Context
+# Web-Grid Project Context
 
 ## Reference Implementation
 Previous iteration at: `../web-grid-3`
 Use this as reference for features being ported to TypeScript.
 
-## Project Structure
-- `src/grid.ts` - Core WebGrid class (state, logic)
-- `src/web-component.ts` - GridElement (DOM, events, rendering)
-- `src/types.ts` - All TypeScript type definitions
-- `src/css/` - Modular CSS files
+## Project Structure (Monorepo)
 
-## Conversion Progress
-See `CONVERSION-PLAN.md` for detailed step-by-step progress.
+This is an npm workspaces monorepo with the following structure:
+
+```
+web-grid/
+├── package.json              # Workspace root
+├── packages/
+│   └── web-grid/             # Library package (@keenmate/web-grid)
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── vite.config.ts
+│       └── src/
+│           ├── grid.ts       # Core WebGrid class (state, logic)
+│           ├── web-component.ts  # GridElement (DOM, events, rendering)
+│           ├── types.ts      # All TypeScript type definitions
+│           ├── index.ts      # Main entry point
+│           ├── css/          # Modular CSS files
+│           └── modules/      # Feature modules
+├── docs/                     # Documentation/demo site
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── index.html            # Demo landing page
+│   └── examples-*.html       # Example pages
+└── Makefile                  # Workspace build commands
+```
+
+## Development Commands
+
+- `make setup` - Install all workspace dependencies
+- `make dev` - Start docs dev server with HMR
+- `make build` - Build library and docs
+- `make package` - Build library for publishing
+- `make publish` - Publish to npm
 
 ## Technical Notes
 
