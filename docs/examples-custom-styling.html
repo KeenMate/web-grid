@@ -6,13 +6,185 @@
     <title>WebGrid - Custom Styling Examples</title>
     <link rel="stylesheet" href="examples-shared.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Theme toggle switch */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .theme-toggle-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+        .theme-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+        }
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .theme-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 28px;
+            transition: background 0.2s;
+        }
+        .theme-slider::before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-switch input:checked + .theme-slider {
+            background: rgba(0, 0, 0, 0.4);
+        }
+        .theme-switch input:checked + .theme-slider::before {
+            transform: translateX(24px);
+        }
+        .theme-icons {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+        .theme-icons i {
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .theme-icons .fa-sun { opacity: 1; }
+        html.dark .theme-icons .fa-sun { opacity: 0.6; }
+        html.dark .theme-icons .fa-moon { opacity: 1; }
+
+        /* Dark mode page styles */
+        html.dark body {
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+        html.dark .card,
+        html.dark .example-section {
+            background: #16213e;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        html.dark .card h2,
+        html.dark .example-section h2 {
+            color: #e0e0e0;
+        }
+        html.dark .card h3,
+        html.dark .example-section h3 {
+            color: #b0b0b0;
+        }
+        html.dark .card p,
+        html.dark .example-section p {
+            color: #a0a0a0;
+        }
+        html.dark pre {
+            background: #0f0f23;
+            border-color: #2a2a4a;
+        }
+        html.dark code {
+            background: #2a2a4a;
+            color: #a78bfa;
+        }
+        html.dark footer {
+            color: #707070;
+        }
+        html.dark li {
+            color: #b0b0b0;
+        }
+
+        /* Light mode salary colors (defaults) */
+        :root {
+            --salary-1-bg: #fee2e2; --salary-1-color: #991b1b;  /* Red */
+            --salary-2-bg: #ffedd5; --salary-2-color: #9a3412;  /* Orange */
+            --salary-3-bg: #fef9c3; --salary-3-color: #854d0e;  /* Yellow */
+            --salary-4-bg: #ecfccb; --salary-4-color: #3f6212;  /* Light Green */
+            --salary-5-bg: #d1fae5; --salary-5-color: #065f46;  /* Green */
+            --salary-6-bg: #cffafe; --salary-6-color: #0e7490;  /* Cyan */
+            --salary-7-bg: #dbeafe; --salary-7-color: #1e40af;  /* Blue */
+            --salary-8-bg: #ede9fe; --salary-8-color: #5b21b6;  /* Purple */
+            --sex-male-color: #3b82f6;
+            --sex-female-color: #ec4899;
+            --sex-other-color: #8b5cf6;
+            --sex-snowman-color: #06b6d4;
+            --row-inactive-bg: #e5e7eb;
+            --row-inactive-color: #6b7280;
+        }
+
+        /* Dark mode base variables for web-grid */
+        html.dark {
+            --base-accent-color: #818cf8;
+            --base-accent-color-hover: #6366f1;
+            --base-accent-color-active: #4f46e5;
+            --base-accent-color-light: #312e81;
+            --base-text-color-1: #f0f0f0;
+            --base-text-color-2: #d0d0d0;
+            --base-text-color-3: #909090;
+            --base-text-on-accent: #ffffff;
+            --base-surface-1: #1e1e32;
+            --base-surface-2: #252542;
+            --base-surface-3: #2d2d52;
+            --base-dropdown-bg: #1e1e32;
+            --base-border-color: #3d3d5c;
+            --base-input-bg: #1e1e32;
+            --base-input-border: 1px solid #3d3d5c;
+            --base-primary-bg: #2d2d52;
+            --base-primary-bg-hover: #3d3d5c;
+            --base-danger-color: #f87171;
+            --base-danger-bg-light: #451a1a;
+            /* Dark mode salary colors */
+            --salary-1-bg: #7f1d1d; --salary-1-color: #fecaca;  /* Red */
+            --salary-2-bg: #7c2d12; --salary-2-color: #fed7aa;  /* Orange */
+            --salary-3-bg: #713f12; --salary-3-color: #fef08a;  /* Yellow */
+            --salary-4-bg: #365314; --salary-4-color: #d9f99d;  /* Light Green */
+            --salary-5-bg: #064e3b; --salary-5-color: #a7f3d0;  /* Green */
+            --salary-6-bg: #155e75; --salary-6-color: #a5f3fc;  /* Cyan */
+            --salary-7-bg: #1e3a8a; --salary-7-color: #bfdbfe;  /* Blue */
+            --salary-8-bg: #4c1d95; --salary-8-color: #ddd6fe;  /* Purple */
+            --sex-male-color: #60a5fa;
+            --sex-female-color: #f472b6;
+            --sex-other-color: #a78bfa;
+            --sex-snowman-color: #22d3ee;
+            --row-inactive-bg: #374151;
+            --row-inactive-color: #9ca3af;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>Custom Styling Examples</h1>
-            <p class="subtitle">Dynamic cell and row styling based on data values</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <a href="index.html" class="back-link">← Back to Examples</a>
+                    <h1>Custom Styling Examples</h1>
+                    <p class="subtitle">Dynamic cell and row styling based on data values</p>
+                </div>
+                <div class="theme-toggle">
+                    <div class="theme-icons">
+                        <i class="fa-solid fa-sun"></i>
+                    </div>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="themeToggle">
+                        <span class="theme-slider"></span>
+                    </label>
+                    <div class="theme-icons">
+                        <i class="fa-solid fa-moon"></i>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <div class="card">
@@ -146,36 +318,43 @@
             return null
         }
 
-        // Inject custom styles into Shadow DOM
+        // Inject custom styles into Shadow DOM using CSS variables
+        // CSS variables inherit through shadow DOM boundary, so dark mode switching works automatically
         grid.customStylesCallback = () => `
             /* Import Font Awesome */
             @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
-            /* Rainbow salary gradient */
-            .salary-1 { background-color: #fee2e2 !important; color: #991b1b; }  /* Red */
-            .salary-2 { background-color: #ffedd5 !important; color: #9a3412; }  /* Orange */
-            .salary-3 { background-color: #fef9c3 !important; color: #854d0e; }  /* Yellow */
-            .salary-4 { background-color: #ecfccb !important; color: #3f6212; }  /* Light Green */
-            .salary-5 { background-color: #d1fae5 !important; color: #065f46; }  /* Green */
-            .salary-6 { background-color: #cffafe !important; color: #0e7490; }  /* Cyan */
-            .salary-7 { background-color: #dbeafe !important; color: #1e40af; }  /* Blue */
-            .salary-8 { background-color: #ede9fe !important; color: #5b21b6; }  /* Purple */
+            /* Rainbow salary gradient - uses CSS variables that change with dark mode */
+            .salary-1 { background-color: var(--salary-1-bg) !important; color: var(--salary-1-color); }
+            .salary-2 { background-color: var(--salary-2-bg) !important; color: var(--salary-2-color); }
+            .salary-3 { background-color: var(--salary-3-bg) !important; color: var(--salary-3-color); }
+            .salary-4 { background-color: var(--salary-4-bg) !important; color: var(--salary-4-color); }
+            .salary-5 { background-color: var(--salary-5-bg) !important; color: var(--salary-5-color); }
+            .salary-6 { background-color: var(--salary-6-bg) !important; color: var(--salary-6-color); }
+            .salary-7 { background-color: var(--salary-7-bg) !important; color: var(--salary-7-color); }
+            .salary-8 { background-color: var(--salary-8-bg) !important; color: var(--salary-8-color); }
 
             /* Sex icons */
-            .sex-male { color: #3b82f6; font-size: 1.2em; }
-            .sex-female { color: #ec4899; font-size: 1.2em; }
-            .sex-other { color: #8b5cf6; font-size: 1.2em; }
-            .sex-snowman { color: #06b6d4; font-size: 1.2em; }
+            .sex-male { color: var(--sex-male-color); font-size: 1.2em; }
+            .sex-female { color: var(--sex-female-color); font-size: 1.2em; }
+            .sex-other { color: var(--sex-other-color); font-size: 1.2em; }
+            .sex-snowman { color: var(--sex-snowman-color); font-size: 1.2em; }
 
             /* Inactive row styling */
             .row-inactive {
                 opacity: 0.5;
             }
             .row-inactive td {
-                background-color: #e5e7eb !important;
-                color: #6b7280 !important;
+                background-color: var(--row-inactive-bg) !important;
+                color: var(--row-inactive-color) !important;
             }
         `
+
+        // Theme toggle handler - just toggles the class, CSS variables handle the rest
+        const themeToggle = document.getElementById('themeToggle')
+        themeToggle.addEventListener('change', () => {
+            document.documentElement.classList.toggle('dark', themeToggle.checked)
+        })
     </script>
 </body>
 </html>

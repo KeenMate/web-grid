@@ -1,0 +1,193 @@
+/* ==============================================================================
+   DROPDOWN
+   ==============================================================================
+   Dropdown menus and select triggers
+*/
+
+/* ==============================================================================
+   SELECT TRIGGER (custom dropdown trigger like v3)
+   ============================================================================== */
+.wg__select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: transparent;
+}
+
+.wg__select-trigger:focus,
+.wg__select-trigger:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.wg__select-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wg__select-toggle {
+  position: relative;
+  font-size: var(--wg-dropdown-toggle-size);
+  opacity: 0.6;
+  margin-left: 4px;
+  flex-shrink: 0;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Larger invisible hitbox for easier clicking */
+.wg__select-toggle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--wg-dropdown-toggle-hitbox);
+  height: 48px;
+}
+
+/* Dropdown cell in display mode (read-only, same layout as editor) */
+.wg__cell-dropdown-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Toggle visibility: on-focus mode - hide by default, show on hover/focus */
+.wg__cell-dropdown-display--toggle-on-focus .wg__select-toggle {
+  opacity: 0;
+}
+
+.wg__cell:hover .wg__cell-dropdown-display--toggle-on-focus .wg__select-toggle {
+  opacity: 0.6;
+}
+
+.wg__cell--focused .wg__cell-dropdown-display--toggle-on-focus .wg__select-toggle {
+  opacity: 0.6;
+}
+
+/* Date cell in display mode (same pattern as dropdown) */
+.wg__cell-date-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+}
+
+.wg__cell-date-display .wg__date-trigger {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+/* Larger invisible hitbox for easier clicking */
+.wg__cell-date-display .wg__date-trigger::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--wg-dropdown-toggle-hitbox);
+  height: 48px;
+}
+
+/* Toggle visibility: on-focus mode - hide by default, show on hover/focus */
+.wg__cell-date-display--toggle-on-focus .wg__date-trigger {
+  opacity: 0;
+}
+
+.wg__cell:hover .wg__cell-date-display--toggle-on-focus .wg__date-trigger {
+  opacity: 0.6;
+}
+
+.wg__cell--focused .wg__cell-date-display--toggle-on-focus .wg__date-trigger {
+  opacity: 0.6;
+}
+
+/* ==============================================================================
+   DROPDOWN MENU
+   ============================================================================== */
+.wg__dropdown {
+  background: var(--wg-surface-floating, #fff);
+  border: 1px solid var(--wg-border-color, #d1d1d1);
+  border-radius: 4px;
+  box-shadow: var(--wg-toolbar-shadow);
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: var(--wg-font-size-base);
+  font-family: inherit;
+  line-height: var(--wg-line-height-base);
+}
+
+.wg__dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-spacing-sm);
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--wg-text-color-1);
+}
+
+.wg__dropdown-option:hover,
+.wg__dropdown-option--highlighted {
+  background: var(--wg-hover-bg, #f0f0f0);
+}
+
+.wg__dropdown-option--selected {
+  background: var(--wg-accent-color-light, #e6f2ff);
+}
+
+.wg__dropdown-option--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.wg__dropdown-option-icon {
+  flex-shrink: 0;
+  width: 1.5em;
+  text-align: center;
+}
+
+.wg__dropdown-option-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.wg__dropdown-option-label {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wg__dropdown-option-subtitle {
+  display: block;
+  font-size: var(--wg-font-size-sm);
+  color: var(--wg-text-color-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wg__dropdown-empty {
+  padding: 8px 12px;
+  color: var(--wg-text-color-2);
+  font-style: italic;
+  text-align: center;
+}

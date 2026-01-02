@@ -1,0 +1,156 @@
+/* ==============================================================================
+   PAGINATION
+   ==============================================================================
+   Pagination controls, summary, and footer wrapper
+*/
+
+.wg__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wg-pagination-gap);
+  padding: var(--wg-pagination-padding);
+  border-top: var(--wg-pagination-border);
+  background: var(--wg-pagination-bg);
+}
+
+.wg__pagination-btn {
+  padding: var(--wg-pagination-btn-padding);
+  background: var(--wg-pagination-btn-bg);
+  border: var(--wg-pagination-btn-border);
+  border-radius: var(--wg-pagination-btn-border-radius);
+  color: var(--wg-cell-color);
+  font-size: var(--wg-font-size-base);
+  cursor: pointer;
+  transition: all var(--wg-transition-fast);
+}
+
+.wg__pagination-btn:hover:not(:disabled) {
+  background: var(--wg-pagination-btn-bg-hover);
+  border: var(--wg-pagination-btn-border-hover);
+}
+
+.wg__pagination-btn:active:not(:disabled) {
+  background: var(--wg-pagination-btn-bg-active);
+}
+
+.wg__pagination-btn:disabled {
+  opacity: var(--wg-pagination-btn-disabled-opacity);
+  cursor: not-allowed;
+}
+
+.wg__pagination-info {
+  font-size: var(--wg-font-size-base);
+  color: var(--wg-cell-color);
+}
+
+.wg__pagination-count {
+  font-size: var(--wg-font-size-sm);
+  color: var(--wg-text-color-3);
+  margin-left: 4px;
+}
+
+.wg__pagination-pagesize {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wg__pagination-select {
+  padding: 4px 8px;
+  background: var(--wg-pagination-btn-bg);
+  border: var(--wg-pagination-btn-border);
+  border-radius: var(--wg-pagination-btn-border-radius);
+  color: var(--wg-cell-color);
+  font-size: var(--wg-font-size-base);
+  cursor: pointer;
+}
+
+.wg__pagination-select:hover {
+  background: var(--wg-pagination-btn-bg-hover);
+  border: var(--wg-pagination-btn-border-hover);
+}
+
+.wg__pagination-select:focus {
+  outline: 2px solid var(--wg-accent-color);
+  outline-offset: -2px;
+}
+
+.wg__pagination-label {
+  font-size: var(--wg-font-size-sm);
+  color: var(--wg-text-color-3);
+}
+
+/* Pagination alignment modifiers */
+.wg__pagination--left {
+  justify-content: flex-start;
+}
+
+.wg__pagination--right {
+  justify-content: flex-end;
+}
+
+/* Top pagination: border on bottom instead of top */
+.wg__pagination--top {
+  border-top: none;
+  border-bottom: var(--wg-pagination-border);
+}
+
+/* ==============================================================================
+   SUMMARY
+   ============================================================================== */
+.wg__summary {
+  display: flex;
+  align-items: center;
+  padding: var(--wg-pagination-padding);
+  border-top: var(--wg-pagination-border);
+  background: var(--wg-pagination-bg);
+  font-size: var(--wg-font-size-base);
+  color: var(--wg-cell-color);
+}
+
+.wg__summary--left {
+  justify-content: flex-start;
+}
+
+.wg__summary--right {
+  justify-content: flex-end;
+}
+
+.wg__summary--top {
+  border-top: none;
+  border-bottom: var(--wg-pagination-border);
+}
+
+/* ==============================================================================
+   FOOTER (wrapper for summary + pagination at same position)
+   ============================================================================== */
+.wg__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: var(--wg-pagination-border);
+  background: var(--wg-pagination-bg);
+}
+
+.wg__footer--top {
+  border-top: none;
+  border-bottom: var(--wg-pagination-border);
+}
+
+/* When inside footer, remove individual borders */
+.wg__footer .wg__summary,
+.wg__footer .wg__pagination {
+  border: none;
+}
+
+/* Summary is on left in footer */
+.wg__footer .wg__summary {
+  flex: 0 0 auto;
+}
+
+/* Pagination aligns to right in footer */
+.wg__footer .wg__pagination {
+  flex: 0 0 auto;
+  margin-left: auto;
+}

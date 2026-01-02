@@ -1,0 +1,121 @@
+/* ==============================================================================
+   TOOLTIP (Floating UI positioned)
+   ============================================================================== */
+.wg__tooltip {
+  position: fixed;
+  z-index: var(--wg-z-tooltip, 10000);
+  max-width: 300px;
+  padding: 6px 10px;
+  background: var(--wg-tooltip-bg, #333);
+  color: var(--wg-tooltip-color, #fff);
+  font-size: var(--wg-font-size-sm);
+  line-height: 1.4;
+  border-radius: var(--wg-border-radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--wg-transition-fast);
+}
+
+.wg__tooltip--visible {
+  opacity: 1;
+}
+
+.wg__tooltip-arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--wg-tooltip-bg, #333);
+  transform: rotate(45deg);
+}
+
+/* Arrow positioning based on tooltip placement */
+.wg__tooltip[data-placement^="top"] .wg__tooltip-arrow {
+  bottom: -4px;
+}
+
+.wg__tooltip[data-placement^="bottom"] .wg__tooltip-arrow {
+  top: -4px;
+}
+
+.wg__tooltip[data-placement^="left"] .wg__tooltip-arrow {
+  right: -4px;
+}
+
+.wg__tooltip[data-placement^="right"] .wg__tooltip-arrow {
+  left: -4px;
+}
+
+/* ==============================================================================
+   GO TO ROW DIALOG (Ctrl+G)
+   ============================================================================== */
+.wg__goto-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.wg__goto-dialog {
+  background: var(--wg-surface-1);
+  border-radius: var(--wg-border-radius);
+  padding: var(--wg-spacing-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 250px;
+}
+
+.wg__goto-label {
+  display: block;
+  margin-bottom: var(--wg-spacing-sm);
+  font-size: var(--wg-font-size-base);
+  color: var(--wg-text-color-1);
+}
+
+.wg__goto-input {
+  width: 100%;
+  padding: var(--wg-spacing-sm) var(--wg-spacing-md);
+  border: 1px solid var(--wg-border-color);
+  border-radius: var(--wg-border-radius-sm);
+  font-size: var(--wg-font-size-base);
+  margin-bottom: var(--wg-spacing-md);
+  box-sizing: border-box;
+}
+
+.wg__goto-input:focus {
+  outline: none;
+  border-color: var(--wg-accent-color);
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+.wg__goto-buttons {
+  display: flex;
+  gap: var(--wg-spacing-sm);
+  justify-content: flex-end;
+}
+
+.wg__goto-btn {
+  padding: var(--wg-spacing-sm) var(--wg-spacing-md);
+  border: 1px solid var(--wg-border-color);
+  border-radius: var(--wg-border-radius-sm);
+  font-size: var(--wg-font-size-sm);
+  cursor: pointer;
+  background: var(--wg-surface-1);
+  color: var(--wg-text-color-1);
+}
+
+.wg__goto-btn:hover {
+  background: var(--wg-surface-2);
+}
+
+.wg__goto-btn--go {
+  background: var(--wg-accent-color);
+  border-color: var(--wg-accent-color);
+  color: white;
+}
+
+.wg__goto-btn--go:hover {
+  background: var(--wg-accent-color-hover, #106ebe);
+}

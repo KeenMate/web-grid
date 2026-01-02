@@ -8,7 +8,7 @@ SHELL := cmd.exe
 .SHELLFLAGS := /c
 endif
 
-.PHONY: setup dev build package create-link unlink publish publish-dry clean help
+.PHONY: setup dev build package create-link unlink publish publish-rc publish-dry clean help
 
 # Default target
 help:
@@ -23,7 +23,8 @@ help:
 	@echo   unlink       - Remove global npm link for @keenmate/web-grid
 	@echo.
 	@echo Publishing:
-	@echo   publish      - Publish package to npm (asks for confirmation)
+	@echo   publish      - Publish stable version to npm (latest tag)
+	@echo   publish-rc   - Publish RC/prerelease version to npm (rc tag)
 	@echo   publish-dry  - Dry run publish (show what would be published)
 	@echo.
 	@echo Cleanup:
@@ -83,9 +84,17 @@ publish: package
 	@echo.
 	@echo Published successfully!
 
+publish-rc: package
+	@echo.
+	@echo Publishing RC version to npm...
+	@echo.
+	cd packages/web-grid && npm publish --access public --tag rc
+	@echo.
+	@echo Published successfully with tag 'rc'!
+
 publish-dry: package
 	@echo Dry run - showing what would be published...
-	cd packages/web-grid && npm publish --dry-run
+	cd packages/web-grid && npm publish --dry-run --tag rc
 
 clean:
 	@echo Cleaning build artifacts...

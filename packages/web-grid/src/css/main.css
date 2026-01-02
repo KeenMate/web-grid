@@ -4,16 +4,32 @@
    Framework-agnostic data grid web component
 
    File structure:
-   - _variables.css : All CSS custom properties at :host level (for theming)
-   - _base.css      : FOUC prevention, container, table, headers, cells, pagination
-   - _cells.css     : Cell editing, validation states (TODO: Phase 4)
-   - _editors.css   : Editor input styles (TODO: Phase 5)
-   - _toolbar.css   : Row toolbar styles
-   - _context-menu.css : Context menu styles (TODO: Phase 8)
-   - _modifiers.css : Additional state modifiers (TODO: future)
+   - _variables.css    : All CSS custom properties at :host level (for theming)
+   - _table.css        : FOUC prevention, container, table, rows
+   - _header.css       : Header, sort indicators, filter row
+   - _cells.css        : Cells, editable states, editing, validation
+   - _editors.css      : All editor types (text, number, date, combobox, etc)
+   - _dropdown.css     : Dropdown menus, select triggers
+   - _navigation.css   : Keyboard navigation, focus states
+   - _pagination.css   : Pagination controls, summary, footer
+   - _toolbar.css      : Row toolbar styles
+   - _modifiers.css    : Striped rows, hover effects, empty state
+   - _dialogs.css      : Tooltips, go-to dialog
+   - _virtual-scroll.css : Virtual scroll support
+   - _dark-mode.css    : Dark mode overrides
 */
 
 /* Import all partials in dependency order */
 @import '_variables.css';
-@import '_base.css';
+@import '_table.css';
+@import '_header.css';
+@import '_cells.css';
+@import '_editors.css';
+@import '_dropdown.css';
+@import '_navigation.css';
+@import '_pagination.css';
 @import '_toolbar.css';
+@import '_modifiers.css';
+@import '_dialogs.css';
+@import '_virtual-scroll.css';
+@import '_dark-mode.css';

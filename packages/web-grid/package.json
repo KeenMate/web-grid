@@ -1,12 +1,11 @@
 {
 	"name": "@keenmate/web-grid",
-	"version": "0.1.0",
-	"description": "Framework-agnostic data grid web component with sorting, filtering, editing, and keyboard navigation",
+	"version": "1.0.0-rc02",
+	"description": "Framework-agnostic data grid web component with sorting, filtering, inline editing, and keyboard navigation",
 	"type": "module",
 	"main": "./dist/web-grid.umd.js",
 	"module": "./dist/web-grid.js",
 	"types": "./dist/index.d.ts",
-	"style": "./dist/style.css",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
@@ -14,8 +13,8 @@
 			"require": "./dist/web-grid.umd.js",
 			"default": "./dist/web-grid.js"
 		},
-		"./style.css": "./dist/style.css",
 		"./css": "./src/css/main.css",
+		"./manifest": "./component-variables.manifest.json",
 		"./dist/*": "./dist/*",
 		"./src/css/*": "./src/css/*",
 		"./package.json": "./package.json"
@@ -27,7 +26,8 @@
 	],
 	"files": [
 		"dist",
-		"src/css"
+		"src/css",
+		"component-variables.manifest.json"
 	],
 	"scripts": {
 		"dev": "vite --port 12500",
@@ -45,8 +45,16 @@
 		"editable",
 		"sortable",
 		"filterable",
+		"pagination",
+		"inline-editing",
 		"web-component",
 		"custom-element",
+		"shadow-dom",
+		"typescript",
+		"dark-mode",
+		"context-menu",
+		"row-toolbar",
+		"keyboard-navigation",
 		"keenmate"
 	],
 	"author": "KeenMate",

@@ -1,0 +1,24 @@
+/* ==============================================================================
+   VIRTUAL SCROLL
+   ==============================================================================
+   Virtualization support for large datasets
+*/
+
+.wg--virtual-scroll {
+  /* No special container styles needed, spacers handle sizing */
+}
+
+/* Spacer rows - invisible rows that maintain scroll height */
+.wg__spacer-top,
+.wg__spacer-bottom {
+  /* Height is set inline via style attribute */
+}
+
+.wg__spacer-top td,
+.wg__spacer-bottom td {
+  padding: 0;
+  border: none;
+  background: transparent;
+  height: inherit;  /* Inherit height from parent TR */
+  line-height: 0;   /* Prevent any text/content from affecting height */
+}

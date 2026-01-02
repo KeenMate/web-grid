@@ -1,0 +1,51 @@
+/* ==============================================================================
+   DARK MODE SUPPORT
+   ==============================================================================
+   Dark mode is controlled by:
+   1. OS preference: @media (prefers-color-scheme: dark)
+   2. data-theme="dark" on ancestor or host
+   3. data-bs-theme="dark" (Bootstrap 5.3+) on ancestor
+   4. .dark class on ancestor (Tailwind CSS convention)
+*/
+@media (prefers-color-scheme: dark) {
+  :host {
+    --wg-surface-1: #1f1f1f;
+    --wg-surface-2: #2b2b2b;
+    --wg-surface-3: #333333;
+    --wg-surface-floating: #2b2b2b;
+    --wg-text-color-1: #e0e0e0;
+    --wg-text-color-2: #c0c0c0;
+    --wg-text-color-3: #a0a0a0;
+    --wg-border-color: #3d3d3d;
+    --wg-border-color-hover: #5a5a5a;
+    --wg-input-bg: #1f1f1f;
+    --wg-input-border: 1px solid #5a5a5a;
+    --wg-hover-bg: #3a3a3a;
+    --wg-active-bg: #4a4a4a;
+    --wg-danger-bg-light: #442726;
+    --wg-danger-color: #f87c86;
+  }
+}
+
+/* Explicit dark mode via data-theme, data-bs-theme attribute, or .dark class */
+:host([data-theme="dark"]),
+[data-theme="dark"] :host,
+:host([data-bs-theme="dark"]),
+[data-bs-theme="dark"] :host,
+.dark :host {
+  --wg-surface-1: #1f1f1f;
+  --wg-surface-2: #2b2b2b;
+  --wg-surface-3: #333333;
+  --wg-surface-floating: #2b2b2b;
+  --wg-text-color-1: #e0e0e0;
+  --wg-text-color-2: #c0c0c0;
+  --wg-text-color-3: #a0a0a0;
+  --wg-border-color: #3d3d3d;
+  --wg-border-color-hover: #5a5a5a;
+  --wg-input-bg: #1f1f1f;
+  --wg-input-border: 1px solid #5a5a5a;
+  --wg-hover-bg: #3a3a3a;
+  --wg-active-bg: #4a4a4a;
+  --wg-danger-bg-light: #442726;
+  --wg-danger-color: #f87c86;
+}

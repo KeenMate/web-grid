@@ -1,0 +1,184 @@
+/* ==============================================================================
+   EDITORS
+   ==============================================================================
+   Input editors for cells: text, number, date, checkbox, custom, combobox
+*/
+
+.wg__editor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  padding: var(--wg-cell-padding);
+  border: none;
+  background: transparent;  /* Transparent - cell provides background */
+  color: var(--wg-text-color-1);
+  font-size: var(--wg-font-size-base);
+  font-family: inherit;
+  line-height: inherit;
+  box-sizing: border-box;
+}
+
+.wg__editor:focus,
+.wg__editor:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Text Editor */
+.wg__editor--text {
+  text-align: inherit;
+}
+
+/* Number Editor */
+.wg__editor--number {
+  text-align: right;
+}
+
+/* Date Editor */
+.wg__editor--date {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  background: var(--wg-editor-bg);
+}
+
+.wg__date-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  padding: var(--wg-cell-padding-block) var(--wg-cell-padding-inline);
+  outline: none;
+  color: inherit;
+}
+
+.wg__date-trigger {
+  width: var(--wg-date-trigger-size, 28px);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--wg-text-secondary, #666);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.wg__date-trigger:hover {
+  color: var(--wg-accent-color, #0078d4);
+  background: var(--wg-hover-bg, rgba(0, 0, 0, 0.05));
+}
+
+/* Checkbox Editor */
+.wg__editor--checkbox {
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* Custom Editor */
+.wg__editor--custom {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  background: var(--wg-editor-bg);
+  padding: var(--wg-cell-padding-block) var(--wg-cell-padding-inline);
+  cursor: pointer;
+}
+
+.wg__editor--custom:focus {
+  outline: none;
+}
+
+.wg__custom-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  cursor: pointer;
+}
+
+/* ==============================================================================
+   COMBOBOX / AUTOCOMPLETE EDITORS
+   ============================================================================== */
+.wg__editor--combobox,
+.wg__editor--autocomplete {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: var(--wg-cell-padding);
+  padding-right: 0;  /* Arrow handles right side */
+  background: transparent;  /* Transparent - cell provides background */
+  box-sizing: border-box;
+}
+
+.wg__combobox-input,
+.wg__autocomplete-input {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  padding-right: 24px;  /* Space for arrow */
+  border: none;
+  background: transparent;
+  color: var(--wg-text-color-1);
+  font-size: var(--wg-font-size-base);
+  font-family: inherit;
+  line-height: var(--wg-line-height-base);
+  outline: none;
+  box-sizing: border-box;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.wg__combobox-input:focus,
+.wg__autocomplete-input:focus {
+  outline: none;
+}
+
+.wg__combobox-toggle {
+  position: absolute;
+  right: var(--wg-dropdown-toggle-right);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--wg-dropdown-toggle-size);
+  color: var(--wg-text-color-2);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Larger invisible hitbox for easier clicking */
+.wg__combobox-toggle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--wg-dropdown-toggle-hitbox);
+  height: 48px;
+}
+
+.wg__loading-indicator {
+  position: absolute;
+  right: var(--wg-dropdown-toggle-right);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  animation: wg-pulse 1s infinite;
+}
+
+@keyframes wg-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

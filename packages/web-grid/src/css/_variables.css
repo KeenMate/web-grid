@@ -9,7 +9,7 @@
    Usage from outside Shadow DOM:
      web-grid {
        --wg-accent-color: #0078d4;
-       --wg-header-background: #f5f5f5;
+       --wg-header-bg: #f5f5f5;
      }
    ============================================================================== */
 
@@ -22,9 +22,6 @@
      Pure Admin: Set to 1rem (inherits from html { font-size: 10px })
      Custom: Set to any value to scale all sizes proportionally */
   --wg-rem: 10px;
-
-  /* Design unit (FluentUI pattern) - base unit for spacing calculations */
-  --wg-design-unit: 4;
 
   /* ==========================================================================
      FONT FAMILY (set at :host so all shadow DOM content inherits)
@@ -56,25 +53,31 @@
   --wg-text-color-3: var(--base-text-color-3, #707070);
   --wg-text-on-accent: var(--base-text-on-accent, #ffffff);
 
-  /* Background Colors (FluentUI neutral layers) */
-  --wg-layer-1: var(--base-layer-1, #ffffff);
-  --wg-layer-2: var(--base-layer-2, #f5f5f5);
-  --wg-layer-3: var(--base-layer-3, #ebebeb);
-  --wg-layer-floating: var(--base-layer-floating, #ffffff);
+  /* Background/Surface Colors */
+  --wg-surface-1: var(--base-surface-1, #ffffff);
+  --wg-surface-2: var(--base-surface-2, #f5f5f5);
+  --wg-surface-3: var(--base-surface-3, #ebebeb);
+  --wg-surface-floating: var(--base-dropdown-bg, var(--base-surface-1, #ffffff));
 
-  /* Stroke/Border Colors */
-  --wg-stroke-color: var(--base-stroke-color, #e0e0e0);
-  --wg-stroke-color-hover: var(--base-stroke-color-hover, #d1d1d1);
-  --wg-stroke-input: var(--base-stroke-input, #d1d1d1);
+  /* Border Colors */
+  --wg-border-color: var(--base-border-color, #e0e0e0);
+  --wg-border-color-hover: var(--base-border-color, #d1d1d1);
 
-  /* Error Colors */
-  --wg-error-color: var(--base-error-color, #d13438);
-  --wg-error-background: var(--base-error-background, #fde7e9);
-  --wg-error-background-hover: var(--base-error-background-hover, #fdd4d7);
+  /* Input Colors */
+  --wg-input-bg: var(--base-input-bg, #ffffff);
+  --wg-input-color: var(--base-input-color, var(--wg-text-color-1));
+  --wg-input-border: var(--base-input-border, 1px solid #d1d1d1);
+  --wg-input-border-hover: var(--base-input-border-hover, 1px solid #0078d4);
+  --wg-input-border-focus: var(--base-input-border-focus, 1px solid #0078d4);
+  --wg-input-placeholder-color: var(--base-input-placeholder-color, #707070);
 
-  /* Fill Colors */
-  --wg-fill-secondary-hover: var(--base-fill-secondary-hover, #f0f0f0);
-  --wg-fill-secondary-active: var(--base-fill-secondary-active, #e0e0e0);
+  /* Danger/Error Colors */
+  --wg-danger-color: var(--base-danger-color, #d13438);
+  --wg-danger-bg-light: var(--base-danger-bg-light, #fde7e9);
+
+  /* Hover/Active States */
+  --wg-hover-bg: var(--base-surface-3, #f0f0f0);
+  --wg-active-bg: var(--base-surface-3, #e0e0e0);
 
   /* ==========================================================================
      TYPOGRAPHY
@@ -84,7 +87,7 @@
   --wg-font-size-xs: calc(var(--base-font-size-xs, 1.1) * var(--wg-rem));
   --wg-font-size-lg: calc(var(--base-font-size-lg, 1.6) * var(--wg-rem));
 
-  --wg-line-height-base: var(--base-line-height-base, 20px);
+  --wg-line-height-base: calc(var(--base-line-height-normal, 2) * var(--wg-rem));
   --wg-font-weight-normal: var(--base-font-weight-normal, 400);
   --wg-font-weight-semibold: var(--base-font-weight-semibold, 600);
 
@@ -96,28 +99,28 @@
   --wg-border-radius-lg: calc(var(--base-border-radius-lg, 0.8) * var(--wg-rem));
 
   /* ==========================================================================
-     SPACING (based on design-unit)
+     SPACING (10px-based for clean pixel values)
      ========================================================================== */
-  --wg-spacing-xs: calc(var(--wg-design-unit) * 1px);
-  --wg-spacing-sm: calc(var(--wg-design-unit) * 2px);
-  --wg-spacing-md: calc(var(--wg-design-unit) * 3px);
-  --wg-spacing-lg: calc(var(--wg-design-unit) * 4px);
-  --wg-spacing-xl: calc(var(--wg-design-unit) * 6px);
+  --wg-spacing-xs: calc(0.4 * var(--wg-rem));   /* 4px */
+  --wg-spacing-sm: calc(0.8 * var(--wg-rem));   /* 8px */
+  --wg-spacing-md: calc(1.2 * var(--wg-rem));   /* 12px */
+  --wg-spacing-lg: calc(1.6 * var(--wg-rem));   /* 16px */
+  --wg-spacing-xl: calc(2.4 * var(--wg-rem));   /* 24px */
 
   /* ==========================================================================
      TABLE COMPONENT
      ========================================================================== */
-  --wg-table-background: var(--wg-layer-1);
-  --wg-table-border: 1px solid var(--wg-stroke-color);
+  --wg-table-bg: var(--wg-surface-1);
+  --wg-table-border: 1px solid var(--wg-border-color);
 
   /* ==========================================================================
      HEADER COMPONENT
      ========================================================================== */
-  --wg-header-background: var(--wg-layer-2);
-  --wg-header-background-hover: var(--wg-layer-3);
-  --wg-header-background-sorted: var(--wg-layer-3);
+  --wg-header-bg: var(--wg-surface-2);
+  --wg-header-bg-hover: var(--wg-surface-3);
+  --wg-header-bg-sorted: var(--wg-surface-3);
   --wg-header-color: var(--wg-text-color-1);
-  --wg-header-border: 2px solid var(--wg-stroke-color);
+  --wg-header-border: 2px solid var(--wg-border-color);
   --wg-header-padding: var(--wg-spacing-sm) var(--wg-spacing-md);
   --wg-header-font-weight: var(--wg-font-weight-semibold);
 
@@ -126,54 +129,56 @@
      ========================================================================== */
   --wg-cell-padding: var(--wg-spacing-sm) var(--wg-spacing-md);
   --wg-cell-color: var(--wg-text-color-1);
-  --wg-cell-border: 1px solid var(--wg-stroke-color);
-  --wg-cell-background-hover: var(--wg-fill-secondary-hover);
-  --wg-cell-background-editing: var(--wg-layer-1);
+  --wg-cell-border: 1px solid var(--wg-border-color);
+  --wg-cell-bg-hover: var(--wg-hover-bg);
+  --wg-cell-bg-editing: var(--wg-surface-1);
+  --wg-cell-readonly-bg: var(--wg-surface-2);
 
   /* ==========================================================================
      ROW COMPONENT
      ========================================================================== */
-  --wg-row-border: 1px solid var(--wg-stroke-color);
-  --wg-row-background-even: var(--wg-layer-2);
-  --wg-row-background-hover: var(--wg-layer-3);
+  --wg-row-border: 1px solid var(--wg-border-color);
+  --wg-row-bg-even: var(--wg-surface-2);
+  --wg-row-bg-hover: var(--wg-surface-3);
 
   /* ==========================================================================
      FILTER ROW
      ========================================================================== */
-  --wg-filter-background: var(--wg-layer-1);
-  --wg-filter-border: 1px solid var(--wg-stroke-color);
+  --wg-filter-bg: var(--wg-surface-1);
+  --wg-filter-border: 1px solid var(--wg-border-color);
   --wg-filter-padding: var(--wg-spacing-xs) var(--wg-spacing-sm);
 
   /* Filter Input */
-  --wg-filter-input-padding: 4px 8px;
-  --wg-filter-input-border: 1px solid var(--wg-stroke-input);
-  --wg-filter-input-border-focus: 1px solid var(--wg-accent-color);
+  --wg-filter-input-padding: calc(0.4 * var(--wg-rem)) calc(0.8 * var(--wg-rem));
+  --wg-filter-input-bg: var(--wg-input-bg);
+  --wg-filter-input-border: var(--wg-input-border);
+  --wg-filter-input-border-focus: var(--wg-input-border-focus);
   --wg-filter-input-border-radius: var(--wg-border-radius-sm);
   --wg-filter-input-font-size: var(--wg-font-size-sm);
 
   /* ==========================================================================
      SORT INDICATOR
      ========================================================================== */
-  --wg-sort-indicator-size: 14px;
+  --wg-sort-indicator-size: calc(1.4 * var(--wg-rem));
   --wg-sort-indicator-opacity: 0.9;
   --wg-sort-placeholder-opacity: 0.3;
-  --wg-sort-priority-size: 11px;
+  --wg-sort-priority-size: calc(1.1 * var(--wg-rem));
 
   /* ==========================================================================
      PAGINATION
      ========================================================================== */
   --wg-pagination-padding: var(--wg-spacing-md);
   --wg-pagination-gap: calc(1.6 * var(--wg-rem));
-  --wg-pagination-background: var(--wg-layer-1);
-  --wg-pagination-border: 1px solid var(--wg-stroke-color);
+  --wg-pagination-bg: var(--wg-surface-1);
+  --wg-pagination-border: 1px solid var(--wg-border-color);
 
   /* Pagination Button */
-  --wg-pagination-btn-padding: 6px 16px;
-  --wg-pagination-btn-background: var(--wg-layer-1);
-  --wg-pagination-btn-background-hover: var(--wg-layer-2);
-  --wg-pagination-btn-background-active: var(--wg-layer-3);
-  --wg-pagination-btn-border: 1px solid var(--wg-stroke-input);
-  --wg-pagination-btn-border-hover: 1px solid var(--wg-stroke-color-hover);
+  --wg-pagination-btn-padding: calc(0.6 * var(--wg-rem)) calc(1.6 * var(--wg-rem));
+  --wg-pagination-btn-bg: var(--wg-surface-1);
+  --wg-pagination-btn-bg-hover: var(--wg-surface-2);
+  --wg-pagination-btn-bg-active: var(--wg-surface-3);
+  --wg-pagination-btn-border: 1px solid var(--wg-border-color);
+  --wg-pagination-btn-border-hover: 1px solid var(--wg-border-color-hover);
   --wg-pagination-btn-border-radius: var(--wg-border-radius-sm);
   --wg-pagination-btn-disabled-opacity: 0.4;
 
@@ -186,58 +191,64 @@
   /* ==========================================================================
      VALIDATION / ERROR
      ========================================================================== */
-  --wg-error-cell-background: var(--wg-error-background);
-  --wg-error-cell-border: 1px solid var(--wg-error-color);
-  --wg-error-message-color: var(--wg-error-color);
+  --wg-error-cell-bg: var(--wg-danger-bg-light);
+  --wg-error-cell-border: 1px solid var(--wg-danger-color);
+  --wg-error-message-color: var(--wg-danger-color);
   --wg-error-message-font-size: var(--wg-font-size-xs);
-  --wg-error-indicator-color: var(--wg-error-color);
+  --wg-error-indicator-color: var(--wg-danger-color);
 
   /* ==========================================================================
      EDITOR
      ========================================================================== */
+  --wg-editor-bg: var(--wg-surface-1);
   --wg-editor-outline: 2px solid var(--wg-accent-color);
   --wg-editor-outline-offset: -2px;
   --wg-editor-validating-opacity: 0.7;
 
   /* Dropdown Toggle */
   --wg-dropdown-toggle-right: var(--wg-spacing-md);
-  --wg-dropdown-toggle-size: 12px;
-  --wg-dropdown-toggle-hitbox: 24px;
+  --wg-dropdown-toggle-size: calc(1.2 * var(--wg-rem));
+  --wg-dropdown-toggle-hitbox: calc(2.4 * var(--wg-rem));
 
   /* ==========================================================================
      ROW TOOLBAR
      ========================================================================== */
-  --wg-toolbar-background: var(--wg-layer-floating);
-  --wg-toolbar-border: 1px solid var(--wg-stroke-color);
+  --wg-toolbar-bg: var(--wg-surface-floating);
+  --wg-toolbar-border: 1px solid var(--wg-border-color);
   --wg-toolbar-border-radius: var(--wg-border-radius-sm);
-  --wg-toolbar-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  --wg-toolbar-divider-color: var(--wg-stroke-color);
+  --wg-toolbar-shadow: var(--base-dropdown-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+  --wg-toolbar-divider-color: var(--wg-border-color);
 
   /* Toolbar Button */
-  --wg-toolbar-btn-min-width: 24px;
-  --wg-toolbar-btn-padding: 0 4px;
+  --wg-toolbar-btn-min-width: calc(2.4 * var(--wg-rem));
+  --wg-toolbar-btn-padding: 0 calc(0.4 * var(--wg-rem));
   --wg-toolbar-btn-border-radius: var(--wg-border-radius-sm);
-  --wg-toolbar-btn-background-hover: var(--wg-fill-secondary-hover);
-  --wg-toolbar-btn-background-active: var(--wg-fill-secondary-active);
+  --wg-toolbar-btn-bg-hover: var(--wg-hover-bg);
+  --wg-toolbar-btn-bg-active: var(--wg-active-bg);
   --wg-toolbar-btn-color: var(--wg-text-color-1);
 
   /* Toolbar Trigger Button */
   --wg-toolbar-trigger-color: var(--wg-text-color-3);
   --wg-toolbar-trigger-color-hover: var(--wg-text-color-1);
-  --wg-toolbar-trigger-background-hover: var(--wg-fill-secondary-hover);
+  --wg-toolbar-trigger-bg-hover: var(--wg-hover-bg);
+
+  /* ==========================================================================
+     TOOLTIP
+     ========================================================================== */
+  --wg-tooltip-bg: var(--base-tooltip-bg, #333);
 
   /* ==========================================================================
      CONTEXT MENU
      ========================================================================== */
   --wg-context-menu-z-index: 1001;
-  --wg-context-menu-min-width: 160px;
+  --wg-context-menu-min-width: calc(16 * var(--wg-rem));
 
   /* ==========================================================================
      NAVIGATE MODE
      ========================================================================== */
   --wg-focus-outline: 2px solid var(--wg-accent-color);
   --wg-focus-outline-offset: -2px;
-  --wg-focus-background: var(--wg-fill-secondary-hover);
+  --wg-focus-bg: var(--wg-hover-bg);
 
   /* ==========================================================================
      TRANSITIONS

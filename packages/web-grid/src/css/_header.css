@@ -1,0 +1,105 @@
+/* ==============================================================================
+   HEADER
+   ==============================================================================
+   Table header, sorting indicators, and filter row
+*/
+
+.wg__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--wg-header-bg);
+  color: var(--wg-header-color);
+  font-weight: var(--wg-header-font-weight);
+  padding: var(--wg-header-padding);
+  border-bottom: var(--wg-header-border);
+  text-align: left;
+  user-select: none;
+}
+
+.wg__header--sortable {
+  cursor: pointer;
+}
+
+.wg__header--sortable:hover {
+  background: var(--wg-header-bg-hover);
+}
+
+.wg__header--sorted {
+  background: var(--wg-header-bg-sorted);
+}
+
+/* Header Content Layout */
+.wg__header-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: space-between;
+}
+
+.wg__header-title {
+  flex: 1;
+}
+
+/* Sort Indicator */
+.wg__sort-indicator {
+  font-size: var(--wg-sort-indicator-size);
+  opacity: var(--wg-sort-indicator-opacity);
+  min-width: 16px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+}
+
+.wg__sort-placeholder {
+  opacity: var(--wg-sort-placeholder-opacity);
+}
+
+.wg__sort-priority {
+  font-size: var(--wg-sort-priority-size);
+  font-weight: 600;
+  margin-left: 2px;
+  vertical-align: super;
+  line-height: 1;
+}
+
+/* Header Info Icon */
+.wg__header-info {
+  display: inline-flex;
+  align-items: center;
+  color: var(--wg-accent-color);
+  cursor: help;
+  opacity: 0.7;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.wg__header-info:hover {
+  opacity: 1;
+}
+
+/* ==============================================================================
+   FILTER ROW
+   ============================================================================== */
+.wg__filter-row th {
+  padding: var(--wg-filter-padding);
+  background: var(--wg-filter-bg);
+  border-bottom: var(--wg-filter-border);
+}
+
+.wg__filter-input {
+  width: 100%;
+  padding: var(--wg-filter-input-padding);
+  border: var(--wg-filter-input-border);
+  border-radius: var(--wg-filter-input-border-radius);
+  background: var(--wg-surface-1);
+  color: var(--wg-text-color-1);
+  font-size: var(--wg-filter-input-font-size);
+  box-sizing: border-box;
+}
+
+.wg__filter-input:focus {
+  outline: none;
+  border: var(--wg-filter-input-border-focus);
+  box-shadow: 0 0 0 1px var(--wg-accent-color);
+}

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-rc02] - 2025-01-02
+
+### Added
+- **Component Variables Manifest** - Machine-readable manifest documenting all CSS variables
+  - `component-variables.manifest.json` included in package
+  - 34 base variables (`--base-*`) the component consumes
+  - 121 component variables (`--wg-*`) with categories and usage descriptions
+  - Import via `@keenmate/web-grid/manifest`
+  - Schema: `https://raw.githubusercontent.com/keenmate/schemas/main/component-variables.schema.json`
+
+### Changed
+- **Dark Mode** - Added support for `.dark` class (Tailwind CSS convention)
+
+## [1.0.0-rc01] - 2025-01-02
+
+### Added
+- **First Release Candidate** - Initial RC for npm publishing
+- **TypeScript Declarations** - Full `.d.ts` files included in package
+- **CSS Variable Architecture** - 121 customizable `--wg-*` variables
+- **Base Theme Integration** - Falls back to `--base-*` variables from `@keenmate/theme-designer`
+
+### Changed
+- **CSS Naming Convention** - Aligned with web-multiselect/daterangepicker
+  - Renamed `-background` suffix to `-bg` throughout
+  - Renamed `--base-layer-*` to `--base-surface-*`
+  - Renamed `--base-stroke-*` to `--base-border-*`
+
 ## [Unreleased]
 
 ### Changed

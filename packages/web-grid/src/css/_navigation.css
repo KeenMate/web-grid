@@ -1,0 +1,25 @@
+/* ==============================================================================
+   NAVIGATE MODE (keyboard navigation)
+   ==============================================================================
+   Excel-like keyboard navigation and focus states
+*/
+
+.wg--navigate-mode .wg__cell {
+  cursor: cell;
+}
+
+/* Remove browser default focus outline - we handle it with .wg__cell--focused */
+.wg--navigate-mode .wg__cell:focus {
+  outline: none;
+}
+
+/* Focused cell styling - Excel-like green border for ALL cells */
+.wg--navigate-mode .wg__cell.wg__cell--focused {
+  outline: 2px solid var(--wg-focus-border-color, #217346);
+  outline-offset: -2px;
+}
+
+/* Hide hover border when cell is focused */
+.wg__cell--focused::after {
+  display: none;
+}

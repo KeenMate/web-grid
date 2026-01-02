@@ -18,7 +18,13 @@
       "Bash(git -C \"C:/Git/KM/web-grid-4\" log --oneline -3)",
       "Bash(git -C \"C:/Git/KM/web-grid-3\" status)",
       "Bash(git -C \"C:/Git/KM/web-grid-4\" remote -v)",
-      "Bash(git -C \"C:/Git/KM/web-grid-3\" remote -v)"
+      "Bash(git -C \"C:/Git/KM/web-grid-3\" remote -v)",
+      "Bash(git -C \"C:/Git/KM/web-grid\" log --oneline -10 --all -- README.md)",
+      "Bash(git -C \"C:/Git/KM/web-grid\" show 709aede:README.md)",
+      "Bash(wc:*)",
+      "Bash(make dev:*)",
+      "Bash(make package:*)",
+      "Bash(npm pack:*)"
     ]
   }
 }

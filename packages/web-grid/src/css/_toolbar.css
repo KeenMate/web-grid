@@ -13,10 +13,10 @@
 	flex-direction: column-reverse;
 	gap: 0;
 	padding: 0;
-	background: var(--wg-toolbar-background, var(--base-layer-floating, #fff));
-	border: 1px solid var(--wg-toolbar-border, var(--base-stroke-default, #e0e0e0));
-	border-radius: var(--wg-border-radius, 4px);
-	box-shadow: var(--wg-toolbar-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+	background: var(--wg-toolbar-bg);
+	border: var(--wg-toolbar-border);
+	border-radius: var(--wg-toolbar-border-radius);
+	box-shadow: var(--wg-toolbar-shadow);
 }
 
 .wg__toolbar-row {
@@ -29,41 +29,41 @@
 }
 
 .wg__toolbar-row + .wg__toolbar-row {
-	border-top: 1px solid var(--wg-toolbar-border, var(--base-stroke-default, #e0e0e0));
+	border-top: 1px solid var(--wg-toolbar-divider-color);
 }
 
 .wg__toolbar-divider {
 	width: 1px;
 	height: 16px;
-	background: var(--wg-toolbar-divider-color, var(--base-stroke-strong, #c0c0c0));
+	background: var(--wg-toolbar-divider-color);
 	margin: 0 4px;
 	flex-shrink: 0;
 }
 
 .wg__toolbar-btn {
-	min-width: var(--wg-toolbar-btn-min-width, 24px);
+	min-width: var(--wg-toolbar-btn-min-width);
 	height: 100%;
 	border: none;
-	border-radius: var(--wg-border-radius, 4px);
+	border-radius: var(--wg-toolbar-btn-border-radius);
 	background: transparent;
-	color: var(--wg-toolbar-btn-color, var(--base-text-color-primary, #1a1a1a));
+	color: var(--wg-toolbar-btn-color);
 	cursor: pointer;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	gap: 4px;
-	font-size: var(--wg-toolbar-btn-font-size, 14px);
+	font-size: var(--wg-font-size-base);
 	font-weight: 500;
-	padding: 0 6px;
+	padding: var(--wg-toolbar-btn-padding);
 	transition: background 0.1s ease;
 }
 
 .wg__toolbar-btn:hover {
-	background: var(--wg-toolbar-btn-hover-bg, var(--base-layer-hover, #f5f5f5));
+	background: var(--wg-toolbar-btn-bg-hover);
 }
 
 .wg__toolbar-btn:active {
-	background: var(--wg-toolbar-btn-active-bg, var(--base-layer-active, #e8e8e8));
+	background: var(--wg-toolbar-btn-bg-active);
 }
 
 .wg__toolbar-btn:disabled {
@@ -76,8 +76,8 @@
 }
 
 .wg__toolbar-btn--danger:hover {
-	background: var(--wg-toolbar-btn-danger-bg, var(--base-error-background, #fef2f2));
-	color: var(--wg-toolbar-btn-danger-color, var(--base-error-color, #d32f2f));
+	background: var(--wg-danger-bg-light);
+	color: var(--wg-danger-color);
 }
 
 .wg__toolbar-label {
@@ -98,11 +98,11 @@
 }
 
 .wg__header .wg__actions-column {
-	background: var(--wg-header-background, var(--base-layer-02, #f5f5f5));
+	background: var(--wg-header-bg);
 }
 
 .wg__filter-row .wg__actions-column {
-	background: var(--wg-background, var(--base-layer-01, #fff));
+	background: var(--wg-filter-bg);
 }
 
 /* ==========================================================================
@@ -114,11 +114,11 @@
 	padding: 0;
 	background: transparent;
 	border: none;
-	border-radius: var(--wg-border-radius, 4px);
+	border-radius: var(--wg-border-radius-sm);
 	cursor: pointer;
-	font-size: 14px;
+	font-size: var(--wg-font-size-base);
 	line-height: 1;
-	color: var(--wg-toolbar-trigger-color, var(--base-text-color-secondary, #707070));
+	color: var(--wg-toolbar-trigger-color);
 }
 
 /* Larger invisible hitbox for easier clicking */
@@ -128,11 +128,12 @@
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);
-	width: var(--wg-dropdown-toggle-hitbox, 24px);
+	width: var(--wg-dropdown-toggle-hitbox);
 	height: 48px;
 }
 
 .wg__toolbar-trigger:hover,
 .wg__toolbar-trigger--active {
-	color: var(--wg-toolbar-trigger-hover-color, var(--base-text-color-primary, #242424));
+	color: var(--wg-toolbar-trigger-color-hover);
+	background: var(--wg-toolbar-trigger-bg-hover);
 }

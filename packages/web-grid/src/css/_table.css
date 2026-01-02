@@ -1,0 +1,90 @@
+/* ==============================================================================
+   TABLE STRUCTURE
+   ==============================================================================
+   Core table container and layout
+*/
+
+/* ==============================================================================
+   FOUC PREVENTION
+   ==============================================================================
+   Prevent Flash of Unstyled Content by hiding undefined custom elements
+   Keep element visible to prevent layout shift, but hide any text content
+*/
+web-grid:not(:defined) {
+  display: block;
+  min-height: calc(10 * var(--wg-rem));
+  color: transparent !important;
+  background: transparent;
+}
+
+/* ==============================================================================
+   CONTAINER
+   ============================================================================== */
+.wg {
+  position: relative;
+  width: 100%;
+  max-height: inherit;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: var(--wg-table-border);
+}
+
+/* ==============================================================================
+   TABLE
+   ============================================================================== */
+.wg__table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: var(--wg-table-bg);
+  font-size: var(--wg-font-size-base);
+  line-height: var(--wg-line-height-base);
+}
+
+/* ==============================================================================
+   ROWS
+   ============================================================================== */
+.wg__table tbody tr {
+  border-bottom: var(--wg-row-border);
+}
+
+/* ==============================================================================
+   ROW NUMBER COLUMN
+   ============================================================================== */
+.wg__row-number-header,
+.wg__row-number {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+  color: var(--wg-text-color-secondary);
+  background: var(--wg-header-bg);
+  user-select: none;
+  font-size: var(--wg-font-size-sm);
+}
+
+.wg__row-number {
+  border-right: var(--wg-cell-border);
+}
+
+/* ==============================================================================
+   ACTIONS COLUMN (for button trigger mode)
+   ============================================================================== */
+.wg__actions-column {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  padding: 0 !important;
+  text-align: center;
+}
+
+thead .wg__actions-column {
+  background: var(--wg-header-bg);
+  border-bottom: var(--wg-header-border);
+}
+
+.wg__filter-row .wg__actions-column {
+  background: var(--wg-filter-bg);
+  border-bottom: var(--wg-filter-border);
+}
