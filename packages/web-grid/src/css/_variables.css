@@ -51,13 +51,13 @@
   --wg-text-color-1: var(--base-text-color-1, #242424);
   --wg-text-color-2: var(--base-text-color-2, #424242);
   --wg-text-color-3: var(--base-text-color-3, #707070);
-  --wg-text-on-accent: var(--base-text-on-accent, #ffffff);
+  --wg-text-on-accent: var(--base-text-color-on-accent, #ffffff);
 
   /* Background/Surface Colors */
-  --wg-surface-1: var(--base-surface-1, #ffffff);
-  --wg-surface-2: var(--base-surface-2, #f5f5f5);
-  --wg-surface-3: var(--base-surface-3, #ebebeb);
-  --wg-surface-floating: var(--base-dropdown-bg, var(--base-surface-1, #ffffff));
+  --wg-surface-1: var(--base-main-bg, #ffffff);
+  --wg-surface-2: var(--base-elevated-bg, #f5f5f5);
+  --wg-surface-3: var(--base-hover-bg, #ebebeb);
+  --wg-surface-floating: var(--base-dropdown-bg, var(--base-main-bg, #ffffff));
 
   /* Border Colors */
   --wg-border-color: var(--base-border-color, #e0e0e0);
@@ -76,8 +76,8 @@
   --wg-danger-bg-light: var(--base-danger-bg-light, #fde7e9);
 
   /* Hover/Active States */
-  --wg-hover-bg: var(--base-surface-3, #f0f0f0);
-  --wg-active-bg: var(--base-surface-3, #e0e0e0);
+  --wg-hover-bg: var(--base-hover-bg, #f0f0f0);
+  --wg-active-bg: var(--base-hover-bg, #e0e0e0);
 
   /* ==========================================================================
      TYPOGRAPHY
@@ -132,7 +132,7 @@
   --wg-cell-border: 1px solid var(--wg-border-color);
   --wg-cell-bg-hover: var(--wg-hover-bg);
   --wg-cell-bg-editing: var(--wg-surface-1);
-  --wg-cell-readonly-bg: var(--wg-surface-2);
+  --wg-cell-readonly-bg: var(--base-disabled-bg, var(--wg-surface-2));
 
   /* ==========================================================================
      ROW COMPONENT

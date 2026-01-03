@@ -40,7 +40,7 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 
 	const headerCells = columns.map(column => {
 		const field = String(column.field)
-		const isSortable = column.sortable !== false && ctx.grid.sortable
+		const isSortable = column.sortable !== false && ctx.grid.sortMode !== 'none'
 		const sortState = ctx.grid.getColumnSortState(field)
 		const sortPriority = ctx.grid.getColumnSortPriority(field)
 		const isSorted = sortState !== undefined
@@ -165,7 +165,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			// In navigate mode, ALL cells are focusable (not just editable)
 			const tabindexAttr = ctx.grid.isNavigateMode ? 'tabindex="0"' : ''
 
-			// Get cell tooltip (callback takes priority over member)
+			// Get cell tooltip (callback takes priority over member, then validation error)
 			// tooltipCallback receives the RAW value, not the formatted value
 			let tooltipAttr = ''
 			if (column.tooltipCallback) {
@@ -178,6 +178,32 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 				const tooltipText = (item as Record<string, unknown>)[column.tooltipMember]
 				if (tooltipText && typeof tooltipText === 'string') {
 					tooltipAttr = `data-tooltip="${ctx.escapeHtml(tooltipText)}"`
+				}
+			}
+			// Show validation error as tooltip for invalid cells (if no other tooltip)
+			if (!tooltipAttr && ctx.grid.isCellInvalid(rowIndex, field)) {
+				const errorMsg = ctx.grid.getCellValidationError(rowIndex, field)
+				if (errorMsg) {
+					// Check for validationTooltipCallback (column-level first, then grid-level)
+					const validationTooltipCb = column.validationTooltipCallback || ctx.grid.validationTooltipCallback
+					if (validationTooltipCb) {
+						const rawValue = ctx.grid.getCellRawValue(item, rowIndex, field)
+						const htmlContent = validationTooltipCb({
+							field,
+							error: errorMsg,
+							value: rawValue,
+							row: item,
+							rowIndex
+						})
+						if (htmlContent) {
+							// Use data-tooltip-html for HTML content (not escaped)
+							tooltipAttr = `data-tooltip-html="${ctx.escapeHtml(htmlContent)}"`
+						}
+					}
+					// Fallback to plain text if no callback or callback returned null
+					if (!tooltipAttr) {
+						tooltipAttr = `data-tooltip="${ctx.escapeHtml(errorMsg)}"`
+					}
 				}
 			}
 
@@ -311,7 +337,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			// In navigate mode, ALL cells are focusable (not just editable)
 			const tabindexAttr = ctx.grid.isNavigateMode ? 'tabindex="0"' : ''
 
-			// Get cell tooltip (callback takes priority over member)
+			// Get cell tooltip (callback takes priority over member, then validation error)
 			let tooltipAttr = ''
 			if (column.tooltipCallback) {
 				const rawValue = ctx.grid.getCellRawValue(item, rowIndex, field)
@@ -323,6 +349,32 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 				const tooltipText = (item as Record<string, unknown>)[column.tooltipMember]
 				if (tooltipText && typeof tooltipText === 'string') {
 					tooltipAttr = `data-tooltip="${ctx.escapeHtml(tooltipText)}"`
+				}
+			}
+			// Show validation error as tooltip for invalid cells (if no other tooltip)
+			if (!tooltipAttr && ctx.grid.isCellInvalid(rowIndex, field)) {
+				const errorMsg = ctx.grid.getCellValidationError(rowIndex, field)
+				if (errorMsg) {
+					// Check for validationTooltipCallback (column-level first, then grid-level)
+					const validationTooltipCb = column.validationTooltipCallback || ctx.grid.validationTooltipCallback
+					if (validationTooltipCb) {
+						const rawValue = ctx.grid.getCellRawValue(item, rowIndex, field)
+						const htmlContent = validationTooltipCb({
+							field,
+							error: errorMsg,
+							value: rawValue,
+							row: item,
+							rowIndex
+						})
+						if (htmlContent) {
+							// Use data-tooltip-html for HTML content (not escaped)
+							tooltipAttr = `data-tooltip-html="${ctx.escapeHtml(htmlContent)}"`
+						}
+					}
+					// Fallback to plain text if no callback or callback returned null
+					if (!tooltipAttr) {
+						tooltipAttr = `data-tooltip="${ctx.escapeHtml(errorMsg)}"`
+					}
 				}
 			}
 

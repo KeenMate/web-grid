@@ -13,7 +13,8 @@ export function showTooltip<T>(
 	ctx: GridContext<T>,
 	anchor: HTMLElement,
 	text: string,
-	delay?: number
+	delay?: number,
+	isHtml?: boolean
 ): void {
 	const showDelay = delay ?? ctx.tooltipShowDelay
 
@@ -35,7 +36,7 @@ export function showTooltip<T>(
 	}
 
 	ctx.tooltipShowTimer = setTimeout(() => {
-		createTooltip(ctx, anchor, text)
+		createTooltip(ctx, anchor, text, isHtml)
 	}, showDelay)
 }
 
@@ -75,7 +76,8 @@ export function hideTooltip<T>(ctx: GridContext<T>, delay?: number): void {
 export function createTooltip<T>(
 	ctx: GridContext<T>,
 	anchor: HTMLElement,
-	text: string
+	content: string,
+	isHtml?: boolean
 ): void {
 	// Remove existing
 	ctx.tooltipElement?.remove()
@@ -83,7 +85,16 @@ export function createTooltip<T>(
 	// Create tooltip
 	const tooltip = document.createElement('div')
 	tooltip.className = 'wg__tooltip'
-	tooltip.textContent = text
+
+	// Create content wrapper (arrow goes after content, not inside it)
+	const contentWrapper = document.createElement('div')
+	contentWrapper.className = 'wg__tooltip-content'
+	if (isHtml) {
+		contentWrapper.innerHTML = content
+	} else {
+		contentWrapper.textContent = content
+	}
+	tooltip.appendChild(contentWrapper)
 
 	// Create arrow
 	const arrowEl = document.createElement('div')

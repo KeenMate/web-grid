@@ -68,6 +68,15 @@
                     </select>
                 </label>
                 <label>
+                    Toolbar Position:
+                    <select id="positionSelect">
+                        <option value="auto">Auto (default)</option>
+                        <option value="left">Left</option>
+                        <option value="right">Right</option>
+                        <option value="top">Top</option>
+                    </select>
+                </label>
+                <label>
                     Toolbar Align:
                     <select id="alignSelect">
                         <option value="center">Center (default)</option>
@@ -201,16 +210,19 @@ grid.rowToolbar = [
 
         // localStorage keys
         const STORAGE_TRIGGER = 'wg-toolbar-trigger'
+        const STORAGE_POSITION = 'wg-toolbar-position'
         const STORAGE_ALIGN = 'wg-toolbar-align'
         const STORAGE_TOP_POSITION = 'wg-toolbar-top-position'
 
         // Load saved settings
         const savedTrigger = localStorage.getItem(STORAGE_TRIGGER) || 'hover'
+        const savedPosition = localStorage.getItem(STORAGE_POSITION) || 'auto'
         const savedAlign = localStorage.getItem(STORAGE_ALIGN) || 'center'
         const savedTopPosition = localStorage.getItem(STORAGE_TOP_POSITION) || 'center'
 
         // Set select values from storage
         document.getElementById('triggerSelect').value = savedTrigger
+        document.getElementById('positionSelect').value = savedPosition
         document.getElementById('alignSelect').value = savedAlign
         document.getElementById('topPositionSelect').value = savedTopPosition
 
@@ -221,7 +233,27 @@ grid.rowToolbar = [
             { id: 3, title: 'Create database schema', priority: 'Medium', status: 'Done', assignee: 'Carol' },
             { id: 4, title: 'Write API documentation', priority: 'Low', status: 'Todo', assignee: 'David' },
             { id: 5, title: 'Set up CI/CD pipeline', priority: 'Medium', status: 'In Progress', assignee: 'Eve' },
-            { id: 6, title: 'Performance optimization', priority: 'Low', status: 'Todo', assignee: 'Frank' }
+            { id: 6, title: 'Performance optimization', priority: 'Low', status: 'Todo', assignee: 'Frank' },
+            { id: 7, title: 'Unit test coverage', priority: 'High', status: 'In Progress', assignee: 'Alice' },
+            { id: 8, title: 'Code review process', priority: 'Medium', status: 'Done', assignee: 'Bob' },
+            { id: 9, title: 'Security audit', priority: 'High', status: 'Todo', assignee: 'Carol' },
+            { id: 10, title: 'Load testing', priority: 'Medium', status: 'Todo', assignee: 'David' },
+            { id: 11, title: 'Mobile responsiveness', priority: 'High', status: 'In Progress', assignee: 'Eve' },
+            { id: 12, title: 'Accessibility compliance', priority: 'Medium', status: 'Todo', assignee: 'Frank' },
+            { id: 13, title: 'Error handling', priority: 'High', status: 'Done', assignee: 'Alice' },
+            { id: 14, title: 'Logging implementation', priority: 'Low', status: 'Todo', assignee: 'Bob' },
+            { id: 15, title: 'Cache optimization', priority: 'Medium', status: 'In Progress', assignee: 'Carol' },
+            { id: 16, title: 'Database indexing', priority: 'High', status: 'Todo', assignee: 'David' },
+            { id: 17, title: 'API rate limiting', priority: 'Medium', status: 'Done', assignee: 'Eve' },
+            { id: 18, title: 'User notifications', priority: 'Low', status: 'Todo', assignee: 'Frank' },
+            { id: 19, title: 'Data export feature', priority: 'Medium', status: 'In Progress', assignee: 'Alice' },
+            { id: 20, title: 'Search functionality', priority: 'High', status: 'Todo', assignee: 'Bob' },
+            { id: 21, title: 'File upload system', priority: 'Medium', status: 'Done', assignee: 'Carol' },
+            { id: 22, title: 'Email integration', priority: 'Low', status: 'Todo', assignee: 'David' },
+            { id: 23, title: 'Analytics dashboard', priority: 'High', status: 'In Progress', assignee: 'Eve' },
+            { id: 24, title: 'Backup strategy', priority: 'Medium', status: 'Todo', assignee: 'Frank' },
+            { id: 25, title: 'Disaster recovery plan', priority: 'High', status: 'Done', assignee: 'Alice' },
+            { id: 26, title: 'Third-party integrations', priority: 'Low', status: 'Todo', assignee: 'Bob' }
         ]
 
         const columns = [
@@ -255,6 +287,7 @@ grid.rowToolbar = [
             { id: 'delete', type: 'delete', icon: '−', title: 'Delete', group: 2 }
         ]
         grid.toolbarTrigger = savedTrigger
+        grid.toolbarPosition = savedPosition
         grid.toolbarAlign = savedAlign
         grid.toolbarTopPosition = savedTopPosition
 
@@ -326,6 +359,14 @@ grid.rowToolbar = [
             grid2.items = [...grid2.items]
         })
 
+        // Position control
+        document.getElementById('positionSelect').addEventListener('change', (e) => {
+            const value = e.target.value
+            localStorage.setItem(STORAGE_POSITION, value)
+            grid.toolbarPosition = value
+            grid2.toolbarPosition = value
+        })
+
         // Align control
         document.getElementById('alignSelect').addEventListener('change', (e) => {
             const value = e.target.value
@@ -346,11 +387,13 @@ grid.rowToolbar = [
         // Multi-row toolbar example
         // ============================================================
         const grid2 = document.getElementById('grid2')
-        grid2.items = tasks.map(t => ({...t}))  // Clone for independent data
+        let tasks2 = tasks.map(t => ({...t}))  // Clone for independent data
+        grid2.items = tasks2
         grid2.columns = columns
 
         grid2.showRowToolbar = true
         grid2.toolbarTrigger = savedTrigger
+        grid2.toolbarPosition = savedPosition
         grid2.toolbarAlign = savedAlign
         grid2.toolbarTopPosition = savedTopPosition
 
@@ -371,7 +414,55 @@ grid.rowToolbar = [
 
         grid2.ontoolbarclick = (detail) => {
             const { item, rowIndex, row } = detail
-            showToast(`${item.title}: ${row.title}`)
+
+            switch (item.id) {
+                case 'add': {
+                    const newId = Math.max(...tasks2.map(t => t.id)) + 1
+                    const newTask = {
+                        id: newId,
+                        title: 'New Task',
+                        priority: 'Medium',
+                        status: 'Todo',
+                        assignee: ''
+                    }
+                    tasks2.splice(rowIndex + 1, 0, newTask)
+                    grid2.items = [...tasks2]
+                    showToast(`Added new task at row ${rowIndex + 2}`, 'success')
+                    break
+                }
+                case 'duplicate': {
+                    const dupId = Math.max(...tasks2.map(t => t.id)) + 1
+                    const duplicate = { ...row, id: dupId, title: row.title + ' (copy)' }
+                    tasks2.splice(rowIndex + 1, 0, duplicate)
+                    grid2.items = [...tasks2]
+                    showToast(`Duplicated: ${row.title}`, 'success')
+                    break
+                }
+                case 'delete': {
+                    const deleted = tasks2.splice(rowIndex, 1)[0]
+                    grid2.items = [...tasks2]
+                    showToast(`Deleted: ${deleted.title}`, 'error')
+                    break
+                }
+                case 'moveUp': {
+                    if (rowIndex > 0) {
+                        [tasks2[rowIndex], tasks2[rowIndex - 1]] = [tasks2[rowIndex - 1], tasks2[rowIndex]]
+                        grid2.items = [...tasks2]
+                        showToast(`Moved "${row.title}" up`)
+                    }
+                    break
+                }
+                case 'moveDown': {
+                    if (rowIndex < tasks2.length - 1) {
+                        [tasks2[rowIndex], tasks2[rowIndex + 1]] = [tasks2[rowIndex + 1], tasks2[rowIndex]]
+                        grid2.items = [...tasks2]
+                        showToast(`Moved "${row.title}" down`)
+                    }
+                    break
+                }
+                default:
+                    showToast(`${item.title}: ${row.title}`)
+            }
         }
     </script>
 </body>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGrid - Edit Trigger Examples</title>
+    <link rel="stylesheet" href="examples-shared.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">← Back to Examples</a>
+            <h1>Edit Trigger Examples</h1>
+            <p class="subtitle">Testing different edit trigger modes</p>
+        </header>
+
+        <div class="card">
+            <h2>Edit Trigger: Click</h2>
+            <p>Single click on a cell to start editing. Click another cell to immediately switch to editing that cell.</p>
+
+            <div class="controls">
+                <label>
+                    Edit Trigger:
+                    <select id="editTrigger">
+                        <option value="click">click</option>
+                        <option value="dblclick">dblclick</option>
+                        <option value="navigate">navigate</option>
+                    </select>
+                </label>
+                <label>
+                    Edit Start Selection:
+                    <select id="editStartSelection">
+                        <option value="mousePosition">mousePosition (default)</option>
+                        <option value="selectAll">selectAll</option>
+                        <option value="cursorAtEnd">cursorAtEnd</option>
+                        <option value="cursorAtStart">cursorAtStart</option>
+                    </select>
+                </label>
+                <label>
+                    <input type="checkbox" id="gridEditable" checked> grid.editable
+                </label>
+            </div>
+
+            <web-grid id="grid" style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Test Scenarios</div>
+                <ul>
+                    <li><strong>Click mode:</strong> Click Alice → edit mode. Click Bob → should immediately edit Bob (no double-click)</li>
+                    <li><strong>DblClick mode:</strong> Double-click to edit. Single click just focuses.</li>
+                    <li><strong>Navigate mode:</strong> Arrow keys to navigate, type to start editing, Enter/F2 to edit.</li>
+                </ul>
+                <div class="note-title" style="margin-top: 1rem;">Edit Start Selection</div>
+                <ul>
+                    <li><strong>mousePosition:</strong> Cursor placed where you clicked (default)</li>
+                    <li><strong>selectAll:</strong> All text selected</li>
+                    <li><strong>cursorAtEnd:</strong> Cursor at end of text</li>
+                    <li><strong>cursorAtStart:</strong> Cursor at beginning of text</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Column-level editable vs Grid-level editable</h2>
+            <p>When <code>grid.editable = true</code>, all columns are editable by default unless <code>column.editable = false</code>.</p>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                <thead>
+                    <tr style="background: #f3f4f6;">
+                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">Column</th>
+                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">column.editable</th>
+                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">column.editor</th>
+                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">ID</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>false</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">-</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">NOT editable</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Name</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">(not set)</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'text'</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Editable (has editor)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Email</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">(not set)</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'text'</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Editable (has editor)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Salary</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">(not set)</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'number'</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Editable (has editor)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Status</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">(not set)</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'select'</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Editable (has editor)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import '@keenmate/web-grid'
+
+        const sampleData = [
+            { id: 1, name: 'Alice Johnson', email: 'alice@example.com', salary: 95000, status: 'active' },
+            { id: 2, name: 'Bob Smith', email: 'bob@example.com', salary: 72000, status: 'pending' },
+            { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', salary: 88000, status: 'active' },
+            { id: 4, name: 'Diana Ross', email: 'diana@example.com', salary: 67000, status: 'inactive' },
+            { id: 5, name: 'Eve Wilson', email: 'eve@example.com', salary: 105000, status: 'active' }
+        ]
+
+        const statusOptions = [
+            { value: 'active', label: 'Active' },
+            { value: 'pending', label: 'Pending' },
+            { value: 'inactive', label: 'Inactive' }
+        ]
+
+        // Column definitions - NO explicit editable:true on columns
+        // They should inherit from grid.editable = true
+        const columns = [
+            { field: 'id', title: 'ID', width: '60px', editable: false },
+            { field: 'name', title: 'Name', width: '150px', editor: 'text' },
+            { field: 'email', title: 'Email', width: '180px', editor: 'text', editorOptions: { editStartSelection: 'selectAll' } },
+            {
+                field: 'salary',
+                title: 'Salary',
+                width: '100px',
+                align: 'right',
+                editor: 'number',
+                formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : ''
+            },
+            {
+                field: 'status',
+                title: 'Status',
+                width: '120px',
+                editor: 'select',
+                editorOptions: {
+                    options: statusOptions,
+                    valueMember: 'value',
+                    displayMember: 'label'
+                }
+            }
+        ]
+
+        const grid = document.getElementById('grid')
+        grid.items = sampleData
+        grid.columns = columns
+        grid.editable = true
+        grid.editTrigger = 'click'
+        grid.striped = true
+        grid.hoverable = true
+
+        // Wire up controls
+        document.getElementById('editTrigger').addEventListener('change', (e) => {
+            grid.editTrigger = e.target.value
+            console.log('editTrigger changed to:', e.target.value)
+        })
+
+        document.getElementById('gridEditable').addEventListener('change', (e) => {
+            grid.editable = e.target.checked
+            console.log('grid.editable changed to:', e.target.checked)
+        })
+
+        document.getElementById('editStartSelection').addEventListener('change', (e) => {
+            grid.editStartSelection = e.target.value
+            console.log('editStartSelection changed to:', e.target.value)
+        })
+    </script>
+</body>
+</html>

@@ -12,9 +12,11 @@ import type {
 	RowActionClickDetail,
 	ContextMenuContext,
 	EditTrigger,
+	EditStartSelection,
 	EditingCell,
 	FocusedCell,
 	SortDirection,
+	SortMode,
 	SortState,
 	DataRequestDetail,
 	DataRequestTrigger,
@@ -23,7 +25,8 @@ import type {
 	GridMode,
 	ToggleVisibility,
 	PaginationLabelsCallback,
-	SummaryContentCallback
+	SummaryContentCallback,
+	ValidationTooltipContext
 } from './types.js'
 
 /**
@@ -39,7 +42,7 @@ export class WebGrid<T = unknown> {
 
 	protected _items: T[] = []
 	protected _columns: Column<T>[] = []
-	protected _sortable: boolean = false
+	protected _sortMode: SortMode = "none"
 	protected _filterable: boolean = false
 	protected _pageable: boolean = false
 	protected _pageSize: number = 10
@@ -48,6 +51,7 @@ export class WebGrid<T = unknown> {
 	protected _hoverable: boolean = true
 	protected _editable: boolean = false
 	protected _editTrigger: EditTrigger = "dblclick"
+	protected _editStartSelection: EditStartSelection = "mousePosition"
 	protected _mode: GridMode = "excel"
 	protected _dropdownToggleVisibility: ToggleVisibility = "always"
 	protected _dropdownShowOnFocus: boolean = true
@@ -60,6 +64,7 @@ export class WebGrid<T = unknown> {
 	protected _toolbarAlign: 'center' | 'top' = 'center'
 	protected _toolbarTopPosition: 'start' | 'center' | 'end' | 'cursor' = 'center'
 	protected _toolbarTrigger: 'hover' | 'click' | 'button' = 'hover'
+	protected _toolbarPosition: 'auto' | 'left' | 'right' | 'top' = 'auto'
 	protected _contextMenu: ContextMenuItem<T>[] | undefined = undefined
 
 	// ==========================================================================
@@ -70,6 +75,7 @@ export class WebGrid<T = unknown> {
 	protected _onroweditstart: ((detail: { row: T, rowIndex: number, field: string }) => void) | undefined
 	protected _onroweditcancel: ((detail: { row: T, rowIndex: number, field: string }) => void) | undefined
 	protected _onvalidationerror: ((detail: { row: T, rowIndex: number, field: string, error: string }) => void) | undefined
+	protected _validationTooltipCallback: ((context: ValidationTooltipContext<T>) => string | null) | undefined
 	protected _ontoolbarclick: ((detail: ToolbarClickDetail<T>) => void) | undefined
 	protected _onrowaction: ((detail: RowActionClickDetail<T>) => void) | undefined
 	protected _oncontextmenuopen: ((context: ContextMenuContext<T>) => void) | undefined
@@ -143,9 +149,16 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get sortable(): boolean { return this._sortable }
+	get sortMode(): SortMode { return this._sortMode }
+	set sortMode(value: SortMode) {
+		this._sortMode = value
+		this.requestUpdate()
+	}
+
+	/** @deprecated Use sortMode instead. sortable=true maps to sortMode="multi", sortable=false maps to sortMode="none" */
+	get sortable(): boolean { return this._sortMode !== "none" }
 	set sortable(value: boolean) {
-		this._sortable = value
+		this._sortMode = value ? "multi" : "none"
 		this.requestUpdate()
 	}
 
@@ -195,6 +208,11 @@ export class WebGrid<T = unknown> {
 	set editTrigger(value: EditTrigger) {
 		this._editTrigger = value
 		this.requestUpdate()
+	}
+
+	get editStartSelection(): EditStartSelection { return this._editStartSelection }
+	set editStartSelection(value: EditStartSelection) {
+		this._editStartSelection = value
 	}
 
 	get mode(): GridMode { return this._mode }
@@ -277,11 +295,18 @@ export class WebGrid<T = unknown> {
 	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this._toolbarTopPosition }
 	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') {
 		this._toolbarTopPosition = value
+		this.requestUpdate()
 	}
 
 	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this._toolbarTrigger }
 	set toolbarTrigger(value: 'hover' | 'click' | 'button') {
 		this._toolbarTrigger = value
+		this.requestUpdate()
+	}
+
+	get toolbarPosition(): 'auto' | 'left' | 'right' | 'top' { return this._toolbarPosition }
+	set toolbarPosition(value: 'auto' | 'left' | 'right' | 'top') {
+		this._toolbarPosition = value
 		this.requestUpdate()
 	}
 
@@ -444,6 +469,13 @@ export class WebGrid<T = unknown> {
 
 	set onvalidationerror(value: ((detail: { row: T, rowIndex: number, field: string, error: string }) => void) | undefined) {
 		this._onvalidationerror = value
+	}
+
+	get validationTooltipCallback(): ((context: ValidationTooltipContext<T>) => string | null) | undefined {
+		return this._validationTooltipCallback
+	}
+	set validationTooltipCallback(value: ((context: ValidationTooltipContext<T>) => string | null) | undefined) {
+		this._validationTooltipCallback = value
 	}
 
 	get ontoolbarclick(): ((detail: ToolbarClickDetail<T>) => void) | undefined {

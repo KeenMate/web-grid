@@ -21,7 +21,7 @@ export type OptionsLoadTrigger = "immediate" | "oneditstart" | "ondropdownopen"
 export type DateOutputFormat = "date" | "iso" | "timestamp"
 
 // How to position cursor/selection when entering edit mode
-export type EditStartSelection = "selectAll" | "cursorAtStart" | "cursorAtEnd"
+export type EditStartSelection = "mousePosition" | "selectAll" | "cursorAtStart" | "cursorAtEnd"
 
 // Option for select/combobox/autocomplete editors
 export type EditorOption = {
@@ -188,6 +188,17 @@ export type Column<T> = {
 	// Clipboard callbacks
 	beforeCopyCallback?: (value: unknown, row: T) => string  // Transform value before copying to clipboard
 	beforePasteCallback?: (value: string, row: T) => unknown  // Process pasted value before applying
+	// Validation tooltip - return HTML string for rich error display
+	validationTooltipCallback?: (context: ValidationTooltipContext<T>) => string | null
+}
+
+// Context for validation tooltip callback
+export type ValidationTooltipContext<T> = {
+	field: string
+	error: string
+	value: unknown
+	row: T
+	rowIndex: number
 }
 
 // Detail passed to onrowchange callback
@@ -286,6 +297,7 @@ export type ContextMenuItem<T> = {
 export type QuickGridProps<T> = {
 	items: T[]
 	columns: Column<T>[]
+	/** @deprecated Use sortMode instead */
 	sortable?: boolean
 	filterable?: boolean
 	pageable?: boolean
@@ -297,8 +309,9 @@ export type QuickGridProps<T> = {
 	style?: string
 	customStylesCallback?: () => string  // Callback returning custom CSS to inject into shadow DOM
 	rowClassCallback?: (row: T, rowIndex: number) => string | null  // Dynamic CSS class for rows
-	// Sorting state (multi-column)
+	// Sorting
 	sort?: SortState[]  // Current sort state (can be set for initial/server-side sort)
+	sortMode?: SortMode  // Sort mode: "none" (disabled), "single", or "multi" (default: "none")
 	// Pagination state
 	currentPage?: number  // Current page (1-based)
 	totalItems?: number   // Total items for server-side pagination
@@ -314,6 +327,7 @@ export type QuickGridProps<T> = {
 	// Editing props
 	editable?: boolean
 	editTrigger?: EditTrigger
+	editStartSelection?: EditStartSelection  // Default cursor position when entering edit via navigate mode (default: selectAll)
 	mode?: GridMode  // Grid mode - sets sensible defaults (read-only, excel, input-matrix)
 	dropdownToggleVisibility?: ToggleVisibility  // When to show dropdown toggle (always, on-focus)
 	dropdownShowOnFocus?: boolean  // Auto-open dropdown when cell is focused (deprecated, use showOnFocus in editorOptions)
@@ -327,6 +341,7 @@ export type QuickGridProps<T> = {
 	toolbarAlign?: 'center' | 'top'  // Vertical alignment: center (default) or top
 	toolbarTopPosition?: 'start' | 'center' | 'end' | 'cursor'  // Horizontal position when toolbar is above row (default: 'center')
 	toolbarTrigger?: 'hover' | 'click' | 'button'  // How to show toolbar
+	toolbarPosition?: 'auto' | 'left' | 'right' | 'top'  // Preferred position: auto (default), left, right, or top
 	// Legacy aliases for backwards compatibility
 	showRowActions?: boolean      // Deprecated: use showRowToolbar
 	rowActions?: RowToolbarConfig<T>[]  // Deprecated: use rowToolbar
@@ -347,6 +362,8 @@ export type QuickGridProps<T> = {
 	onroweditstart?: (detail: { row: T, rowIndex: number, field: string }) => void
 	onroweditcancel?: (detail: { row: T, rowIndex: number, field: string }) => void
 	onvalidationerror?: (detail: { row: T, rowIndex: number, field: string, error: string }) => void
+	// Validation tooltip - return HTML string for rich error display (column-level overrides this)
+	validationTooltipCallback?: (context: ValidationTooltipContext<T>) => string | null
 	ontoolbarclick?: (detail: ToolbarClickDetail<T>) => void
 	onrowaction?: (detail: RowActionClickDetail<T>) => void  // Deprecated: use ontoolbarclick
 	ondatarequest?: (detail: DataRequestDetail) => void  // Fires when sort/page changes
@@ -373,6 +390,9 @@ export type FocusedCell = {
 
 // Sort direction
 export type SortDirection = "asc" | "desc"
+
+// Sort mode - none (disabled), single column, or multi-column
+export type SortMode = "none" | "single" | "multi"
 
 // Toolbar row group (for grouped rendering)
 export type ToolbarRowGroup<T> = {

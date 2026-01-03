@@ -27,9 +27,10 @@ npm install @keenmate/web-grid
   ]
   grid.columns = [
     { field: 'id', title: 'ID', width: '60px' },
-    { field: 'name', title: 'Name', sortable: true },
-    { field: 'age', title: 'Age', sortable: true }
+    { field: 'name', title: 'Name' },
+    { field: 'age', title: 'Age' }
   ]
+  grid.sortMode = 'multi'  // Enable multi-column sorting
 </script>
 ```
 
@@ -42,7 +43,7 @@ npm install @keenmate/web-grid
 
 ## Features
 
-- **Sorting** - Click column headers to sort ascending/descending
+- **Sorting** - Single or multi-column sorting with `sortMode` property
 - **Filtering** - Per-column text input filters
 - **Pagination** - Configurable page size with navigation
 - **Inline Editing** - 7 editor types with validation support
@@ -59,18 +60,20 @@ npm install @keenmate/web-grid
 |----------|------|---------|-------------|
 | `items` | `Array` | `[]` | Data array to display |
 | `columns` | `Array<Column>` | `[]` | Column definitions |
-| `sortable` | `boolean` | `false` | Enable column sorting |
+| `sortMode` | `string` | `'none'` | Sort mode: `'none'`, `'single'`, `'multi'` |
 | `filterable` | `boolean` | `false` | Enable column filtering |
 | `pageable` | `boolean` | `false` | Enable pagination |
 | `pageSize` | `number` | `10` | Rows per page |
 | `editable` | `boolean` | `false` | Enable cell editing |
 | `editTrigger` | `string` | `'dblclick'` | Edit trigger: `'click'`, `'dblclick'`, `'navigate'` |
+| `editStartSelection` | `string` | `'mousePosition'` | Cursor position when entering edit: `'mousePosition'`, `'selectAll'`, `'cursorAtStart'`, `'cursorAtEnd'` |
 | `striped` | `boolean` | `false` | Alternate row colors |
 | `hoverable` | `boolean` | `false` | Highlight row on hover |
 | `showRowToolbar` | `boolean` | `false` | Show row action toolbar |
 | `rowToolbar` | `Array` | `[]` | Toolbar items configuration |
 | `toolbarTrigger` | `string` | `'hover'` | Toolbar trigger: `'hover'`, `'button'` |
 | `contextMenu` | `Array` | `[]` | Context menu items |
+| `validationTooltipCallback` | `Function` | `undefined` | Custom HTML tooltip for validation errors: `({ field, error, value, row, rowIndex }) => htmlString` |
 
 ## Column Definition
 
@@ -83,7 +86,7 @@ npm install @keenmate/web-grid
   maxWidth: '300px',            // Maximum width
   align: 'left',                // 'left', 'center', 'right'
   textOverflow: 'wrap',         // 'wrap' or 'ellipsis'
-  sortable: true,               // Enable sorting
+  sortable: false,              // Disable sorting for this column (when grid has sortMode enabled)
   filterable: true,             // Enable filtering
   editable: true,               // Enable editing
   editor: 'text',               // Editor type
@@ -91,7 +94,8 @@ npm install @keenmate/web-grid
   formatCallback: (value, row) => '',        // Value formatter
   templateCallback: (row, column) => '',     // Custom cell HTML
   cellClassCallback: (value, row) => '',     // Dynamic CSS class
-  beforeCommitCallback: (ctx) => true        // Validation
+  beforeCommitCallback: (ctx) => true,       // Validation
+  validationTooltipCallback: (ctx) => ''     // Custom HTML for validation error tooltip
 }
 ```
 

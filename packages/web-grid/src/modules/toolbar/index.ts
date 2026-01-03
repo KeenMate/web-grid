@@ -10,6 +10,7 @@ import type {
 	ToolbarClickDetail
 } from '../../types.js'
 import type { GridContext } from '../types.js'
+import { computePosition, flip, shift, type Placement } from '@floating-ui/dom'
 
 // =============================================================================
 // Connector Arrow Types and State
@@ -226,7 +227,11 @@ export function openToolbar<T>(
 	const toolbar = container.querySelector('.wg__toolbar') as HTMLElement
 	let toolbarPosition: 'left' | 'right' | 'top' = 'left'
 
-	// Wait for next frame before positioning (ensures element is rendered)
+	// Set initial fixed positioning (will be updated by computePosition)
+	toolbar.style.position = 'fixed'
+	toolbar.style.visibility = 'hidden'  // Hide until positioned
+
+	// Position toolbar using floating-ui
 	requestAnimationFrame(() => {
 		// Re-query row element fresh from shadow DOM (original might be stale)
 		const freshRow = ctx.shadow.querySelector(`tr[data-row-index="${rowIndex}"]`) as HTMLElement
@@ -235,80 +240,87 @@ export function openToolbar<T>(
 			return
 		}
 
-		const rowRect = freshRow.getBoundingClientRect()
-		const toolbarRect = toolbar.getBoundingClientRect()
+		// Determine placement based on toolbarPosition preference
+		const preferredPosition = ctx.grid.toolbarPosition
+		const toolbarAlign = ctx.grid.toolbarAlign
+		const topPosition = ctx.grid.toolbarTopPosition
 
-		// Get table bounds for position detection (like QuickGrid)
-		const table = ctx.shadow.querySelector('.wg__table') as HTMLElement
-		const tableRect = table?.getBoundingClientRect()
-		const minSpace = 100  // Minimum space needed for toolbar
+		// Build placement string for floating-ui
+		// For left/right: suffix determines vertical alignment (-start = top, none = center)
+		// For top: suffix determines horizontal alignment (-start = left, -end = right, none = center)
+		let placement: Placement
+		let fallbacks: Placement[]
 
-		// Determine position: left, right, or top (like QuickGrid)
-		if (tableRect) {
-			if (tableRect.left >= minSpace) {
-				toolbarPosition = 'left'
-			} else if (window.innerWidth - tableRect.right >= minSpace) {
-				toolbarPosition = 'right'
-			} else {
-				toolbarPosition = 'top'
-			}
+		const alignSuffix = toolbarAlign === 'top' ? '-start' : ''
+
+		// Map toolbarTopPosition to placement suffix for 'top' position
+		const getTopPlacement = (): Placement => {
+			if (topPosition === 'start') return 'top-start'
+			if (topPosition === 'end') return 'top-end'
+			return 'top'  // center is default
 		}
 
-		// Calculate x, y based on position
-		let x: number, y: number
-		if (toolbarPosition === 'left') {
-			x = rowRect.left - toolbarRect.width
-			// Center toolbar vertically with the row
-			y = rowRect.top + (rowRect.height - toolbarRect.height) / 2
-		} else if (toolbarPosition === 'right') {
-			x = rowRect.right
-			y = rowRect.top + (rowRect.height - toolbarRect.height) / 2
+		// Set preferred placement and fallbacks based on toolbarPosition
+		if (preferredPosition === 'left') {
+			placement = `left${alignSuffix}` as Placement
+			fallbacks = [`right${alignSuffix}` as Placement, getTopPlacement()]
+		} else if (preferredPosition === 'right') {
+			placement = `right${alignSuffix}` as Placement
+			fallbacks = [`left${alignSuffix}` as Placement, getTopPlacement()]
+		} else if (preferredPosition === 'top') {
+			placement = getTopPlacement()
+			fallbacks = [`left${alignSuffix}` as Placement, `right${alignSuffix}` as Placement]
 		} else {
-			// 'top' - position above the row
-			y = rowRect.top - toolbarRect.height
-			// Horizontal position based on toolbarTopPosition setting
-			const topPosition = ctx.grid.toolbarTopPosition
-			if (topPosition === 'start') {
-				x = rowRect.left
-			} else if (topPosition === 'end') {
-				x = rowRect.right - toolbarRect.width
-			} else if (topPosition === 'cursor' && cursorX !== undefined) {
-				x = cursorX - toolbarRect.width / 2  // Center on cursor
-			} else {
-				// 'center' (default)
-				x = rowRect.left + (rowRect.width - toolbarRect.width) / 2
+			// 'auto' - prefer left, then right, then top
+			placement = `left${alignSuffix}` as Placement
+			fallbacks = [`right${alignSuffix}` as Placement, getTopPlacement()]
+		}
+
+		// Handle 'cursor' positioning for top - use virtual element
+		// Only apply cursor anchor when toolbarPosition is explicitly 'top'
+		let anchor: Element | { getBoundingClientRect: () => DOMRect } = freshRow
+		if (topPosition === 'cursor' && cursorX !== undefined && preferredPosition === 'top') {
+			const rowRect = freshRow.getBoundingClientRect()
+			anchor = {
+				getBoundingClientRect: () => ({
+					x: cursorX,
+					y: rowRect.top,
+					top: rowRect.top,
+					left: cursorX,
+					bottom: rowRect.bottom,
+					right: cursorX,
+					width: 0,
+					height: rowRect.height,
+					toJSON: () => ({})
+				}) as DOMRect
 			}
 		}
 
-		// Override vertical alignment if explicitly set to 'top' (align toolbar top with row top)
-		if (toolbarPosition !== 'top' && ctx.grid.toolbarAlign === 'top') {
-			y = rowRect.top
-		}
+		computePosition(anchor, toolbar, {
+			strategy: 'fixed',
+			placement,
+			middleware: [
+				flip({ fallbackPlacements: fallbacks }),
+				shift({ padding: 8 })  // Keep within viewport
+			]
+		}).then(({ x, y, placement: finalPlacement }) => {
+			Object.assign(toolbar.style, {
+				left: `${x}px`,
+				top: `${y}px`,
+				visibility: 'visible'  // Show now that it's positioned
+			})
 
-		// Viewport clamping - keep toolbar within visible area
-		if (x + toolbarRect.width > window.innerWidth - 8) {
-			x = window.innerWidth - toolbarRect.width - 8
-		}
-		if (x < 8) {
-			x = 8
-		}
-		if (y + toolbarRect.height > window.innerHeight - 8) {
-			y = window.innerHeight - toolbarRect.height - 8
-		}
-		if (y < 8) {
-			y = 8
-		}
+			// Extract position from placement (e.g., 'left-start' -> 'left')
+			toolbarPosition = finalPlacement.split('-')[0] as 'left' | 'right' | 'top'
 
-		Object.assign(toolbar.style, {
-			position: 'fixed',
-			left: `${x}px`,
-			top: `${y}px`
+			// Store position for connector calculations
+			if (activeToolbar) {
+				activeToolbar.position = toolbarPosition
+			}
+		}).catch(() => {
+			// Fallback if computePosition fails
+			toolbar.style.visibility = 'visible'
 		})
-
-		// Store position for connector calculations
-		if (activeToolbar) {
-			activeToolbar.position = toolbarPosition
-		}
 	})
 
 	// Handle button clicks
@@ -394,6 +406,7 @@ export function getConnectorState(): ConnectorState {
 /**
  * Update connector path after row has moved
  * Call this after a moveUp/moveDown action to draw the bracket-shaped connector
+ * The connector is clipped at grid container boundaries
  */
 export function updateConnector<T>(
 	ctx: GridContext<T>,
@@ -439,34 +452,79 @@ export function updateConnector<T>(
 	const table = ctx.shadow.querySelector('.wg__table') as HTMLElement
 	const tableRect = table?.getBoundingClientRect()
 
-	if (!tableRect) {
+	// Get grid container bounds for clipping
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	const containerRect = container?.getBoundingClientRect()
+
+	if (!tableRect || !containerRect) {
 		connectorState = { path: null, arrowPos: null, arrowDir: 'right' }
 		return
 	}
 
 	const isRTL = document.dir === 'rtl' || document.documentElement.dir === 'rtl'
 
-	// For 'top' position, check if overlapping
-	const isOverlapping = !(rowRect.bottom < popupRect.top || rowRect.top > popupRect.bottom)
+	// Check row visibility within container
+	// Row is only "not visible" when COMPLETELY outside the container
+	const rowCenterY = rowRect.top + rowRect.height / 2
+	const isRowAbove = rowRect.bottom <= containerRect.top  // Row completely above
+	const isRowBelow = rowRect.top >= containerRect.bottom  // Row completely below
+	const isRowVisible = !isRowAbove && !isRowBelow
 
-	// Bracket shape goes to the left side of the table (LTR) or right (RTL)
-	const cornerX = isRTL ? tableRect.right + 15 : tableRect.left - 15
-	const endX = isRTL ? rowRect.right + 8 : rowRect.left - 8
-	const endY = rowRect.top + rowRect.height / 2
+	// Clamp endY to container bounds
+	let endY: number
+	let arrowDir: 'left' | 'right' | 'down' | 'up' = 'right'
 
-	let path: string
-	let arrowDir: 'left' | 'right' | 'down' | 'up' = isRTL ? 'left' : 'right'
+	if (isRowAbove) {
+		// Row is above visible area - point to top edge
+		endY = containerRect.top + 8
+		arrowDir = 'up'
+	} else if (isRowBelow) {
+		// Row is below visible area - point to bottom edge
+		endY = containerRect.bottom - 8
+		arrowDir = 'down'
+	} else {
+		// Row is visible - point to actual row center
+		endY = rowCenterY
+	}
 
 	if (position === 'left') {
-		// Popup is to the left - connect from right side of popup
+		// Popup is to the left - connect from right side of popup to left side of row
 		const startX = popupRect.right
 		const startY = popupRect.top + popupRect.height / 2
-		path = `M ${startX} ${startY} H ${cornerX} V ${endY} H ${endX}`
+		const cornerX = isRTL ? containerRect.right + 15 : containerRect.left - 15
+
+		if (!isRowVisible) {
+			// Row out of view - L-shape to corner, then vertical down/up
+			const path = `M ${startX} ${startY} H ${cornerX} V ${endY}`
+			connectorState = { path, arrowPos: { x: cornerX, y: endY }, arrowDir }
+			return
+		}
+
+		// Row visible - full bracket shape to left side of row
+		const endX = isRTL ? containerRect.right - 8 : containerRect.left + 8
+		arrowDir = isRTL ? 'left' : 'right'
+		const path = `M ${startX} ${startY} H ${cornerX} V ${endY} H ${endX}`
+		connectorState = { path, arrowPos: { x: endX, y: endY }, arrowDir }
+		return
 	} else if (position === 'right') {
-		// Popup is to the right - connect from left side of popup
+		// Popup is to the right - connect from left side of popup to right side of row
 		const startX = popupRect.left
 		const startY = popupRect.top + popupRect.height / 2
-		path = `M ${startX} ${startY} H ${cornerX} V ${endY} H ${endX}`
+		const cornerX = isRTL ? containerRect.left - 15 : containerRect.right + 15
+
+		if (!isRowVisible) {
+			// Row out of view - L-shape to corner, then vertical down/up
+			const path = `M ${startX} ${startY} H ${cornerX} V ${endY}`
+			connectorState = { path, arrowPos: { x: cornerX, y: endY }, arrowDir }
+			return
+		}
+
+		// Row visible - full bracket shape to right side of row
+		const endX = isRTL ? containerRect.left + 8 : containerRect.right - 8
+		arrowDir = isRTL ? 'right' : 'left'
+		const path = `M ${startX} ${startY} H ${cornerX} V ${endY} H ${endX}`
+		connectorState = { path, arrowPos: { x: endX, y: endY }, arrowDir }
+		return
 	} else {
 		// Position: 'top' - L-shaped connector from right side of toolbar
 		const horizontalLength = 48  // 3rem at 16px base
@@ -483,8 +541,12 @@ export function updateConnector<T>(
 
 		if (length === 0) {
 			// Row at same position - simple L pointing down at top edge of row
-			const targetY = rowRect.top - arrowSize
-			path = `M ${startX} ${startY} H ${turnX} V ${targetY}`
+			let targetY = rowRect.top - arrowSize
+			// Clip to container if needed
+			if (isRowBelow) {
+				targetY = containerRect.bottom - arrowSize
+			}
+			const path = `M ${startX} ${startY} H ${turnX} V ${targetY}`
 			connectorState = { path, arrowPos: { x: turnX, y: targetY }, arrowDir: 'down' }
 			return
 		} else if (length === -1) {
@@ -494,25 +556,31 @@ export function updateConnector<T>(
 			const endLoopY = popupRect.top + popupRect.height * 0.75
 			const loopX = popupRect.right + loopWidth
 			const endX = popupRect.right + arrowSize  // Leave space for arrow
-			path = `M ${popupRect.right} ${startLoopY} H ${loopX} V ${endLoopY} H ${endX}`
+			const path = `M ${popupRect.right} ${startLoopY} H ${loopX} V ${endLoopY} H ${endX}`
 			connectorState = { path, arrowPos: { x: endX, y: endLoopY }, arrowDir: 'left' }
 			return
 		} else if (length < 0) {
-			// Row above toolbar (more than 1) - L goes UP, arrow points UP at bottom edge of row
-			const targetY = rowRect.bottom + arrowSize
-			path = `M ${startX} ${startY} H ${turnX} V ${targetY}`
+			// Row above toolbar - L goes UP, arrow points UP
+			let targetY = rowRect.bottom + arrowSize
+			// Clip to container top if row is scrolled out
+			if (isRowAbove) {
+				targetY = containerRect.top + arrowSize
+			}
+			const path = `M ${startX} ${startY} H ${turnX} V ${targetY}`
 			connectorState = { path, arrowPos: { x: turnX, y: targetY }, arrowDir: 'up' }
 			return
 		} else {
-			// Row below toolbar - L goes DOWN, arrow points DOWN at top edge of row
-			const targetY = rowRect.top - arrowSize
-			path = `M ${startX} ${startY} H ${turnX} V ${targetY}`
+			// Row below toolbar - L goes DOWN, arrow points DOWN
+			let targetY = rowRect.top - arrowSize
+			// Clip to container bottom if row is scrolled out
+			if (isRowBelow) {
+				targetY = containerRect.bottom - arrowSize
+			}
+			const path = `M ${startX} ${startY} H ${turnX} V ${targetY}`
 			connectorState = { path, arrowPos: { x: turnX, y: targetY }, arrowDir: 'down' }
 			return
 		}
 	}
-
-	connectorState = { path, arrowPos: { x: endX, y: endY }, arrowDir }
 }
 
 // =============================================================================

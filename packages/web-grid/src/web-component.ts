@@ -14,6 +14,7 @@ import type {
 	ContextMenuContext,
 	CustomEditorContext,
 	EditTrigger,
+	EditStartSelection,
 	EditorOption,
 	EditorOptions,
 	GridMode,
@@ -21,8 +22,10 @@ import type {
 	NormalizedToolbarItem,
 	DataRequestDetail,
 	SortState,
+	SortMode,
 	PaginationLabelsCallback,
-	SummaryContentCallback
+	SummaryContentCallback,
+	ValidationTooltipContext
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -278,6 +281,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get editTrigger(): EditTrigger { return this.grid.editTrigger }
 	set editTrigger(value: EditTrigger) { this.grid.editTrigger = value }
 
+	get editStartSelection(): EditStartSelection { return this.grid.editStartSelection }
+	set editStartSelection(value: EditStartSelection) { this.grid.editStartSelection = value }
+
 	get mode(): GridMode { return this.grid.mode }
 	set mode(value: GridMode) { this.grid.mode = value }
 
@@ -314,6 +320,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this.grid.toolbarTrigger }
 	set toolbarTrigger(value: 'hover' | 'click' | 'button') { this.grid.toolbarTrigger = value }
 
+	get toolbarPosition(): 'auto' | 'left' | 'right' | 'top' { return this.grid.toolbarPosition }
+	set toolbarPosition(value: 'auto' | 'left' | 'right' | 'top') { this.grid.toolbarPosition = value }
+
 	get contextMenu(): ContextMenuItem<T>[] | undefined { return this.grid.contextMenu }
 	set contextMenu(value: ContextMenuItem<T>[] | undefined) { this.grid.contextMenu = value }
 
@@ -339,6 +348,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	set onvalidationerror(value: ((detail: { row: T, rowIndex: number, field: string, error: string }) => void) | undefined) {
 		this.grid.onvalidationerror = value
+	}
+
+	get validationTooltipCallback(): ((context: ValidationTooltipContext<T>) => string | null) | undefined {
+		return this.grid.validationTooltipCallback
+	}
+	set validationTooltipCallback(value: ((context: ValidationTooltipContext<T>) => string | null) | undefined) {
+		this.grid.validationTooltipCallback = value
 	}
 
 	set ontoolbarclick(value: ((detail: ToolbarClickDetail<T>) => void) | undefined) {
@@ -370,6 +386,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Sorting & Pagination
 	get sort(): SortState[] { return this.grid.sort }
 	set sort(value: SortState[]) { this.grid.sort = value }
+
+	get sortMode(): SortMode { return this.grid.sortMode }
+	set sortMode(value: SortMode) { this.grid.sortMode = value }
 
 	get currentPage(): number { return this.grid.currentPage }
 	set currentPage(value: number) { this.grid.currentPage = value }
@@ -1135,6 +1154,37 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
+		// Single click to edit (for editTrigger = 'click')
+		table.addEventListener('click', (e: Event) => {
+			const target = e.target as HTMLElement
+			const cell = target.closest('.wg__cell') as HTMLElement
+			if (cell && !cell.classList.contains('wg__cell--editing')) {
+				const rowIndex = parseInt(cell.dataset.row || '0', 10)
+				const colIndex = parseInt(cell.dataset.col || '0', 10)
+				const column = this.grid.columns[colIndex]
+				if (column) {
+					const trigger = column.editTrigger || this.grid.editTrigger
+					if (trigger === 'click') {
+						e.preventDefault()
+						const cursorPos = getCursorPositionFromClick(e as MouseEvent, cell)
+						tryStartEdit(this, rowIndex, colIndex, { cursorPosition: cursorPos ?? undefined })
+						const editor = column.editor
+						if (editor === 'select' || editor === 'combobox' || editor === 'autocomplete') {
+							requestAnimationFrame(() => {
+								if (!this.dropdownOpen) {
+									openDropdownForCurrentEditor(this)
+								}
+							})
+						} else if (editor === 'custom') {
+							requestAnimationFrame(() => {
+								this.openCustomEditor(rowIndex, colIndex)
+							})
+						}
+					}
+				}
+			}
+		})
+
 		// Mousedown - toggle dropdown, handle cell transitions
 		table.addEventListener('mousedown', (e: Event) => {
 			const target = e.target as HTMLElement
@@ -1196,9 +1246,24 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							removeDropdown(this)
 							clearEditingVisual(this)
 							this.grid.cancelEdit()
+							const newColumn = this.grid.columns[colIndex]
+							const trigger = newColumn?.editTrigger || this.grid.editTrigger
+							// Capture click position for cursor placement
+							const mouseEvent = e as MouseEvent
+							const clickX = mouseEvent.clientX
 							requestAnimationFrame(() => {
 								this.isTransitioningCells = false
-								moveFocus(this, rowIndex, colIndex)
+								if (trigger === 'click' && newColumn && this.grid.isCellEditable(newColumn)) {
+									// For click trigger, immediately start editing the new cell
+									// Find the new cell and calculate cursor position
+									const newCell = this.shadow.querySelector(
+										`td[data-row="${rowIndex}"][data-col="${colIndex}"]`
+									) as HTMLElement
+									const cursorPos = newCell ? getCursorPositionFromClick({ clientX: clickX } as MouseEvent, newCell) : undefined
+									tryStartEdit(this, rowIndex, colIndex, { cursorPosition: cursorPos ?? undefined })
+								} else {
+									moveFocus(this, rowIndex, colIndex)
+								}
 							})
 							return
 						}
@@ -1290,7 +1355,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const existingIndex = currentSort.findIndex(s => s.column === field)
 				const isCtrlClick = mouseEvent.ctrlKey || mouseEvent.metaKey
 
-				if (isCtrlClick) {
+				if (isCtrlClick && this.grid.sortMode === 'multi') {
 					// Multi-column sort: Ctrl+Click adds/toggles/removes column
 					if (existingIndex >= 0) {
 						const existing = currentSort[existingIndex]
@@ -1404,7 +1469,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		}, true)
 
-		// Scroll events - close dropdown + virtual scroll + infinite scroll
+		// Scroll events - close dropdown + virtual scroll + infinite scroll + connector update
 		const container = this.shadow.querySelector('.wg') as HTMLElement
 		if (container) {
 			container.addEventListener('scroll', () => {
@@ -1424,6 +1489,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (this.grid.infiniteScroll && this.grid.hasMoreItems && !this.isLoadingMoreItems) {
 					this.handleInfiniteScroll(container)
 				}
+
+				// Update connector position when scrolling (clips at container boundary)
+				if (getActiveToolbarRowIndex() !== null) {
+					updateConnector(this, this.grid.displayItems)
+					this.renderConnector()
+				}
 			})
 		}
 
@@ -1441,10 +1512,17 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Tooltip events
 		table.addEventListener('mouseenter', (e: Event) => {
 			const target = e.target as HTMLElement
+			// Check for HTML tooltip first, then plain text
+			const htmlTooltipElement = target.closest('[data-tooltip-html]') as HTMLElement
+			if (htmlTooltipElement) {
+				const tooltipHtml = htmlTooltipElement.getAttribute('data-tooltip-html')!
+				showTooltip(this, htmlTooltipElement, tooltipHtml, this._tooltipShowDelay, true)
+				return
+			}
 			const tooltipElement = target.closest('[data-tooltip]') as HTMLElement
 			if (tooltipElement) {
 				const tooltipText = tooltipElement.getAttribute('data-tooltip')!
-				showTooltip(this, tooltipElement, tooltipText, this._tooltipShowDelay)
+				showTooltip(this, tooltipElement, tooltipText, this._tooltipShowDelay, false)
 			}
 		}, true)
 
@@ -1452,9 +1530,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const mouseEvent = e as MouseEvent
 			const target = mouseEvent.target as HTMLElement
 			const relatedTarget = mouseEvent.relatedTarget as HTMLElement | null
-			const tooltipEl = target.closest('[data-tooltip]') as HTMLElement
+			const tooltipEl = target.closest('[data-tooltip], [data-tooltip-html]') as HTMLElement
 
-			if (tooltipEl && relatedTarget?.closest('[data-tooltip]') === tooltipEl) {
+			if (tooltipEl && relatedTarget?.closest('[data-tooltip], [data-tooltip-html]') === tooltipEl) {
 				return
 			}
 
@@ -1914,19 +1992,24 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (editor instanceof HTMLInputElement && editor.type === 'text') {
 					const cursorPos = this.grid.editingCell.cursorPosition
 					const column = this.getCurrentEditingColumn()
-					const editStartSelection = column?.editorOptions?.editStartSelection || 'selectAll'
+					const editStartSelection = column?.editorOptions?.editStartSelection || this.grid.editStartSelection
 
-					if (cursorPos !== undefined) {
-						// Click-based: position cursor at click location
-						const pos = Math.min(cursorPos, editor.value.length)
-						editor.setSelectionRange(pos, pos)
-					} else if (this.grid.editingCell.initialSearchQuery !== undefined) {
-						// Type-to-start: cursor at end
+					if (this.grid.editingCell.initialSearchQuery !== undefined) {
+						// Type-to-start: always cursor at end
 						const len = editor.value.length
 						editor.setSelectionRange(len, len)
 					} else {
-						// Default behavior based on editStartSelection property
+						// Apply editStartSelection setting
 						switch (editStartSelection) {
+							case 'mousePosition':
+								if (cursorPos !== undefined) {
+									const pos = Math.min(cursorPos, editor.value.length)
+									editor.setSelectionRange(pos, pos)
+								} else {
+									// No click position available (e.g., Enter/F2 in navigate mode) - cursor at end
+									editor.setSelectionRange(editor.value.length, editor.value.length)
+								}
+								break
 							case 'cursorAtStart':
 								editor.setSelectionRange(0, 0)
 								break
