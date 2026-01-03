@@ -104,6 +104,7 @@ export function handleKeyDown(
 	// Enter selects the focused date (move down)
 	if (key === 'Enter') {
 		event.preventDefault()
+		event.stopPropagation()
 		if (state.focusedDate) {
 			callbacks.onSelect?.(state.focusedDate, 'down')
 		}

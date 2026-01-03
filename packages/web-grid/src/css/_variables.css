@@ -26,7 +26,7 @@
   /* ==========================================================================
      FONT FAMILY (set at :host so all shadow DOM content inherits)
      ========================================================================== */
-  font-family: var(--wg-font-family, var(--base-font-family, system-ui, -apple-system, sans-serif));
+  font-family: var(--wg-font-family, var(--base-font-family, inherit));
 
   /* ==========================================================================
      HOST ELEMENT SIZING
@@ -82,12 +82,12 @@
   /* ==========================================================================
      TYPOGRAPHY
      ========================================================================== */
-  --wg-font-size-base: calc(var(--base-font-size-base, 1.4) * var(--wg-rem));
-  --wg-font-size-sm: calc(var(--base-font-size-sm, 1.2) * var(--wg-rem));
-  --wg-font-size-xs: calc(var(--base-font-size-xs, 1.1) * var(--wg-rem));
-  --wg-font-size-lg: calc(var(--base-font-size-lg, 1.6) * var(--wg-rem));
+  --wg-font-size-base: calc(var(--base-font-size-sm, 1.4) * var(--wg-rem));
+  --wg-font-size-sm: calc(var(--base-font-size-xs, 1.2) * var(--wg-rem));
+  --wg-font-size-xs: calc(var(--base-font-size-2xs, 1.1) * var(--wg-rem));
+  --wg-font-size-lg: calc(var(--base-font-size-base, 1.6) * var(--wg-rem));
 
-  --wg-line-height-base: calc(var(--base-line-height-normal, 2) * var(--wg-rem));
+  --wg-line-height-base: var(--base-line-height-normal, 1.5);
   --wg-font-weight-normal: var(--base-font-weight-normal, 400);
   --wg-font-weight-semibold: var(--base-font-weight-semibold, 600);
 

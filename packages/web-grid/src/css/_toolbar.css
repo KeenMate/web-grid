@@ -52,6 +52,7 @@
 	align-items: center;
 	justify-content: center;
 	gap: 4px;
+	font-family: inherit; /* Form elements don't inherit font by default */
 	font-size: var(--wg-font-size-base);
 	font-weight: 500;
 	padding: var(--wg-toolbar-btn-padding);

@@ -145,6 +145,7 @@
                     <tr><td><code>id</code></td><td>Unique identifier</td></tr>
                     <tr><td><code>label</code></td><td>Display text (string or function)</td></tr>
                     <tr><td><code>icon</code></td><td>Emoji or HTML icon (string or function)</td></tr>
+                    <tr><td><code>shortcut</code></td><td>Keyboard shortcut (e.g., "C", "Delete")</td></tr>
                     <tr><td><code>disabled</code></td><td>Disable state (boolean or function)</td></tr>
                     <tr><td><code>visible</code></td><td>Visibility (boolean or function)</td></tr>
                     <tr><td><code>danger</code></td><td>Red styling for destructive actions</td></tr>
@@ -170,6 +171,7 @@
         id: 'copy',
         label: (ctx) => `Copy "${ctx.column.title}"`,
         icon: '📋',
+        shortcut: 'C',  // Press C to trigger
         onclick: (ctx) => {
             navigator.clipboard.writeText(
                 String(ctx.cellValue)
@@ -180,6 +182,7 @@
         id: 'delete',
         label: 'Delete',
         icon: '🗑️',
+        shortcut: 'Delete',
         danger: true,
         dividerBefore: true,
         disabled: (ctx) => ctx.row.isProtected,
@@ -266,6 +269,7 @@
                 id: 'view',
                 label: 'View Details',
                 icon: '👁️',
+                shortcut: 'V',
                 onclick: (ctx) => {
                     showMessage(`Viewing: ${ctx.row.name} (ID: ${ctx.row.id})`)
                 }
@@ -274,6 +278,7 @@
                 id: 'copy-cell',
                 label: (ctx) => `Copy "${ctx.column.title}"`,
                 icon: '📋',
+                shortcut: 'C',
                 onclick: (ctx) => {
                     navigator.clipboard.writeText(String(ctx.cellValue))
                     showMessage(`Copied: ${ctx.cellValue}`)
@@ -283,6 +288,7 @@
                 id: 'copy-row',
                 label: 'Copy Row as JSON',
                 icon: '📄',
+                shortcut: 'J',
                 onclick: (ctx) => {
                     navigator.clipboard.writeText(JSON.stringify(ctx.row, null, 2))
                     showMessage('Row copied as JSON')
@@ -292,6 +298,7 @@
                 id: 'convert-eur',
                 label: 'Convert to Euro',
                 icon: '💶',
+                shortcut: 'E',
                 visible: (ctx) => ctx.column.field === 'price',
                 onclick: (ctx) => {
                     showConversionDialog(ctx.row.name, ctx.row.price)
@@ -301,6 +308,7 @@
                 id: 'export',
                 label: 'Export to CSV',
                 icon: '📊',
+                shortcut: 'X',
                 dividerBefore: true,
                 onclick: (ctx) => {
                     showMessage(`Would export: ${ctx.row.name}`)

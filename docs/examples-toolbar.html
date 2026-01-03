@@ -77,15 +77,16 @@
                     </select>
                 </label>
                 <label>
-                    Toolbar Align:
-                    <select id="alignSelect">
-                        <option value="center">Center (default)</option>
-                        <option value="top">Top</option>
+                    Vertical Align:
+                    <select id="verticalAlignSelect">
+                        <option value="top">Top (rows above)</option>
+                        <option value="center">Center</option>
+                        <option value="bottom">Bottom (default)</option>
                     </select>
                 </label>
                 <label>
-                    Top Position:
-                    <select id="topPositionSelect">
+                    Horizontal Align:
+                    <select id="horizontalAlignSelect">
                         <option value="start">Start</option>
                         <option value="center">Center (default)</option>
                         <option value="end">End</option>
@@ -94,7 +95,7 @@
                 </label>
             </div>
             <p class="note" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;">
-                <strong>Top Position</strong> only applies when toolbar appears above the row (when there's no space on left/right).
+                <strong>Horizontal Align</strong> only applies when toolbar appears above the row (top position).
             </p>
         </div>
 
@@ -211,20 +212,20 @@ grid.rowToolbar = [
         // localStorage keys
         const STORAGE_TRIGGER = 'wg-toolbar-trigger'
         const STORAGE_POSITION = 'wg-toolbar-position'
-        const STORAGE_ALIGN = 'wg-toolbar-align'
-        const STORAGE_TOP_POSITION = 'wg-toolbar-top-position'
+        const STORAGE_VERTICAL_ALIGN = 'wg-toolbar-vertical-align'
+        const STORAGE_HORIZONTAL_ALIGN = 'wg-toolbar-horizontal-align'
 
         // Load saved settings
         const savedTrigger = localStorage.getItem(STORAGE_TRIGGER) || 'hover'
         const savedPosition = localStorage.getItem(STORAGE_POSITION) || 'auto'
-        const savedAlign = localStorage.getItem(STORAGE_ALIGN) || 'center'
-        const savedTopPosition = localStorage.getItem(STORAGE_TOP_POSITION) || 'center'
+        const savedVerticalAlign = localStorage.getItem(STORAGE_VERTICAL_ALIGN) || 'bottom'
+        const savedHorizontalAlign = localStorage.getItem(STORAGE_HORIZONTAL_ALIGN) || 'center'
 
         // Set select values from storage
         document.getElementById('triggerSelect').value = savedTrigger
         document.getElementById('positionSelect').value = savedPosition
-        document.getElementById('alignSelect').value = savedAlign
-        document.getElementById('topPositionSelect').value = savedTopPosition
+        document.getElementById('verticalAlignSelect').value = savedVerticalAlign
+        document.getElementById('horizontalAlignSelect').value = savedHorizontalAlign
 
         // Sample data
         let tasks = [
@@ -288,8 +289,8 @@ grid.rowToolbar = [
         ]
         grid.toolbarTrigger = savedTrigger
         grid.toolbarPosition = savedPosition
-        grid.toolbarAlign = savedAlign
-        grid.toolbarTopPosition = savedTopPosition
+        grid.toolbarVerticalAlign = savedVerticalAlign
+        grid.toolbarHorizontalAlign = savedHorizontalAlign
 
         // Handle toolbar clicks
         grid.ontoolbarclick = (detail) => {
@@ -367,20 +368,20 @@ grid.rowToolbar = [
             grid2.toolbarPosition = value
         })
 
-        // Align control
-        document.getElementById('alignSelect').addEventListener('change', (e) => {
+        // Vertical align control
+        document.getElementById('verticalAlignSelect').addEventListener('change', (e) => {
             const value = e.target.value
-            localStorage.setItem(STORAGE_ALIGN, value)
-            grid.toolbarAlign = value
-            grid2.toolbarAlign = value
+            localStorage.setItem(STORAGE_VERTICAL_ALIGN, value)
+            grid.toolbarVerticalAlign = value
+            grid2.toolbarVerticalAlign = value
         })
 
-        // Top position control
-        document.getElementById('topPositionSelect').addEventListener('change', (e) => {
+        // Horizontal align control
+        document.getElementById('horizontalAlignSelect').addEventListener('change', (e) => {
             const value = e.target.value
-            localStorage.setItem(STORAGE_TOP_POSITION, value)
-            grid.toolbarTopPosition = value
-            grid2.toolbarTopPosition = value
+            localStorage.setItem(STORAGE_HORIZONTAL_ALIGN, value)
+            grid.toolbarHorizontalAlign = value
+            grid2.toolbarHorizontalAlign = value
         })
 
         // ============================================================
@@ -394,8 +395,8 @@ grid.rowToolbar = [
         grid2.showRowToolbar = true
         grid2.toolbarTrigger = savedTrigger
         grid2.toolbarPosition = savedPosition
-        grid2.toolbarAlign = savedAlign
-        grid2.toolbarTopPosition = savedTopPosition
+        grid2.toolbarVerticalAlign = savedVerticalAlign
+        grid2.toolbarHorizontalAlign = savedHorizontalAlign
 
         // Multi-row toolbar configuration
         grid2.rowToolbar = [

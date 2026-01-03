@@ -143,13 +143,22 @@ function groupToolbarItems<T>(items: NormalizedToolbarItem<T>[]): GroupedItems<T
 
 /**
  * Render toolbar HTML for a specific row
+ * @param reverseRows - If true, reverse row order so Row 1 ends up at top visually
+ *                      (CSS column-reverse makes last HTML row appear at top)
  */
 export function renderToolbarHTML<T>(
 	items: NormalizedToolbarItem<T>[],
 	row: T,
-	rowIndex: number
+	rowIndex: number,
+	reverseRows: boolean = false
 ): string {
-	const grouped = groupToolbarItems(items)
+	let grouped = groupToolbarItems(items)
+
+	// CSS uses column-reverse, so last row in HTML appears at top visually
+	// Reverse when we want Row 1 at top (for 'bottom' and 'center' alignments)
+	if (reverseRows) {
+		grouped = grouped.reverse()
+	}
 
 	const rowsHtml = grouped.map(({ groups }) => {
 		const groupsHtml = groups.map(({ items: groupItems }, groupIdx) => {
@@ -216,7 +225,11 @@ export function openToolbar<T>(
 	// Close any existing toolbar
 	closeToolbar()
 
-	const html = renderToolbarHTML(items, row, rowIndex)
+	// CSS uses column-reverse, so Row 1 in HTML ends up at BOTTOM visually
+	// For 'bottom' (toolbar top at row level), we need Row 1 at TOP → reverse
+	// For 'top' (toolbar bottom at row level), Row 1 at BOTTOM is correct → no reverse
+	const reverseRows = ctx.grid.toolbarVerticalAlign !== 'top'
+	const html = renderToolbarHTML(items, row, rowIndex, reverseRows)
 
 	// Create container - append to shadow root to stay in same DOM context as rowElement
 	const container = document.createElement('div')
@@ -242,21 +255,31 @@ export function openToolbar<T>(
 
 		// Determine placement based on toolbarPosition preference
 		const preferredPosition = ctx.grid.toolbarPosition
-		const toolbarAlign = ctx.grid.toolbarAlign
-		const topPosition = ctx.grid.toolbarTopPosition
+		const verticalAlign = ctx.grid.toolbarVerticalAlign
+		const horizontalAlign = ctx.grid.toolbarHorizontalAlign
 
 		// Build placement string for floating-ui
-		// For left/right: suffix determines vertical alignment (-start = top, none = center)
+		// For left/right: suffix determines vertical alignment
+		//   -start = toolbar top at row level (rows stack below) = verticalAlign 'bottom'
+		//   -end = toolbar bottom at row level (rows stack above) = verticalAlign 'top'
+		//   none = toolbar centered on row = verticalAlign 'center'
 		// For top: suffix determines horizontal alignment (-start = left, -end = right, none = center)
 		let placement: Placement
 		let fallbacks: Placement[]
 
-		const alignSuffix = toolbarAlign === 'top' ? '-start' : ''
+		// Determine vertical alignment suffix for left/right positions
+		let alignSuffix = ''
+		if (verticalAlign === 'top') {
+			alignSuffix = '-end'    // Toolbar bottom at row level, stacks upward
+		} else if (verticalAlign === 'bottom') {
+			alignSuffix = '-start'  // Toolbar top at row level, stacks downward
+		}
+		// 'center' uses no suffix (default floating-ui behavior)
 
-		// Map toolbarTopPosition to placement suffix for 'top' position
+		// Map toolbarHorizontalAlign to placement suffix for 'top' position
 		const getTopPlacement = (): Placement => {
-			if (topPosition === 'start') return 'top-start'
-			if (topPosition === 'end') return 'top-end'
+			if (horizontalAlign === 'start') return 'top-start'
+			if (horizontalAlign === 'end') return 'top-end'
 			return 'top'  // center is default
 		}
 
@@ -279,7 +302,7 @@ export function openToolbar<T>(
 		// Handle 'cursor' positioning for top - use virtual element
 		// Only apply cursor anchor when toolbarPosition is explicitly 'top'
 		let anchor: Element | { getBoundingClientRect: () => DOMRect } = freshRow
-		if (topPosition === 'cursor' && cursorX !== undefined && preferredPosition === 'top') {
+		if (horizontalAlign === 'cursor' && cursorX !== undefined && preferredPosition === 'top') {
 			const rowRect = freshRow.getBoundingClientRect()
 			anchor = {
 				getBoundingClientRect: () => ({

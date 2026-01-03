@@ -5,10 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0-rc05] - 2026-01-03
+## [1.0.0-rc06] - Unreleased
+
+### Added
+- **Row Keyboard Shortcuts** - Grid-level keyboard shortcuts for row operations
+  - `rowShortcuts` property accepts array of shortcut definitions
+  - Each shortcut has `key` (e.g., "Delete", "Ctrl+D", "F2"), `id`, `label`, and `action` callback
+  - `disabled` property supports boolean or callback for conditional shortcuts
+  - `ShortcutContext` provides `row`, `rowIndex`, `colIndex`, `column`, `cellValue`
+- **Shortcuts Help Overlay** - Info icon showing available shortcuts
+  - `showShortcutsHelp` property enables the info icon
+  - `shortcutsHelpPosition` controls placement ('top-right' or 'top-left')
+  - `shortcutsHelpContentCallback` for custom HTML in overlay
+- **Context Menu Shortcuts** - Keyboard shortcuts for context menu items
+  - `shortcut` property on `ContextMenuItem` displays shortcut hint
+  - Pressing shortcut key while menu is open triggers the action
+- **Public Focus API** - New `focusCell(rowIndex, colIndex)` method for programmatic focus
+- **Public Edit API** - New `startEditing(rowIndex, colIndex)` method for programmatic editing
+- **Toolbar Position Property** - New `toolbarPosition` property to control toolbar placement
+  - `toolbarPosition="auto"` - Auto-detect best position (default)
+  - `toolbarPosition="left"` - Prefer left side
+  - `toolbarPosition="right"` - Prefer right side
+  - `toolbarPosition="top"` - Prefer above the row
+  - Uses floating-ui for intelligent fallback when preferred position has no space
 
 ### Changed
 - **Readonly Cell Background** - `--wg-cell-readonly-bg` now uses `var(--base-disabled-bg, var(--wg-surface-2))` instead of `var(--wg-surface-2)`, providing visual distinction from striped rows when theme-designer's `--base-disabled-bg` is set
+- **Toolbar Positioning** - Refactored to use floating-ui library for better space detection and automatic fallback positioning
+- **Font Inheritance** - Changed default font-family fallback from `system-ui, sans-serif` to `inherit`, allowing grid to inherit font from parent context (Bootstrap, Tailwind, etc.)
+- **Form Element Fonts** - Added `font-family: inherit` to all form elements (buttons, inputs, selects) that don't inherit by default
+- **Line Height** - Changed `--wg-line-height-base` from absolute value (`2 * --wg-rem` = 20px) to unitless multiplier (`1.5`), matching web-multiselect and standard CSS best practices
+- **Font Size Alignment** - Aligned font size scale with web-multiselect and web-daterangepicker: `--wg-font-size-base` now uses `--base-font-size-sm` (14px) instead of `--base-font-size-base` (16px), ensuring consistent text size across all KeenMate components
+
+### Fixed
+- **Focus Following Row on Move** - `focusCell()` now updates state synchronously before render, fixing focus not following row when using keyboard shortcuts to move rows up/down
+- **Enter Key Blocked After Date Picker** - Fixed `this.datepicker` not being set to null after date selection, which caused Enter key to be blocked in other editors
+- **Connector Arrow Clipping** - Connector arrow now clips at grid container boundaries instead of drawing outside the container
+- **Connector Scroll Updates** - Connector arrow updates in real-time when scrolling, pointing to container edge when row scrolls out of view
+- **Connector Right Position** - When toolbar is on right side, connector now correctly points to the right side of the row (not always left)
+- **Connector Scrollbar Overlap** - Connector uses container bounds instead of table bounds, avoiding overlap with scrollbar
+- **Connector Visibility Check** - Row is only considered "not visible" when completely outside container (not just when center is outside)
+- **Cursor Anchor Bug** - Cursor-based positioning only applies when `toolbarPosition="top"`, not for left/right positions
 
 ## [1.0.0-rc04] - 2026-01-02
 

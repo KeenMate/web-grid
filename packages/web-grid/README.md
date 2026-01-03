@@ -71,7 +71,10 @@ npm install @keenmate/web-grid
 | `hoverable` | `boolean` | `false` | Highlight row on hover |
 | `showRowToolbar` | `boolean` | `false` | Show row action toolbar |
 | `rowToolbar` | `Array` | `[]` | Toolbar items configuration |
-| `toolbarTrigger` | `string` | `'hover'` | Toolbar trigger: `'hover'`, `'button'` |
+| `toolbarTrigger` | `string` | `'hover'` | Toolbar trigger: `'hover'`, `'click'`, `'button'` |
+| `toolbarPosition` | `string` | `'auto'` | Toolbar position: `'auto'`, `'left'`, `'right'`, `'top'` |
+| `toolbarAlign` | `string` | `'center'` | Vertical alignment for left/right: `'center'`, `'top'` |
+| `toolbarTopPosition` | `string` | `'center'` | Horizontal position for top: `'start'`, `'center'`, `'end'`, `'cursor'` |
 | `contextMenu` | `Array` | `[]` | Context menu items |
 | `validationTooltipCallback` | `Function` | `undefined` | Custom HTML tooltip for validation errors: `({ field, error, value, row, rowIndex }) => htmlString` |
 
@@ -128,6 +131,11 @@ grid.rowToolbar = [
     onclick: ({ row, rowIndex }) => { /* ... */ }
   }
 ]
+
+// Positioning
+grid.toolbarPosition = 'left'     // Prefer left side (falls back if no space)
+grid.toolbarAlign = 'top'         // Align to top of row (for left/right position)
+grid.toolbarTopPosition = 'cursor' // Position at cursor (for top position)
 ```
 
 ## Context Menu

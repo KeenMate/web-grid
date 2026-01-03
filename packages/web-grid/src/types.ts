@@ -282,11 +282,43 @@ export type ContextMenuItem<T> = {
 	id: string
 	label: string | ((context: ContextMenuContext<T>) => string)
 	icon?: string | ((context: ContextMenuContext<T>) => string)
+	shortcut?: string  // Keyboard shortcut (e.g., "c", "Delete", "Ctrl+C")
 	disabled?: boolean | ((context: ContextMenuContext<T>) => boolean)
 	visible?: boolean | ((context: ContextMenuContext<T>) => boolean)
 	danger?: boolean
 	dividerBefore?: boolean
 	onclick?: (context: ContextMenuContext<T>) => void | Promise<void>
+}
+
+// =============================================================================
+// Row Keyboard Shortcuts Types
+// =============================================================================
+
+// Context passed to shortcut action callbacks
+export type ShortcutContext<T> = {
+	row: T
+	rowIndex: number
+	colIndex: number
+	column: Column<T>
+	cellValue: unknown
+}
+
+// Single shortcut definition
+export type RowShortcut<T> = {
+	key: string                    // e.g., "Delete", "Ctrl+D", "F3", "Shift+Enter"
+	id: string                     // Unique identifier
+	label: string                  // Display label for help overlay
+	action: (ctx: ShortcutContext<T>) => void | Promise<void>
+	disabled?: boolean | ((ctx: ShortcutContext<T>) => boolean)
+}
+
+// Parsed key combination (internal use)
+export type ParsedKeyCombo = {
+	key: string
+	ctrl: boolean
+	shift: boolean
+	alt: boolean
+	meta: boolean
 }
 
 // =============================================================================
@@ -338,16 +370,23 @@ export type QuickGridProps<T> = {
 	// Row toolbar (floating toolbar for row actions)
 	showRowToolbar?: boolean
 	rowToolbar?: RowToolbarConfig<T>[]  // Toolbar items (predefined strings or custom objects)
-	toolbarAlign?: 'center' | 'top'  // Vertical alignment: center (default) or top
-	toolbarTopPosition?: 'start' | 'center' | 'end' | 'cursor'  // Horizontal position when toolbar is above row (default: 'center')
+	toolbarVerticalAlign?: 'top' | 'center' | 'bottom'  // Vertical alignment for left/right positions: top (rows above), center, bottom (default, rows below)
+	toolbarHorizontalAlign?: 'start' | 'center' | 'end' | 'cursor'  // Horizontal alignment for top position (default: 'center')
 	toolbarTrigger?: 'hover' | 'click' | 'button'  // How to show toolbar
 	toolbarPosition?: 'auto' | 'left' | 'right' | 'top'  // Preferred position: auto (default), left, right, or top
 	// Legacy aliases for backwards compatibility
 	showRowActions?: boolean      // Deprecated: use showRowToolbar
 	rowActions?: RowToolbarConfig<T>[]  // Deprecated: use rowToolbar
+	toolbarAlign?: 'top' | 'center' | 'bottom'  // Deprecated: use toolbarVerticalAlign
+	toolbarTopPosition?: 'start' | 'center' | 'end' | 'cursor'  // Deprecated: use toolbarHorizontalAlign
 	// Context menu
 	contextMenu?: ContextMenuItem<T>[]
 	oncontextmenuopen?: (context: ContextMenuContext<T>) => void
+	// Row keyboard shortcuts
+	rowShortcuts?: RowShortcut<T>[]              // Shortcut definitions
+	showShortcutsHelp?: boolean                   // Show info icon (default: false)
+	shortcutsHelpPosition?: 'top-right' | 'top-left'  // Icon position (default: 'top-right')
+	shortcutsHelpContentCallback?: () => string   // Custom HTML to show with shortcuts list
 	// Virtual scroll
 	virtualScroll?: boolean              // Enable virtual scroll (default: false)
 	virtualScrollThreshold?: number      // Auto-enable when items >= threshold (default: 100)

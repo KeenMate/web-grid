@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGrid - Keyboard Shortcuts</title>
+    <link rel="stylesheet" href="examples-shared.css">
+    <style>
+        .action-log {
+            background: #1a1a2e;
+            color: #9cdcfe;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            margin-top: 1rem;
+            min-height: 24px;
+        }
+        .action-log:empty::before {
+            content: 'Focus a cell and press a shortcut key...';
+            color: #666;
+        }
+        .shortcut-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            padding: 2px 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1a1a1a;
+            background: #e2e8f0;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+        .shortcuts-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            background: #f7fafc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">← Back to Examples</a>
+            <h1>⌨️ Keyboard Shortcuts</h1>
+            <p class="subtitle">Grid-level keyboard shortcuts for row operations with help overlay</p>
+        </header>
+
+        <div class="card">
+            <h2>Row Keyboard Shortcuts</h2>
+            <p style="color: #666; margin-bottom: 1rem;">
+                Click on any cell to focus it (navigate mode), then use the keyboard shortcuts below.
+                Press F2 or Enter to edit. Hover over the <strong>ⓘ</strong> icon to see available shortcuts.
+            </p>
+            <web-grid id="grid1" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+            <div id="actionLog" class="action-log"></div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>Available Shortcuts</h2>
+                <div class="shortcuts-list">
+                    <div class="shortcut-item">
+                        <span class="shortcut-badge">Delete</span>
+                        <span>Delete row</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-badge">Ctrl+D</span>
+                        <span>Duplicate row</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-badge">Ctrl+Up</span>
+                        <span>Move row up</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-badge">Ctrl+Down</span>
+                        <span>Move row down</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-badge">F2</span>
+                        <span>Edit cell</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-badge">Ctrl+E</span>
+                        <span>Export row</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Configuration</h2>
+                <div class="code-block">
+                    <pre>// Enable navigate mode for cell focus
+grid.editable = true
+grid.editTrigger = 'navigate'
+
+grid.rowShortcuts = [
+  {
+    key: 'Delete',
+    id: 'delete',
+    label: 'Delete row',
+    action: (ctx) => {
+      items.splice(ctx.rowIndex, 1)
+      grid.items = [...items]
+    }
+  },
+  {
+    key: 'Ctrl+D',
+    id: 'duplicate',
+    label: 'Duplicate row',
+    action: (ctx) => {
+      const copy = { ...ctx.row, id: nextId++ }
+      items.splice(ctx.rowIndex + 1, 0, copy)
+      grid.items = [...items]
+    }
+  }
+]
+
+// Show help icon
+grid.showShortcutsHelp = true</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>API Reference</h2>
+                <h3>Grid Properties</h3>
+                <table class="props-table">
+                    <tr><td><code>rowShortcuts</code></td><td>Array of shortcut definitions</td></tr>
+                    <tr><td><code>showShortcutsHelp</code></td><td>Show info icon (default: false)</td></tr>
+                    <tr><td><code>shortcutsHelpPosition</code></td><td>'top-right' | 'top-left'</td></tr>
+                    <tr><td><code>shortcutsHelpContentCallback</code></td><td>Custom HTML for overlay</td></tr>
+                </table>
+
+                <h3 style="margin-top: 1rem;">RowShortcut Properties</h3>
+                <table class="props-table">
+                    <tr><td><code>key</code></td><td>Key combo (e.g., "Delete", "Ctrl+D", "F2")</td></tr>
+                    <tr><td><code>id</code></td><td>Unique identifier</td></tr>
+                    <tr><td><code>label</code></td><td>Display label for help overlay</td></tr>
+                    <tr><td><code>action</code></td><td>Callback receiving ShortcutContext</td></tr>
+                    <tr><td><code>disabled</code></td><td>Boolean or callback (optional)</td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>ShortcutContext</h2>
+                <p>The context object passed to action callbacks:</p>
+                <table class="props-table">
+                    <tr><td><code>row</code></td><td>The row data object</td></tr>
+                    <tr><td><code>rowIndex</code></td><td>Index of the focused row</td></tr>
+                    <tr><td><code>colIndex</code></td><td>Index of the focused column</td></tr>
+                    <tr><td><code>column</code></td><td>The column definition</td></tr>
+                    <tr><td><code>cellValue</code></td><td>Value of the focused cell</td></tr>
+                </table>
+
+                <h3 style="margin-top: 1rem;">Key Format</h3>
+                <p>Supported modifier keys:</p>
+                <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                    <li><code>Ctrl+</code> or <code>Control+</code></li>
+                    <li><code>Shift+</code></li>
+                    <li><code>Alt+</code></li>
+                    <li><code>Meta+</code> or <code>Cmd+</code></li>
+                </ul>
+                <p style="margin-top: 0.5rem;">Examples: <code>Delete</code>, <code>F2</code>, <code>Ctrl+D</code>, <code>Shift+Enter</code></p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import '@keenmate/web-grid'
+
+        let items = [
+            { id: 1, name: 'Laptop Pro', category: 'Electronics', price: 1299, stock: 15 },
+            { id: 2, name: 'Wireless Mouse', category: 'Electronics', price: 49, stock: 120 },
+            { id: 3, name: 'Office Chair', category: 'Furniture', price: 299, stock: 8 },
+            { id: 4, name: 'Standing Desk', category: 'Furniture', price: 599, stock: 3 },
+            { id: 5, name: 'Monitor 27"', category: 'Electronics', price: 449, stock: 22 },
+            { id: 6, name: 'Keyboard RGB', category: 'Electronics', price: 89, stock: 65 },
+            { id: 7, name: 'Desk Lamp', category: 'Accessories', price: 45, stock: 40 },
+            { id: 8, name: 'Webcam HD', category: 'Electronics', price: 79, stock: 34 }
+        ]
+
+        let nextId = 9
+
+        const columns = [
+            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'name', title: 'Product Name', editable: true, editor: 'text' },
+            { field: 'category', title: 'Category', width: '120px', editable: true, editor: 'select',
+              editorOptions: {
+                options: [
+                  { value: 'Electronics', label: 'Electronics' },
+                  { value: 'Furniture', label: 'Furniture' },
+                  { value: 'Accessories', label: 'Accessories' }
+                ]
+              }
+            },
+            { field: 'price', title: 'Price', width: '100px', align: 'right', editable: true, editor: 'number',
+              formatCallback: (v) => `$${v.toFixed(2)}` },
+            { field: 'stock', title: 'Stock', width: '80px', align: 'center', editable: true, editor: 'number' }
+        ]
+
+        function logAction(action, ctx) {
+            const log = document.getElementById('actionLog')
+            log.textContent = `${action} | row: ${ctx.rowIndex}, column: "${ctx.column.field}", value: "${ctx.cellValue}"`
+        }
+
+        const grid = document.getElementById('grid1')
+        grid.items = items
+        grid.columns = columns
+        grid.editable = true
+        grid.editTrigger = 'navigate'  // Enable navigate mode for keyboard focus
+
+        // Define keyboard shortcuts
+        grid.rowShortcuts = [
+            {
+                key: 'Delete',
+                id: 'delete',
+                label: 'Delete row',
+                action: (ctx) => {
+                    items = items.filter((_, i) => i !== ctx.rowIndex)
+                    grid.items = items
+                    logAction('Deleted row', ctx)
+                }
+            },
+            {
+                key: 'Ctrl+D',
+                id: 'duplicate',
+                label: 'Duplicate row',
+                action: (ctx) => {
+                    const copy = { ...ctx.row, id: nextId++ }
+                    items = [...items.slice(0, ctx.rowIndex + 1), copy, ...items.slice(ctx.rowIndex + 1)]
+                    grid.items = items
+                    logAction('Duplicated row', ctx)
+                }
+            },
+            {
+                key: 'Ctrl+ArrowUp',
+                id: 'moveUp',
+                label: 'Move row up',
+                disabled: (ctx) => ctx.rowIndex === 0,
+                action: (ctx) => {
+                    if (ctx.rowIndex > 0) {
+                        const temp = items[ctx.rowIndex]
+                        items[ctx.rowIndex] = items[ctx.rowIndex - 1]
+                        items[ctx.rowIndex - 1] = temp
+                        grid.items = [...items]
+                        grid.focusCell(ctx.rowIndex - 1, ctx.colIndex)
+                        logAction('Moved row up', ctx)
+                    }
+                }
+            },
+            {
+                key: 'Ctrl+ArrowDown',
+                id: 'moveDown',
+                label: 'Move row down',
+                disabled: (ctx) => ctx.rowIndex === items.length - 1,
+                action: (ctx) => {
+                    if (ctx.rowIndex < items.length - 1) {
+                        const temp = items[ctx.rowIndex]
+                        items[ctx.rowIndex] = items[ctx.rowIndex + 1]
+                        items[ctx.rowIndex + 1] = temp
+                        grid.items = [...items]
+                        grid.focusCell(ctx.rowIndex + 1, ctx.colIndex)
+                        logAction('Moved row down', ctx)
+                    }
+                }
+            },
+            {
+                key: 'F2',
+                id: 'edit',
+                label: 'Edit cell',
+                action: (ctx) => {
+                    grid.startEditing(ctx.rowIndex, ctx.colIndex)
+                    logAction('Started editing', ctx)
+                }
+            },
+            {
+                key: 'Ctrl+E',
+                id: 'export',
+                label: 'Export row as JSON',
+                action: (ctx) => {
+                    navigator.clipboard.writeText(JSON.stringify(ctx.row, null, 2))
+                    logAction('Exported row to clipboard', ctx)
+                }
+            }
+        ]
+
+        // Show shortcuts help icon
+        grid.showShortcutsHelp = true
+        grid.shortcutsHelpPosition = 'top-right'
+        grid.shortcutsHelpContentCallback = () => '<p style="margin:0;font-size:12px;color:#666;">Click a cell to focus, then use shortcuts</p>'
+
+        // Handle row changes
+        grid.onrowchange = (detail) => {
+            if (detail.isValid) {
+                items[detail.rowIndex] = { ...items[detail.rowIndex], [detail.field]: detail.newValue }
+            }
+        }
+    </script>
+</body>
+</html>

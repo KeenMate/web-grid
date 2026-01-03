@@ -15,31 +15,31 @@ const DATEPICKER_STYLES = `
 	z-index: var(--wg-dp-z-index, 9999);
 
 	/* Colors */
-	--wg-dp-background: var(--base-layer-01, #fff);
-	--wg-dp-border-color: var(--base-stroke-default, #e0e0e0);
-	--wg-dp-text-color: var(--base-text-color-primary, #1a1a1a);
-	--wg-dp-text-secondary: var(--base-text-color-secondary, #666);
-	--wg-dp-text-muted: var(--base-text-color-muted, #ccc);
-	--wg-dp-text-disabled: var(--base-text-color-disabled, #999);
+	--wg-dp-background: var(--base-main-bg, #fff);
+	--wg-dp-border-color: var(--base-border-color, #e0e0e0);
+	--wg-dp-text-color: var(--base-text-color-1, #1a1a1a);
+	--wg-dp-text-secondary: var(--base-text-color-3, #666);
+	--wg-dp-text-muted: var(--base-text-color-4, #ccc);
+	--wg-dp-text-disabled: var(--base-text-color-4, #999);
 	--wg-dp-accent-color: var(--base-accent-color, #0078d4);
 	--wg-dp-accent-hover: var(--base-accent-color-hover, #006cbd);
-	--wg-dp-hover-bg: var(--base-layer-hover, #f5f5f5);
-	--wg-dp-hover-border: var(--base-stroke-hover, #ccc);
-	--wg-dp-selected-text: var(--base-text-on-accent, #fff);
+	--wg-dp-hover-bg: var(--base-hover-bg, #f5f5f5);
+	--wg-dp-hover-border: var(--base-border-color, #ccc);
+	--wg-dp-selected-text: var(--base-text-color-on-accent, #fff);
 
 	/* Typography */
-	--wg-dp-font-family: var(--base-font-family, inherit);
-	--wg-dp-font-size: var(--base-font-size-sm, 13px);
-	--wg-dp-font-size-sm: var(--base-font-size-xs, 12px);
-	--wg-dp-font-size-xs: 10px;
-	--wg-dp-font-weight-normal: var(--base-font-weight-normal, 400);
-	--wg-dp-font-weight-medium: var(--base-font-weight-medium, 500);
-	--wg-dp-font-weight-semibold: var(--base-font-weight-semibold, 600);
+	--wg-dp-font-family: var(--wg-font-family, var(--base-font-family, inherit));
+	--wg-dp-font-size: var(--wg-font-size-base, 14px);
+	--wg-dp-font-size-sm: var(--wg-font-size-sm, 12px);
+	--wg-dp-font-size-xs: var(--wg-font-size-xs, 11px);
+	--wg-dp-font-weight-normal: var(--wg-font-weight-normal, 400);
+	--wg-dp-font-weight-medium: 500;
+	--wg-dp-font-weight-semibold: var(--wg-font-weight-semibold, 600);
 
 	/* Sizing */
 	--wg-dp-padding: 8px;
 	--wg-dp-min-width: 220px;
-	--wg-dp-border-radius: var(--base-border-radius-sm, 4px);
+	--wg-dp-border-radius: var(--wg-border-radius-sm, 4px);
 	--wg-dp-nav-size: 24px;
 	--wg-dp-nav-icon-size: 14px;
 	--wg-dp-rolling-list-height: 180px;
@@ -50,7 +50,7 @@ const DATEPICKER_STYLES = `
 	--wg-dp-gap-xs: 1px;
 
 	/* Shadow */
-	--wg-dp-shadow: var(--base-shadow-lg, 0 4px 16px rgba(0, 0, 0, 0.15));
+	--wg-dp-shadow: var(--wg-shadow-lg, 0 4px 16px rgba(0, 0, 0, 0.15));
 }
 
 .wg-datepicker {

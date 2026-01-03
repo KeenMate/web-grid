@@ -79,6 +79,7 @@
   padding: var(--wg-spacing-sm) var(--wg-spacing-md);
   border: 1px solid var(--wg-border-color);
   border-radius: var(--wg-border-radius-sm);
+  font-family: inherit; /* Form elements don't inherit font by default */
   font-size: var(--wg-font-size-base);
   margin-bottom: var(--wg-spacing-md);
   box-sizing: border-box;
@@ -100,6 +101,7 @@
   padding: var(--wg-spacing-sm) var(--wg-spacing-md);
   border: 1px solid var(--wg-border-color);
   border-radius: var(--wg-border-radius-sm);
+  font-family: inherit; /* Form elements don't inherit font by default */
   font-size: var(--wg-font-size-sm);
   cursor: pointer;
   background: var(--wg-surface-1);

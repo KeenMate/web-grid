@@ -7,6 +7,7 @@ import type {
 	CellValidationState,
 	RowToolbarConfig,
 	ContextMenuItem,
+	RowShortcut,
 	RowChangeDetail,
 	ToolbarClickDetail,
 	RowActionClickDetail,
@@ -61,11 +62,15 @@ export class WebGrid<T = unknown> {
 	protected _invalidCells: CellValidationState[] = []
 	protected _showRowToolbar: boolean = false
 	protected _rowToolbar: RowToolbarConfig<T>[] = ['add', 'delete', 'duplicate']
-	protected _toolbarAlign: 'center' | 'top' = 'center'
-	protected _toolbarTopPosition: 'start' | 'center' | 'end' | 'cursor' = 'center'
+	protected _toolbarVerticalAlign: 'top' | 'center' | 'bottom' = 'bottom'
+	protected _toolbarHorizontalAlign: 'start' | 'center' | 'end' | 'cursor' = 'center'
 	protected _toolbarTrigger: 'hover' | 'click' | 'button' = 'hover'
 	protected _toolbarPosition: 'auto' | 'left' | 'right' | 'top' = 'auto'
 	protected _contextMenu: ContextMenuItem<T>[] | undefined = undefined
+	protected _rowShortcuts: RowShortcut<T>[] | undefined = undefined
+	protected _showShortcutsHelp: boolean = false
+	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
+	protected _shortcutsHelpContentCallback: (() => string) | undefined = undefined
 
 	// ==========================================================================
 	// Callbacks
@@ -286,17 +291,24 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get toolbarAlign(): 'center' | 'top' { return this._toolbarAlign }
-	set toolbarAlign(value: 'center' | 'top') {
-		this._toolbarAlign = value
+	get toolbarVerticalAlign(): 'top' | 'center' | 'bottom' { return this._toolbarVerticalAlign }
+	set toolbarVerticalAlign(value: 'top' | 'center' | 'bottom') {
+		this._toolbarVerticalAlign = value
 		this.requestUpdate()
 	}
 
-	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this._toolbarTopPosition }
-	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') {
-		this._toolbarTopPosition = value
+	get toolbarHorizontalAlign(): 'start' | 'center' | 'end' | 'cursor' { return this._toolbarHorizontalAlign }
+	set toolbarHorizontalAlign(value: 'start' | 'center' | 'end' | 'cursor') {
+		this._toolbarHorizontalAlign = value
 		this.requestUpdate()
 	}
+
+	// Deprecated aliases
+	get toolbarAlign(): 'top' | 'center' | 'bottom' { return this._toolbarVerticalAlign }
+	set toolbarAlign(value: 'top' | 'center' | 'bottom') { this.toolbarVerticalAlign = value }
+
+	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this._toolbarHorizontalAlign }
+	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') { this.toolbarHorizontalAlign = value }
 
 	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this._toolbarTrigger }
 	set toolbarTrigger(value: 'hover' | 'click' | 'button') {
@@ -313,6 +325,31 @@ export class WebGrid<T = unknown> {
 	get contextMenu(): ContextMenuItem<T>[] | undefined { return this._contextMenu }
 	set contextMenu(value: ContextMenuItem<T>[] | undefined) {
 		this._contextMenu = value
+		this.requestUpdate()
+	}
+
+	// Row keyboard shortcuts
+	get rowShortcuts(): RowShortcut<T>[] | undefined { return this._rowShortcuts }
+	set rowShortcuts(value: RowShortcut<T>[] | undefined) {
+		this._rowShortcuts = value
+		this.requestUpdate()
+	}
+
+	get showShortcutsHelp(): boolean { return this._showShortcutsHelp }
+	set showShortcutsHelp(value: boolean) {
+		this._showShortcutsHelp = value
+		this.requestUpdate()
+	}
+
+	get shortcutsHelpPosition(): 'top-right' | 'top-left' { return this._shortcutsHelpPosition }
+	set shortcutsHelpPosition(value: 'top-right' | 'top-left') {
+		this._shortcutsHelpPosition = value
+		this.requestUpdate()
+	}
+
+	get shortcutsHelpContentCallback(): (() => string) | undefined { return this._shortcutsHelpContentCallback }
+	set shortcutsHelpContentCallback(value: (() => string) | undefined) {
+		this._shortcutsHelpContentCallback = value
 		this.requestUpdate()
 	}
 

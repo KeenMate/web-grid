@@ -8,6 +8,9 @@ import type {
 	CellValidationState,
 	RowToolbarConfig,
 	ContextMenuItem,
+	RowShortcut,
+	ShortcutContext,
+	ParsedKeyCombo,
 	RowChangeDetail,
 	ToolbarClickDetail,
 	RowActionClickDetail,
@@ -103,6 +106,76 @@ import {
 } from './modules/toolbar/index.js'
 
 import type { GridContext } from './modules/types.js'
+
+// =============================================================================
+// Key Combo Parsing Utilities
+// =============================================================================
+
+/**
+ * Parse a key combination string like "Ctrl+D", "Shift+F3", "Alt+Delete"
+ * into a structured object for matching against KeyboardEvents.
+ */
+function parseKeyCombo(keyStr: string): ParsedKeyCombo {
+	const parts = keyStr.split('+').map(p => p.trim())
+	const result: ParsedKeyCombo = {
+		key: '',
+		ctrl: false,
+		shift: false,
+		alt: false,
+		meta: false
+	}
+
+	for (const part of parts) {
+		const lower = part.toLowerCase()
+		if (lower === 'ctrl' || lower === 'control') {
+			result.ctrl = true
+		} else if (lower === 'shift') {
+			result.shift = true
+		} else if (lower === 'alt') {
+			result.alt = true
+		} else if (lower === 'meta' || lower === 'cmd' || lower === 'command') {
+			result.meta = true
+		} else {
+			// This is the actual key
+			result.key = part
+		}
+	}
+
+	return result
+}
+
+/**
+ * Check if a KeyboardEvent matches a parsed key combination.
+ */
+function matchesKeyCombo(e: KeyboardEvent, combo: ParsedKeyCombo): boolean {
+	// Check modifier keys
+	if (combo.ctrl !== e.ctrlKey) return false
+	if (combo.shift !== e.shiftKey) return false
+	if (combo.alt !== e.altKey) return false
+	if (combo.meta !== e.metaKey) return false
+
+	// Check the main key (case-insensitive for letters)
+	const eventKey = e.key.toLowerCase()
+	const comboKey = combo.key.toLowerCase()
+
+	return eventKey === comboKey
+}
+
+/**
+ * Format a key combination for display (e.g., "Ctrl+D" → "Ctrl+D")
+ */
+function formatKeyCombo(keyStr: string): string {
+	// Normalize formatting
+	return keyStr.split('+').map(p => {
+		const trimmed = p.trim()
+		// Capitalize first letter of modifiers
+		if (['ctrl', 'control', 'shift', 'alt', 'meta', 'cmd', 'command'].includes(trimmed.toLowerCase())) {
+			return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+		}
+		// Keep key as-is (could be F1, Delete, etc.)
+		return trimmed
+	}).join('+')
+}
 
 /**
  * GridElement - Custom HTML Element for WebGrid
@@ -311,11 +384,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get rowToolbar(): RowToolbarConfig<T>[] { return this.grid.rowToolbar }
 	set rowToolbar(value: RowToolbarConfig<T>[]) { this.grid.rowToolbar = value }
 
-	get toolbarAlign(): 'center' | 'top' { return this.grid.toolbarAlign }
-	set toolbarAlign(value: 'center' | 'top') { this.grid.toolbarAlign = value }
+	get toolbarVerticalAlign(): 'top' | 'center' | 'bottom' { return this.grid.toolbarVerticalAlign }
+	set toolbarVerticalAlign(value: 'top' | 'center' | 'bottom') { this.grid.toolbarVerticalAlign = value }
 
-	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this.grid.toolbarTopPosition }
-	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') { this.grid.toolbarTopPosition = value }
+	get toolbarHorizontalAlign(): 'start' | 'center' | 'end' | 'cursor' { return this.grid.toolbarHorizontalAlign }
+	set toolbarHorizontalAlign(value: 'start' | 'center' | 'end' | 'cursor') { this.grid.toolbarHorizontalAlign = value }
+
+	// Deprecated aliases
+	get toolbarAlign(): 'top' | 'center' | 'bottom' { return this.grid.toolbarVerticalAlign }
+	set toolbarAlign(value: 'top' | 'center' | 'bottom') { this.grid.toolbarVerticalAlign = value }
+
+	get toolbarTopPosition(): 'start' | 'center' | 'end' | 'cursor' { return this.grid.toolbarHorizontalAlign }
+	set toolbarTopPosition(value: 'start' | 'center' | 'end' | 'cursor') { this.grid.toolbarHorizontalAlign = value }
 
 	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this.grid.toolbarTrigger }
 	set toolbarTrigger(value: 'hover' | 'click' | 'button') { this.grid.toolbarTrigger = value }
@@ -325,6 +405,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	get contextMenu(): ContextMenuItem<T>[] | undefined { return this.grid.contextMenu }
 	set contextMenu(value: ContextMenuItem<T>[] | undefined) { this.grid.contextMenu = value }
+
+	// Row keyboard shortcuts
+	get rowShortcuts(): RowShortcut<T>[] | undefined { return this.grid.rowShortcuts }
+	set rowShortcuts(value: RowShortcut<T>[] | undefined) { this.grid.rowShortcuts = value }
+
+	get showShortcutsHelp(): boolean { return this.grid.showShortcutsHelp }
+	set showShortcutsHelp(value: boolean) { this.grid.showShortcutsHelp = value }
+
+	get shortcutsHelpPosition(): 'top-right' | 'top-left' { return this.grid.shortcutsHelpPosition }
+	set shortcutsHelpPosition(value: 'top-right' | 'top-left') { this.grid.shortcutsHelpPosition = value }
+
+	get shortcutsHelpContentCallback(): (() => string) | undefined { return this.grid.shortcutsHelpContentCallback }
+	set shortcutsHelpContentCallback(value: (() => string) | undefined) { this.grid.shortcutsHelpContentCallback = value }
 
 	// Legacy aliases
 	get showRowActions(): boolean { return this.grid.showRowActions }
@@ -468,6 +561,38 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	isCellInvalid(rowIndex: number, field: string): boolean { return this.grid.isCellInvalid(rowIndex, field) }
 	getCellValidationError(rowIndex: number, field: string): string | null { return this.grid.getCellValidationError(rowIndex, field) }
 
+	// Public methods for focus and editing
+	/**
+	 * Programmatically focus a cell. Updates state and focuses the DOM element.
+	 * State is updated immediately so pending renders use the correct position.
+	 */
+	focusCell(rowIndex: number, colIndex: number): void {
+		const columns = this.grid.columns
+		const displayItems = this.grid.displayItems
+		if (rowIndex < 0 || rowIndex >= displayItems.length) return
+		if (colIndex < 0 || colIndex >= columns.length) return
+
+		// Update state immediately so any pending render uses the correct position
+		this.grid.setFocusedCell(rowIndex, colIndex)
+
+		// Schedule DOM focus for after any pending render completes
+		requestAnimationFrame(() => {
+			moveFocus(this, rowIndex, colIndex)
+		})
+	}
+
+	/**
+	 * Programmatically start editing a cell.
+	 */
+	startEditing(rowIndex: number, colIndex: number): void {
+		const columns = this.grid.columns
+		if (colIndex < 0 || colIndex >= columns.length) return
+
+		const column = columns[colIndex]
+		const field = String(column.field)
+		this.grid.startEdit(rowIndex, field)
+	}
+
 	// ==========================================================================
 	// GridContext Implementation - Required by module functions
 	// ==========================================================================
@@ -559,6 +684,39 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				navigator.clipboard.writeText(textValue)
 			}
 			return // Let browser also handle for visual feedback
+		}
+
+		// Check row shortcuts (user-defined keyboard shortcuts)
+		const shortcuts = this.grid.rowShortcuts
+		if (shortcuts && shortcuts.length > 0) {
+			const column = columns[colIndex]
+			const row = displayItems[rowIndex]
+			if (column && row) {
+				for (const shortcut of shortcuts) {
+					const combo = parseKeyCombo(shortcut.key)
+					if (matchesKeyCombo(e, combo)) {
+						// Build shortcut context
+						const ctx: ShortcutContext<T> = {
+							row,
+							rowIndex,
+							colIndex,
+							column,
+							cellValue: this.grid.getCellRawValue(row, rowIndex, String(column.field))
+						}
+
+						// Check if disabled
+						const isDisabled = typeof shortcut.disabled === 'function'
+							? shortcut.disabled(ctx)
+							: shortcut.disabled === true
+
+						if (!isDisabled) {
+							e.preventDefault()
+							shortcut.action(ctx)
+							return
+						}
+					}
+				}
+			}
 		}
 
 		switch (e.key) {
@@ -1837,6 +1995,49 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Rendering
 	// ==========================================================================
 
+	/**
+	 * Render the shortcuts help icon and overlay
+	 */
+	private renderShortcutsHelpIcon(): string {
+		if (!this.grid.showShortcutsHelp || !this.grid.rowShortcuts?.length) {
+			return ''
+		}
+
+		const position = this.grid.shortcutsHelpPosition
+		const positionClass = position === 'top-left' ? 'wg__shortcuts-help--left' : ''
+
+		// Build shortcuts list HTML
+		const shortcutsHtml = this.grid.rowShortcuts.map(shortcut => {
+			const formattedKey = formatKeyCombo(shortcut.key)
+			return `<div class="wg__shortcuts-help-item">
+				<span class="wg__shortcuts-help-key">${formattedKey}</span>
+				<span class="wg__shortcuts-help-label">${shortcut.label}</span>
+			</div>`
+		}).join('')
+
+		// Get custom content if callback is provided
+		const customContent = this.grid.shortcutsHelpContentCallback?.() || ''
+
+		return `
+			<div class="wg__shortcuts-help ${positionClass}">
+				<button class="wg__shortcuts-help-icon" type="button" title="Keyboard shortcuts">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="10"></circle>
+						<path d="M12 16v-4"></path>
+						<path d="M12 8h.01"></path>
+					</svg>
+				</button>
+				<div class="wg__shortcuts-help-overlay">
+					${customContent ? `<div class="wg__shortcuts-help-custom">${customContent}</div>` : ''}
+					<div class="wg__shortcuts-help-title">Keyboard Shortcuts</div>
+					<div class="wg__shortcuts-help-list">
+						${shortcutsHtml}
+					</div>
+				</div>
+			</div>
+		`
+	}
+
 	private render(): void {
 		// Preserve scroll position before re-render
 		const oldContainer = this.shadow.querySelector('.wg') as HTMLElement
@@ -1951,8 +2152,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			container.classList.add('wg--virtual-scroll')
 		}
 
+		// Render shortcuts help icon if enabled
+		const shortcutsHelpHtml = this.renderShortcutsHelpIcon()
+
 		// Build the table HTML
 		const tableHtml = `
+			${shortcutsHelpHtml}
 			${topContent}
 			<table class="wg__table">
 				<thead>
@@ -2138,6 +2343,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Update input value with formatted date
 		input.value = formatDate(date, formatInfo)
 		input.dataset.dateValue = toISODateString(date)
+
+		// Clear datepicker reference (picker closes silently via close(true), skipping onClose)
+		this.datepicker = null
 
 		// Commit the date
 		this.isCommittingFromKeyboard = true

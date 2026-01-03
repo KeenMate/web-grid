@@ -94,6 +94,7 @@
   border-radius: var(--wg-filter-input-border-radius);
   background: var(--wg-surface-1);
   color: var(--wg-text-color-1);
+  font-family: inherit; /* Form elements don't inherit font by default */
   font-size: var(--wg-filter-input-font-size);
   box-sizing: border-box;
 }

@@ -90,6 +90,13 @@ const CONTEXT_MENU_STYLES = `
 	flex: 1;
 }
 
+.wg-context-menu__shortcut {
+	margin-left: auto;
+	padding-left: 16px;
+	color: var(--wg-cm-text-secondary);
+	font-size: 0.9em;
+}
+
 .wg-context-menu__divider {
 	height: 1px;
 	background: var(--wg-cm-border-color);
@@ -126,6 +133,7 @@ function renderContextMenu<T>(
 	const itemsHtml = visibleItems.map((item, index) => {
 		const label = typeof item.label === 'function' ? item.label(context) : item.label
 		const icon = typeof item.icon === 'function' ? item.icon(context) : item.icon
+		const shortcut = item.shortcut
 		const isDisabled = typeof item.disabled === 'function' ? item.disabled(context) : item.disabled
 		const isDanger = item.danger === true
 
@@ -141,7 +149,11 @@ function renderContextMenu<T>(
 			? `<span class="wg-context-menu__icon">${icon}</span>`
 			: ''
 
-		return `${divider}<div class="${classes}" data-item-id="${item.id}" data-disabled="${isDisabled ? 'true' : 'false'}">${iconHtml}<span class="wg-context-menu__label">${label}</span></div>`
+		const shortcutHtml = shortcut
+			? `<span class="wg-context-menu__shortcut">${shortcut}</span>`
+			: ''
+
+		return `${divider}<div class="${classes}" data-item-id="${item.id}" data-disabled="${isDisabled ? 'true' : 'false'}" data-shortcut="${shortcut || ''}">${iconHtml}<span class="wg-context-menu__label">${label}</span>${shortcutHtml}</div>`
 	}).join('')
 
 	return `<div class="wg-context-menu">${itemsHtml}</div>`
@@ -217,12 +229,36 @@ export function openContextMenu<T>(
 		}
 	}
 
-	// Handle close on Escape
+	// Handle close on Escape and shortcut keys
 	const handleKeyDown = (e: KeyboardEvent) => {
 		if (e.key === 'Escape') {
 			e.preventDefault()
 			closeContextMenu(container, handleOutsideClick, handleKeyDown)
 			onClose()
+			return
+		}
+
+		// Match shortcut keys
+		const key = e.key.toLowerCase()
+		const menuItems = container.querySelectorAll('.wg-context-menu__item') as NodeListOf<HTMLElement>
+
+		for (const menuItem of menuItems) {
+			const shortcut = menuItem.dataset.shortcut
+			const disabled = menuItem.dataset.disabled === 'true'
+
+			if (disabled) continue
+			if (!shortcut) continue
+
+			// Case-insensitive match for single letters, exact match for others
+			const shortcutLower = shortcut.toLowerCase()
+			if (shortcutLower === key || shortcut === e.key) {
+				e.preventDefault()
+				const itemId = menuItem.dataset.itemId || ''
+				onItemClick(itemId)
+				closeContextMenu(container, handleOutsideClick, handleKeyDown)
+				onClose()
+				return
+			}
 		}
 	}
 

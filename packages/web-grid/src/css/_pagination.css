@@ -20,6 +20,7 @@
   border: var(--wg-pagination-btn-border);
   border-radius: var(--wg-pagination-btn-border-radius);
   color: var(--wg-cell-color);
+  font-family: inherit; /* Form elements don't inherit font by default */
   font-size: var(--wg-font-size-base);
   cursor: pointer;
   transition: all var(--wg-transition-fast);
@@ -62,6 +63,7 @@
   border: var(--wg-pagination-btn-border);
   border-radius: var(--wg-pagination-btn-border-radius);
   color: var(--wg-cell-color);
+  font-family: inherit; /* Form elements don't inherit font by default */
   font-size: var(--wg-font-size-base);
   cursor: pointer;
 }
