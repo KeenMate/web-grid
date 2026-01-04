@@ -15,7 +15,7 @@
 
 /* Focused cell styling - Excel-like green border for ALL cells */
 .wg--navigate-mode .wg__cell.wg__cell--focused {
-  outline: 2px solid var(--wg-focus-border-color, #217346);
+  outline: var(--wg-focus-outline);
   outline-offset: -2px;
 }
 

@@ -163,17 +163,17 @@ export function buildToolbarTooltipHtml<T>(
 	const lines: string[] = []
 
 	// Title (always shown)
-	lines.push(`<strong>${item.title}</strong>`)
+	lines.push(`<span class="wg__tooltip-title">${item.title}</span>`)
 
 	// Description (if configured)
 	if (item.tooltip?.description) {
-		lines.push(`<div style="opacity:0.85;margin-top:2px">${item.tooltip.description}</div>`)
+		lines.push(`<div class="wg__tooltip-desc">${item.tooltip.description}</div>`)
 	}
 
 	// Keyboard shortcut (from tooltip config or rowShortcuts)
 	const shortcut = item.tooltip?.shortcut || shortcutKey
 	if (shortcut) {
-		lines.push(`<div style="margin-top:4px;opacity:0.7;font-size:0.9em">${formatShortcut(shortcut)}</div>`)
+		lines.push(`<div class="wg__tooltip-shortcut">${formatShortcut(shortcut)}</div>`)
 	}
 
 	return lines.join('')

@@ -26,7 +26,7 @@
   /* ==========================================================================
      FONT FAMILY (set at :host so all shadow DOM content inherits)
      ========================================================================== */
-  font-family: var(--wg-font-family, var(--base-font-family, inherit));
+  font-family: var(--wg-font-family);
 
   /* ==========================================================================
      HOST ELEMENT SIZING
@@ -87,9 +87,11 @@
   --wg-font-size-xs: calc(var(--base-font-size-2xs, 1.1) * var(--wg-rem));
   --wg-font-size-lg: calc(var(--base-font-size-base, 1.6) * var(--wg-rem));
 
+  --wg-font-family: var(--base-font-family, inherit);
   --wg-line-height-base: var(--base-line-height-normal, 1.5);
   --wg-font-weight-normal: var(--base-font-weight-normal, 400);
   --wg-font-weight-semibold: var(--base-font-weight-semibold, 600);
+  --wg-font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* ==========================================================================
      BORDER RADIUS
@@ -128,6 +130,8 @@
      CELL COMPONENT
      ========================================================================== */
   --wg-cell-padding: var(--wg-spacing-sm) var(--wg-spacing-md);
+  --wg-cell-padding-block: var(--wg-spacing-sm);
+  --wg-cell-padding-inline: var(--wg-spacing-md);
   --wg-cell-color: var(--wg-text-color-1);
   --wg-cell-border: 1px solid var(--wg-border-color);
   --wg-cell-bg-hover: var(--wg-hover-bg);
@@ -210,6 +214,9 @@
   --wg-dropdown-toggle-size: calc(1.2 * var(--wg-rem));
   --wg-dropdown-toggle-hitbox: calc(2.4 * var(--wg-rem));
 
+  /* Date Editor */
+  --wg-date-trigger-size: calc(2.8 * var(--wg-rem));
+
   /* ==========================================================================
      ROW TOOLBAR
      ========================================================================== */
@@ -218,6 +225,7 @@
   --wg-toolbar-border-radius: var(--wg-border-radius-sm);
   --wg-toolbar-shadow: var(--base-dropdown-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
   --wg-toolbar-divider-color: var(--wg-border-color);
+  --wg-toolbar-row-height: calc(3.7 * var(--wg-rem));
 
   /* Toolbar Button */
   --wg-toolbar-btn-min-width: calc(2.4 * var(--wg-rem));
@@ -236,6 +244,7 @@
      TOOLTIP
      ========================================================================== */
   --wg-tooltip-bg: var(--base-tooltip-bg, #333);
+  --wg-tooltip-color: var(--base-tooltip-color, #fff);
 
   /* ==========================================================================
      CONTEXT MENU
@@ -262,4 +271,5 @@
   --wg-z-dropdown: 9999;
   --wg-z-toolbar: 1000;
   --wg-z-context-menu: 1001;
+  --wg-z-tooltip: 10000;
 }

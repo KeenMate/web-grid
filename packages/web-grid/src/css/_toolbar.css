@@ -24,7 +24,7 @@
 	gap: 2px;
 	align-items: center;
 	/* Match grid row height: vertical padding (design-unit * 2 * 2) + line-height (~21px) */
-	height: calc(var(--wg-design-unit, 4) * 4px + 21px);
+	height: var(--wg-toolbar-row-height);
 	padding: 0 4px;
 }
 

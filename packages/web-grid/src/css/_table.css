@@ -58,7 +58,7 @@ web-grid:not(:defined) {
   min-width: 40px;
   max-width: 40px;
   text-align: center;
-  color: var(--wg-text-color-secondary);
+  color: var(--wg-text-color-2);
   background: var(--wg-header-bg);
   user-select: none;
   font-size: var(--wg-font-size-sm);
