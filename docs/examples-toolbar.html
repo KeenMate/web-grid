@@ -53,7 +53,7 @@
         <header>
             <a href="index.html" class="back-link">← Back to Examples</a>
             <h1>🛠️ Row Toolbar</h1>
-            <p class="subtitle">Floating toolbar with row actions - add, delete, duplicate, and reorder</p>
+            <p class="subtitle">Floating toolbar with row actions, rich tooltips, and keyboard shortcuts</p>
         </header>
 
         <div class="card">
@@ -101,7 +101,7 @@
 
         <div class="card">
             <h2>Tasks List with Row Actions</h2>
-            <p>Hover over a row to see the toolbar with Add, Delete, Duplicate, Move Up, Move Down buttons.</p>
+            <p>Hover over a row to see the toolbar. Press <kbd>D</kbd> to duplicate, <kbd>Delete</kbd> to delete, or <kbd>↑</kbd>/<kbd>↓</kbd> to move.</p>
 
             <web-grid id="grid" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
@@ -179,6 +179,74 @@ grid.ontoolbarclick = (detail) => {
         onclick: ({ row }) => {
             row.locked = true
         }
+    }
+]</pre>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Rich Tooltips</h2>
+            <p>Toolbar buttons support rich tooltips with title, description, and keyboard shortcut. Hover over a button to see it in action!</p>
+            <div class="code-block">
+                <pre>// Static tooltip with description
+grid.rowToolbar = [
+    {
+        id: 'duplicate',
+        icon: '⧉',
+        title: 'Duplicate',
+        tooltip: {
+            description: 'Create a copy of this task',
+            shortcut: 'D'  // Optional - auto-detected from rowShortcuts
+        }
+    }
+]
+
+// Dynamic tooltip with callback
+grid.rowToolbar = [
+    {
+        id: 'info',
+        icon: 'ℹ',
+        title: 'Info',
+        tooltipCallback: (row, rowIndex) => {
+            return `&lt;strong&gt;Task #${row.id}&lt;/strong&gt;
+                    &lt;div&gt;Priority: ${row.priority}&lt;/div&gt;
+                    &lt;div&gt;Assigned to: ${row.assignee}&lt;/div&gt;`
+        }
+    }
+]</pre>
+            </div>
+            <p class="note" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;">
+                <strong>Note:</strong> When toolbar items have matching <code>rowShortcuts</code> (same <code>id</code>),
+                the keyboard shortcut is automatically shown in the tooltip.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Keyboard Shortcuts on Hover</h2>
+            <p>When the toolbar is visible (hovering over a row), keyboard shortcuts work on that row - no cell focus required!</p>
+            <div class="code-block">
+                <pre>// Define shortcuts that work when toolbar is visible
+grid.rowShortcuts = [
+    {
+        key: 'd',
+        id: 'duplicate',
+        label: 'Duplicate row',
+        action: (ctx) => {
+            // ctx.row, ctx.rowIndex available
+            duplicateRow(ctx.rowIndex)
+        }
+    },
+    {
+        key: 'Delete',
+        id: 'delete',
+        label: 'Delete row',
+        action: (ctx) => deleteRow(ctx.rowIndex)
+    },
+    {
+        key: 'ArrowUp',
+        id: 'moveUp',
+        label: 'Move up',
+        action: (ctx) => moveRowUp(ctx.rowIndex)
     }
 ]</pre>
             </div>
@@ -280,17 +348,73 @@ grid.rowToolbar = [
         grid.columns = columns
         grid.showRowToolbar = true
         // Use explicit groups to show dividers between move and CRUD actions
+        // Tooltips show description + keyboard shortcut (auto-detected from rowShortcuts)
         grid.rowToolbar = [
-            { id: 'moveUp', type: 'moveUp', icon: '↑', title: 'Move up', group: 1 },
-            { id: 'moveDown', type: 'moveDown', icon: '↓', title: 'Move down', group: 1 },
-            { id: 'add', type: 'add', icon: '+', title: 'Add', group: 2 },
-            { id: 'duplicate', type: 'duplicate', icon: '⧉', title: 'Duplicate', group: 2 },
-            { id: 'delete', type: 'delete', icon: '−', title: 'Delete', group: 2 }
+            { id: 'moveUp', type: 'moveUp', icon: '↑', title: 'Move up', group: 1,
+              tooltip: { description: 'Move this task higher in the list' } },
+            { id: 'moveDown', type: 'moveDown', icon: '↓', title: 'Move down', group: 1,
+              tooltip: { description: 'Move this task lower in the list' } },
+            { id: 'add', type: 'add', icon: '+', title: 'Add', group: 2,
+              tooltip: { description: 'Insert a new task below this one' } },
+            { id: 'duplicate', type: 'duplicate', icon: '⧉', title: 'Duplicate', group: 2,
+              tooltip: { description: 'Create a copy of this task' } },
+            { id: 'delete', type: 'delete', icon: '−', title: 'Delete', group: 2,
+              tooltip: { description: 'Permanently remove this task' } }
         ]
         grid.toolbarTrigger = savedTrigger
         grid.toolbarPosition = savedPosition
         grid.toolbarVerticalAlign = savedVerticalAlign
         grid.toolbarHorizontalAlign = savedHorizontalAlign
+
+        // Keyboard shortcuts - work on hovered row when toolbar is visible
+        grid.rowShortcuts = [
+            {
+                key: 'd',
+                id: 'duplicate',
+                label: 'Duplicate row',
+                action: (ctx) => {
+                    const dupId = Math.max(...tasks.map(t => t.id)) + 1
+                    const duplicate = { ...ctx.row, id: dupId, title: ctx.row.title + ' (copy)' }
+                    tasks.splice(ctx.rowIndex + 1, 0, duplicate)
+                    grid.items = [...tasks]
+                    showToast(`Duplicated: ${ctx.row.title}`, 'success')
+                }
+            },
+            {
+                key: 'Delete',
+                id: 'delete',
+                label: 'Delete row',
+                action: (ctx) => {
+                    const deleted = tasks.splice(ctx.rowIndex, 1)[0]
+                    grid.items = [...tasks]
+                    showToast(`Deleted: ${deleted.title}`, 'error')
+                }
+            },
+            {
+                key: 'ArrowUp',
+                id: 'moveUp',
+                label: 'Move row up',
+                action: (ctx) => {
+                    if (ctx.rowIndex > 0) {
+                        [tasks[ctx.rowIndex], tasks[ctx.rowIndex - 1]] = [tasks[ctx.rowIndex - 1], tasks[ctx.rowIndex]]
+                        grid.items = [...tasks]
+                        showToast(`Moved "${ctx.row.title}" up`)
+                    }
+                }
+            },
+            {
+                key: 'ArrowDown',
+                id: 'moveDown',
+                label: 'Move row down',
+                action: (ctx) => {
+                    if (ctx.rowIndex < tasks.length - 1) {
+                        [tasks[ctx.rowIndex], tasks[ctx.rowIndex + 1]] = [tasks[ctx.rowIndex + 1], tasks[ctx.rowIndex]]
+                        grid.items = [...tasks]
+                        showToast(`Moved "${ctx.row.title}" down`)
+                    }
+                }
+            }
+        ]
 
         // Handle toolbar clicks
         grid.ontoolbarclick = (detail) => {

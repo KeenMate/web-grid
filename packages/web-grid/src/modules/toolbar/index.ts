@@ -85,7 +85,9 @@ export function normalizeToolbarItems<T>(
 			type: item.type,
 			danger: item.danger,
 			disabled: item.disabled,
-			onclick: item.onclick
+			onclick: item.onclick,
+			tooltip: item.tooltip,
+			tooltipCallback: item.tooltipCallback
 		} as NormalizedToolbarItem<T>
 	}).filter((item): item is NormalizedToolbarItem<T> => item !== null)
 }
@@ -135,6 +137,46 @@ function groupToolbarItems<T>(items: NormalizedToolbarItem<T>[]): GroupedItems<T
 	}
 
 	return result
+}
+
+// =============================================================================
+// Build Tooltip HTML
+// =============================================================================
+
+/**
+ * Format a keyboard shortcut for display (e.g., "Ctrl+D" -> "Ctrl + D")
+ */
+function formatShortcut(key: string): string {
+	// Add spaces around + for readability
+	return key.replace(/\+/g, ' + ')
+}
+
+/**
+ * Build rich tooltip HTML for a toolbar item
+ * @param item - The toolbar item
+ * @param shortcutKey - Optional keyboard shortcut from rowShortcuts
+ */
+export function buildToolbarTooltipHtml<T>(
+	item: NormalizedToolbarItem<T>,
+	shortcutKey?: string
+): string {
+	const lines: string[] = []
+
+	// Title (always shown)
+	lines.push(`<strong>${item.title}</strong>`)
+
+	// Description (if configured)
+	if (item.tooltip?.description) {
+		lines.push(`<div style="opacity:0.85;margin-top:2px">${item.tooltip.description}</div>`)
+	}
+
+	// Keyboard shortcut (from tooltip config or rowShortcuts)
+	const shortcut = item.tooltip?.shortcut || shortcutKey
+	if (shortcut) {
+		lines.push(`<div style="margin-top:4px;opacity:0.7;font-size:0.9em">${formatShortcut(shortcut)}</div>`)
+	}
+
+	return lines.join('')
 }
 
 // =============================================================================

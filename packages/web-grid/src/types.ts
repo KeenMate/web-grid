@@ -220,6 +220,12 @@ export type RowChangeDetail<T> = {
 // Predefined toolbar item types
 export type PredefinedToolbarItemType = 'add' | 'delete' | 'duplicate' | 'moveUp' | 'moveDown'
 
+// Toolbar tooltip configuration
+export type ToolbarTooltip = {
+	description?: string   // Additional description text
+	shortcut?: string      // Keyboard shortcut to display (e.g., "Ctrl+D")
+}
+
 // Custom toolbar item configuration
 export type RowToolbarItem<T> = {
 	// Identity
@@ -239,6 +245,10 @@ export type RowToolbarItem<T> = {
 	danger?: boolean                   // Red styling (like delete)
 	disabled?: boolean | ((row: T, rowIndex: number) => boolean)
 
+	// Tooltip
+	tooltip?: ToolbarTooltip  // Rich tooltip with description and shortcut
+	tooltipCallback?: (row: T, rowIndex: number) => string  // Custom HTML tooltip
+
 	// Custom handler (required if no type)
 	onclick?: (detail: { row: T, rowIndex: number }) => void | Promise<void>
 }
@@ -247,7 +257,10 @@ export type RowToolbarItem<T> = {
 export type RowToolbarConfig<T> = PredefinedToolbarItemType | RowToolbarItem<T>
 
 // Normalized toolbar item (after processing shorthand)
-export type NormalizedToolbarItem<T> = Required<Pick<RowToolbarItem<T>, 'id' | 'icon' | 'title' | 'row' | 'group'>> & Omit<RowToolbarItem<T>, 'id' | 'icon' | 'title' | 'row' | 'group'>
+export type NormalizedToolbarItem<T> = Required<Pick<RowToolbarItem<T>, 'id' | 'icon' | 'title' | 'row' | 'group'>> & Omit<RowToolbarItem<T>, 'id' | 'icon' | 'title' | 'row' | 'group'> & {
+	tooltip?: ToolbarTooltip
+	tooltipCallback?: (row: T, rowIndex: number) => string
+}
 
 // Detail passed to ontoolbarclick callback
 export type ToolbarClickDetail<T> = {

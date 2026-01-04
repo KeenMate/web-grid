@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Each shortcut has `key` (e.g., "Delete", "Ctrl+D", "F2"), `id`, `label`, and `action` callback
   - `disabled` property supports boolean or callback for conditional shortcuts
   - `ShortcutContext` provides `row`, `rowIndex`, `colIndex`, `column`, `cellValue`
+- **Toolbar-Activated Shortcuts** - Keyboard shortcuts work on hovered row when toolbar is visible
+  - No cell focus required - just hover over a row and press shortcut key
+  - Matches `rowShortcuts` by ID (e.g., toolbar item `id: 'delete'` pairs with shortcut `id: 'delete'`)
+  - Document-level listener activated when toolbar opens, cleaned up when closed
+- **Rich Toolbar Tooltips** - Enhanced tooltips for toolbar buttons
+  - `tooltip: { description, shortcut }` property on toolbar items
+  - `tooltipCallback: (row, rowIndex) => htmlString` for dynamic HTML content
+  - Auto-detects keyboard shortcut from matching `rowShortcuts` (by ID)
+  - Uses Floating UI positioned tooltip with title, description, and shortcut display
 - **Shortcuts Help Overlay** - Info icon showing available shortcuts
   - `showShortcutsHelp` property enables the info icon
   - `shortcutsHelpPosition` controls placement ('top-right' or 'top-left')

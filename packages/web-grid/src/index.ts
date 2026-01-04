@@ -32,6 +32,7 @@ export type {
 
 	// Toolbar types
 	PredefinedToolbarItemType,
+	ToolbarTooltip,
 	RowToolbarItem,
 	RowToolbarConfig,
 	NormalizedToolbarItem,

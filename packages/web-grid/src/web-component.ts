@@ -102,6 +102,7 @@ import {
 	isToolbarOwnedBy,
 	getConnectorState,
 	updateConnector,
+	buildToolbarTooltipHtml,
 	type ConnectorState
 } from './modules/toolbar/index.js'
 
@@ -230,6 +231,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Toolbar hover tracking (for delayed hide like QuickGrid)
 	private toolbarHideTimeout: ReturnType<typeof setTimeout> | null = null
 	private toolbarHovered = false
+	private toolbarShortcutHandler: ((e: KeyboardEvent) => void) | null = null
 
 	// Dropdown state for combobox/autocomplete
 	dropdownOpen = false
@@ -2637,6 +2639,95 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	/**
+	 * Setup document-level keyboard shortcut listener for toolbar row
+	 * Allows shortcuts to work on hovered row without cell focus
+	 */
+	private setupToolbarShortcuts(): void {
+		// Remove any existing listener first
+		if (this.toolbarShortcutHandler) {
+			document.removeEventListener('keydown', this.toolbarShortcutHandler)
+		}
+
+		const shortcuts = this.grid.rowShortcuts
+		if (!shortcuts?.length) return
+
+		this.toolbarShortcutHandler = (e: KeyboardEvent) => {
+			// Skip if focus is in an input/editor
+			const target = e.target as HTMLElement
+			if (target.matches('input, textarea, select, [contenteditable="true"]')) {
+				return
+			}
+
+			const toolbarRowIndex = getActiveToolbarRowIndex()
+			if (toolbarRowIndex === null || !isToolbarOwnedBy(this.shadow)) return
+
+			const row = this.grid.displayItems[toolbarRowIndex]
+			if (!row) return
+
+			const columns = this.grid.columns
+
+			for (const shortcut of shortcuts) {
+				const combo = parseKeyCombo(shortcut.key)
+				if (matchesKeyCombo(e, combo)) {
+					const ctx: ShortcutContext<T> = {
+						row,
+						rowIndex: toolbarRowIndex,
+						colIndex: 0,
+						column: columns[0],
+						cellValue: null
+					}
+
+					const isDisabled = typeof shortcut.disabled === 'function'
+						? shortcut.disabled(ctx)
+						: shortcut.disabled === true
+
+					if (!isDisabled) {
+						e.preventDefault()
+						e.stopPropagation()
+						shortcut.action(ctx)
+						return
+					}
+				}
+			}
+		}
+
+		document.addEventListener('keydown', this.toolbarShortcutHandler)
+	}
+
+	/**
+	 * Setup rich tooltips for toolbar buttons
+	 * Shows title, description, and keyboard shortcut on hover
+	 */
+	private setupToolbarTooltips(items: NormalizedToolbarItem<T>[], row: T, rowIndex: number): void {
+		const toolbarContainer = this.shadow.querySelector('.wg__toolbar-container')
+		if (!toolbarContainer) return
+
+		const buttons = toolbarContainer.querySelectorAll('.wg__toolbar-btn')
+		buttons.forEach(btn => {
+			const button = btn as HTMLElement
+			const itemId = button.dataset.toolbarItem
+			const item = items.find(i => i.id === itemId)
+			if (!item) return
+
+			// Find matching keyboard shortcut from rowShortcuts
+			const matchingShortcut = this.grid.rowShortcuts?.find(s => s.id === item.id)
+
+			button.addEventListener('mouseenter', () => {
+				// Use custom callback if provided, otherwise build standard tooltip
+				const html = item.tooltipCallback
+					? item.tooltipCallback(row, rowIndex)
+					: buildToolbarTooltipHtml(item, matchingShortcut?.key)
+
+				showTooltip(this, button, html, 0, true)
+			})
+
+			button.addEventListener('mouseleave', () => {
+				hideTooltip(this)
+			})
+		})
+	}
+
+	/**
 	 * Show toolbar for a specific row
 	 */
 	private showToolbarForRow(rowElement: HTMLElement, rowIndex: number, cursorX?: number): void {
@@ -2669,8 +2760,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			cursorX
 		)
 
+		// Add document-level shortcut listener for toolbar row
+		this.setupToolbarShortcuts()
+
 		// Clean up any existing connector (state was reset in openToolbar)
 		this.renderConnector()
+
+		// Add rich tooltip handlers to toolbar buttons
+		this.setupToolbarTooltips(items, row, rowIndex)
 
 		// Add hover tracking to toolbar container (hover mode only)
 		if (this.grid.toolbarTrigger === 'hover') {
@@ -2726,6 +2823,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		if (this.toolbarHideTimeout) {
 			clearTimeout(this.toolbarHideTimeout)
 			this.toolbarHideTimeout = null
+		}
+		// Remove document shortcut listener
+		if (this.toolbarShortcutHandler) {
+			document.removeEventListener('keydown', this.toolbarShortcutHandler)
+			this.toolbarShortcutHandler = null
 		}
 		closeToolbar()
 	}
