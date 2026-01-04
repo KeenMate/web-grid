@@ -85,6 +85,7 @@ export function normalizeToolbarItems<T>(
 			type: item.type,
 			danger: item.danger,
 			disabled: item.disabled,
+			hidden: item.hidden,
 			onclick: item.onclick,
 			tooltip: item.tooltip,
 			tooltipCallback: item.tooltipCallback

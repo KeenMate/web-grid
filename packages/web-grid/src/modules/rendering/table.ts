@@ -6,7 +6,7 @@
 import type { GridContext } from '../types.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
-import { renderTriggerButton, getActiveToolbarRowIndex } from '../toolbar/index.js'
+import { renderTriggerButton, getActiveToolbarRowIndex, normalizeToolbarItems } from '../toolbar/index.js'
 
 /**
  * Get container CSS classes
@@ -32,8 +32,14 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 		? '<th class="wg__header wg__row-number-header">#</th>'
 		: ''
 
-	// Actions column for button trigger mode
-	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button'
+	// Inline actions column (toolbarPosition="inline")
+	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
+	const inlineActionsHeaderHtml = showInlineActions
+		? `<th class="wg__header wg__inline-actions-header">${ctx.escapeHtml(ctx.grid.inlineActionsTitle || '')}</th>`
+		: ''
+
+	// Actions column for button trigger mode (floating toolbar trigger)
+	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
 	const actionsColumnHtml = showActionsColumn
 		? '<th class="wg__header wg__actions-column"></th>'
 		: ''
@@ -86,7 +92,7 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 		`
 	}).join('')
 
-	return `<tr>${rowNumberColumnHtml}${actionsColumnHtml}${headerCells}</tr>`
+	return `<tr>${rowNumberColumnHtml}${inlineActionsHeaderHtml}${actionsColumnHtml}${headerCells}</tr>`
 }
 
 /**
@@ -99,9 +105,12 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 	// Row number column
 	const showRowNumbers = ctx.grid.showRowNumbers
 
-	// Actions column for button trigger mode
-	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button'
-	const colspanWithExtras = columns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0)
+	// Inline actions column (toolbarPosition="inline")
+	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
+
+	// Actions column for button trigger mode (floating toolbar trigger)
+	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
+	const colspanWithExtras = columns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
 	if (items.length === 0) {
 		return `
@@ -119,6 +128,11 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 		// Row number cell
 		const rowNumberCell = showRowNumbers
 			? `<td class="wg__cell wg__row-number">${rowIndex + 1}</td>`
+			: ''
+
+		// Inline actions cell (toolbarPosition="inline")
+		const inlineActionsCell = showInlineActions
+			? renderInlineActionsCell(ctx, item, rowIndex)
 			: ''
 
 		// Actions cell for button trigger mode
@@ -231,8 +245,59 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			if (dynamicClass) rowClasses.push(dynamicClass)
 		}
 
-		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}">${rowNumberCell}${actionsCell}${cells}</tr>`
+		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}">${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}</tr>`
 	}).join('')
+}
+
+/**
+ * Render inline actions cell for a row
+ * Renders toolbar buttons directly in the cell (hidden buttons are excluded from DOM)
+ * Supports multi-row layout via the `row` property on toolbar items
+ */
+function renderInlineActionsCell<T>(ctx: GridContext<T>, row: T, rowIndex: number): string {
+	const items = normalizeToolbarItems(ctx.grid.rowToolbar)
+
+	// Filter visible items (hidden callback returns true = hidden)
+	const visibleItems = items.filter(item => {
+		if (typeof item.hidden === 'function') {
+			return !item.hidden(row, rowIndex)
+		}
+		return !item.hidden
+	})
+
+	// Group items by row number
+	const byRow = new Map<number, typeof visibleItems>()
+	for (const item of visibleItems) {
+		const rowNum = item.row ?? 1
+		if (!byRow.has(rowNum)) byRow.set(rowNum, [])
+		byRow.get(rowNum)!.push(item)
+	}
+
+	// Sort rows ascending
+	const sortedRows = [...byRow.keys()].sort((a, b) => a - b)
+
+	// Render each row of buttons
+	const rowsHtml = sortedRows.map(rowNum => {
+		const rowItems = byRow.get(rowNum)!
+		const buttons = rowItems.map(item => {
+			const isDisabled = typeof item.disabled === 'function'
+				? item.disabled(row, rowIndex)
+				: item.disabled
+
+			const classes = [
+				'wg__inline-action-btn',
+				item.danger ? 'wg__inline-action-btn--danger' : '',
+				isDisabled ? 'wg__inline-action-btn--disabled' : ''
+			].filter(Boolean).join(' ')
+
+			const disabledAttr = isDisabled ? 'disabled' : ''
+			return `<button class="${classes}" data-action-id="${item.id}" data-row="${rowIndex}" title="${ctx.escapeHtml(item.title)}" ${disabledAttr}>${item.icon}</button>`
+		}).join('')
+
+		return `<div class="wg__inline-actions-row">${buttons}</div>`
+	}).join('')
+
+	return `<td class="wg__cell wg__inline-actions-cell"><div class="wg__inline-actions-wrap">${rowsHtml}</div></td>`
 }
 
 /**
@@ -257,9 +322,12 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 	// Row number column
 	const showRowNumbers = ctx.grid.showRowNumbers
 
-	// Actions column for button trigger mode
-	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button'
-	const colspanWithExtras = columns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0)
+	// Inline actions column (toolbarPosition="inline")
+	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
+
+	// Actions column for button trigger mode (floating toolbar trigger)
+	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
+	const colspanWithExtras = columns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
 	if (items.length === 0) {
 		return `
@@ -291,6 +359,11 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 		// Row number cell
 		const rowNumberCell = showRowNumbers
 			? `<td class="wg__cell wg__row-number">${rowIndex + 1}</td>`
+			: ''
+
+		// Inline actions cell (toolbarPosition="inline")
+		const inlineActionsCell = showInlineActions
+			? renderInlineActionsCell(ctx, item, rowIndex)
 			: ''
 
 		// Actions cell for button trigger mode
@@ -402,7 +475,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			if (dynamicClass) rowClasses.push(dynamicClass)
 		}
 
-		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}">${rowNumberCell}${actionsCell}${cells}</tr>`)
+		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}">${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}</tr>`)
 	}
 
 	// Bottom spacer row - height on TD for better browser compatibility

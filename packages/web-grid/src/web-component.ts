@@ -28,7 +28,8 @@ import type {
 	SortMode,
 	PaginationLabelsCallback,
 	SummaryContentCallback,
-	ValidationTooltipContext
+	ValidationTooltipContext,
+	ToolbarPosition
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -233,6 +234,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	private toolbarHovered = false
 	private toolbarShortcutHandler: ((e: KeyboardEvent) => void) | null = null
 
+	// Hovered row tracking (for inline mode shortcuts)
+	private hoveredRowIndex: number | null = null
+	private inlineShortcutHandler: ((e: KeyboardEvent) => void) | null = null
+
 	// Dropdown state for combobox/autocomplete
 	dropdownOpen = false
 	dropdownOptions: EditorOption[] = []
@@ -313,6 +318,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		}
 		// Close any open toolbar
 		closeToolbar()
+		// Cleanup inline shortcuts
+		this.removeInlineShortcuts()
 	}
 
 	// ==========================================================================
@@ -402,8 +409,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get toolbarTrigger(): 'hover' | 'click' | 'button' { return this.grid.toolbarTrigger }
 	set toolbarTrigger(value: 'hover' | 'click' | 'button') { this.grid.toolbarTrigger = value }
 
-	get toolbarPosition(): 'auto' | 'left' | 'right' | 'top' { return this.grid.toolbarPosition }
-	set toolbarPosition(value: 'auto' | 'left' | 'right' | 'top') { this.grid.toolbarPosition = value }
+	get toolbarPosition(): ToolbarPosition { return this.grid.toolbarPosition }
+	set toolbarPosition(value: ToolbarPosition) { this.grid.toolbarPosition = value }
+
+	get inlineActionsTitle(): string { return this.grid.inlineActionsTitle }
+	set inlineActionsTitle(value: string) { this.grid.inlineActionsTitle = value }
 
 	get contextMenu(): ContextMenuItem<T>[] | undefined { return this.grid.contextMenu }
 	set contextMenu(value: ContextMenuItem<T>[] | undefined) { this.grid.contextMenu = value }
@@ -1726,56 +1736,90 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Row hover (hover mode)
-		table.addEventListener('mouseenter', (e: Event) => {
-			if (this.grid.toolbarTrigger !== 'hover') return
+		// Inline action button click (inline mode - toolbarPosition="inline")
+		table.addEventListener('click', (e: Event) => {
+			if (this.grid.toolbarPosition !== 'inline') return
 
-			// Cancel any pending hide timeout when entering a row
-			if (this.toolbarHideTimeout) {
-				clearTimeout(this.toolbarHideTimeout)
-				this.toolbarHideTimeout = null
+			const target = e.target as HTMLElement
+			const btn = target.closest('.wg__inline-action-btn') as HTMLButtonElement
+			if (btn && !btn.disabled) {
+				e.preventDefault()
+				e.stopPropagation()
+				const actionId = btn.dataset.actionId
+				const rowIndex = parseInt(btn.dataset.row || '0', 10)
+				this.handleInlineActionClick(actionId, rowIndex)
 			}
+		})
 
+		// Row hover - track hovered row and handle toolbar/inline shortcuts
+		table.addEventListener('mouseenter', (e: Event) => {
 			const mouseEvent = e as MouseEvent
 			const target = mouseEvent.target as HTMLElement
 			const row = target.closest('.wg__row') as HTMLElement
 			if (row) {
 				const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
-				if (!isToolbarOpenForRow(rowIndex)) {
-					this.showToolbarForRow(row, rowIndex, mouseEvent.clientX)
+				this.hoveredRowIndex = rowIndex
+
+				// For inline mode, setup shortcuts
+				if (this.grid.toolbarPosition === 'inline') {
+					this.setupInlineShortcuts()
+				}
+
+				// For floating toolbar (hover trigger)
+				if (this.grid.toolbarTrigger === 'hover' && this.grid.toolbarPosition !== 'inline') {
+					// Cancel any pending hide timeout when entering a row
+					if (this.toolbarHideTimeout) {
+						clearTimeout(this.toolbarHideTimeout)
+						this.toolbarHideTimeout = null
+					}
+					if (!isToolbarOpenForRow(rowIndex)) {
+						this.showToolbarForRow(row, rowIndex, mouseEvent.clientX)
+					}
 				}
 			}
 		}, true)
 
-		// Row mouseleave (hover mode - close after delay if not hovering toolbar)
+		// Row mouseleave - handle toolbar hide and inline shortcuts cleanup
 		table.addEventListener('mouseleave', (e: Event) => {
-			if (this.grid.toolbarTrigger !== 'hover') return
-
 			const mouseEvent = e as MouseEvent
 			const target = mouseEvent.target as HTMLElement
 			const row = target.closest('.wg__row') as HTMLElement
 
 			if (row) {
-				// Don't close during move actions (connector tracking)
-				if (this.toolbarMoveInProgress) return
-
-				// Start hide timeout (shared with toolbar mouseleave)
-				if (this.toolbarHideTimeout) {
-					clearTimeout(this.toolbarHideTimeout)
-				}
-				this.toolbarHideTimeout = setTimeout(() => {
-					const toolbarContainer = this.shadow.querySelector('.wg__toolbar-container')
-					const isHoveringToolbar = toolbarContainer?.matches(':hover')
-					const isHoveringTable = table.matches(':hover')
-
-					if (!isHoveringToolbar && !isHoveringTable) {
-						this.closeToolbarAndReset()
-						// Don't re-render if editing - would destroy the editor
-						if (!this.grid.editingCell) {
-							this.render()
+				// For inline mode, clear hovered row and shortcuts after short delay
+				if (this.grid.toolbarPosition === 'inline') {
+					setTimeout(() => {
+						if (!table.matches(':hover')) {
+							this.hoveredRowIndex = null
+							this.removeInlineShortcuts()
 						}
+					}, 50)
+				}
+
+				// For floating toolbar (hover trigger)
+				if (this.grid.toolbarTrigger === 'hover' && this.grid.toolbarPosition !== 'inline') {
+					// Don't close during move actions (connector tracking)
+					if (this.toolbarMoveInProgress) return
+
+					// Start hide timeout (shared with toolbar mouseleave)
+					if (this.toolbarHideTimeout) {
+						clearTimeout(this.toolbarHideTimeout)
 					}
-				}, 150)
+					this.toolbarHideTimeout = setTimeout(() => {
+						const toolbarContainer = this.shadow.querySelector('.wg__toolbar-container')
+						const isHoveringToolbar = toolbarContainer?.matches(':hover')
+						const isHoveringTable = table.matches(':hover')
+
+						if (!isHoveringToolbar && !isHoveringTable) {
+							this.hoveredRowIndex = null
+							this.closeToolbarAndReset()
+							// Don't re-render if editing - would destroy the editor
+							if (!this.grid.editingCell) {
+								this.render()
+							}
+						}
+					}, 150)
+				}
 			}
 		}, true)
 
@@ -2695,6 +2739,69 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	/**
+	 * Setup keyboard shortcuts for inline toolbar mode
+	 * Uses hoveredRowIndex to determine which row to act on
+	 */
+	private setupInlineShortcuts(): void {
+		this.removeInlineShortcuts()
+
+		const shortcuts = this.grid.rowShortcuts
+		if (!shortcuts?.length || this.hoveredRowIndex === null) return
+
+		this.inlineShortcutHandler = (e: KeyboardEvent) => {
+			// Skip if focus is in an input/editor
+			const target = e.target as HTMLElement
+			if (target.matches('input, textarea, select, [contenteditable="true"]')) {
+				return
+			}
+
+			const rowIndex = this.hoveredRowIndex
+			if (rowIndex === null) return
+
+			const row = this.grid.displayItems[rowIndex]
+			if (!row) return
+
+			const columns = this.grid.columns
+
+			for (const shortcut of shortcuts) {
+				const combo = parseKeyCombo(shortcut.key)
+				if (matchesKeyCombo(e, combo)) {
+					const ctx: ShortcutContext<T> = {
+						row,
+						rowIndex,
+						colIndex: 0,
+						column: columns[0],
+						cellValue: null
+					}
+
+					const isDisabled = typeof shortcut.disabled === 'function'
+						? shortcut.disabled(ctx)
+						: shortcut.disabled === true
+
+					if (!isDisabled) {
+						e.preventDefault()
+						e.stopPropagation()
+						shortcut.action(ctx)
+						return
+					}
+				}
+			}
+		}
+
+		document.addEventListener('keydown', this.inlineShortcutHandler)
+	}
+
+	/**
+	 * Remove inline shortcuts listener
+	 */
+	private removeInlineShortcuts(): void {
+		if (this.inlineShortcutHandler) {
+			document.removeEventListener('keydown', this.inlineShortcutHandler)
+			this.inlineShortcutHandler = null
+		}
+	}
+
+	/**
 	 * Setup rich tooltips for toolbar buttons
 	 * Shows title, description, and keyboard shortcut on hover
 	 */
@@ -2731,6 +2838,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Show toolbar for a specific row
 	 */
 	private showToolbarForRow(rowElement: HTMLElement, rowIndex: number, cursorX?: number): void {
+		// Skip floating toolbar in inline mode (buttons rendered directly in cells)
+		if (this.grid.toolbarPosition === 'inline') {
+			return
+		}
+
 		if (!this.grid.showRowToolbar || !this.grid.rowToolbar.length) {
 			return
 		}
@@ -2884,6 +2996,36 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			// For other actions (add, duplicate): keep toolbar open
 			this.render()
 		}
+	}
+
+	/**
+	 * Handle inline action button click (toolbarPosition="inline")
+	 */
+	private handleInlineActionClick(actionId: string | undefined, rowIndex: number): void {
+		if (!actionId) return
+
+		const items = normalizeToolbarItems(this.grid.rowToolbar)
+		const item = items.find(i => i.id === actionId)
+		const row = this.grid.displayItems[rowIndex]
+
+		if (!item || !row) return
+
+		// Call item's onclick if defined
+		if (item.onclick) {
+			item.onclick({ row, rowIndex })
+		}
+
+		// Fire ontoolbarclick callback
+		if (this.grid.ontoolbarclick) {
+			this.grid.ontoolbarclick({
+				item,
+				rowIndex,
+				row
+			})
+		}
+
+		// Re-render to update button states
+		this.render()
 	}
 
 	/**

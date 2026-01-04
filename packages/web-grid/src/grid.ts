@@ -27,7 +27,8 @@ import type {
 	ToggleVisibility,
 	PaginationLabelsCallback,
 	SummaryContentCallback,
-	ValidationTooltipContext
+	ValidationTooltipContext,
+	ToolbarPosition
 } from './types.js'
 
 /**
@@ -65,7 +66,8 @@ export class WebGrid<T = unknown> {
 	protected _toolbarVerticalAlign: 'top' | 'center' | 'bottom' = 'bottom'
 	protected _toolbarHorizontalAlign: 'start' | 'center' | 'end' | 'cursor' = 'center'
 	protected _toolbarTrigger: 'hover' | 'click' | 'button' = 'hover'
-	protected _toolbarPosition: 'auto' | 'left' | 'right' | 'top' = 'auto'
+	protected _toolbarPosition: ToolbarPosition = 'auto'
+	protected _inlineActionsTitle: string = ''
 	protected _contextMenu: ContextMenuItem<T>[] | undefined = undefined
 	protected _rowShortcuts: RowShortcut<T>[] | undefined = undefined
 	protected _showShortcutsHelp: boolean = false
@@ -316,9 +318,15 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get toolbarPosition(): 'auto' | 'left' | 'right' | 'top' { return this._toolbarPosition }
-	set toolbarPosition(value: 'auto' | 'left' | 'right' | 'top') {
+	get toolbarPosition(): ToolbarPosition { return this._toolbarPosition }
+	set toolbarPosition(value: ToolbarPosition) {
 		this._toolbarPosition = value
+		this.requestUpdate()
+	}
+
+	get inlineActionsTitle(): string { return this._inlineActionsTitle }
+	set inlineActionsTitle(value: string) {
+		this._inlineActionsTitle = value
 		this.requestUpdate()
 	}
 

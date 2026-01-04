@@ -220,6 +220,9 @@ export type RowChangeDetail<T> = {
 // Predefined toolbar item types
 export type PredefinedToolbarItemType = 'add' | 'delete' | 'duplicate' | 'moveUp' | 'moveDown'
 
+// Toolbar position options
+export type ToolbarPosition = 'auto' | 'left' | 'right' | 'top' | 'inline'
+
 // Toolbar tooltip configuration
 export type ToolbarTooltip = {
 	description?: string   // Additional description text
@@ -244,6 +247,7 @@ export type RowToolbarItem<T> = {
 	type?: PredefinedToolbarItemType  // If predefined, use built-in handler
 	danger?: boolean                   // Red styling (like delete)
 	disabled?: boolean | ((row: T, rowIndex: number) => boolean)
+	hidden?: boolean | ((row: T, rowIndex: number) => boolean)  // Hide button for specific rows
 
 	// Tooltip
 	tooltip?: ToolbarTooltip  // Rich tooltip with description and shortcut
@@ -386,7 +390,8 @@ export type QuickGridProps<T> = {
 	toolbarVerticalAlign?: 'top' | 'center' | 'bottom'  // Vertical alignment for left/right positions: top (rows above), center, bottom (default, rows below)
 	toolbarHorizontalAlign?: 'start' | 'center' | 'end' | 'cursor'  // Horizontal alignment for top position (default: 'center')
 	toolbarTrigger?: 'hover' | 'click' | 'button'  // How to show toolbar
-	toolbarPosition?: 'auto' | 'left' | 'right' | 'top'  // Preferred position: auto (default), left, right, or top
+	toolbarPosition?: ToolbarPosition  // Preferred position: auto (default), left, right, top, or inline
+	inlineActionsTitle?: string  // Header title for inline actions column (when toolbarPosition="inline")
 	// Legacy aliases for backwards compatibility
 	showRowActions?: boolean      // Deprecated: use showRowToolbar
 	rowActions?: RowToolbarConfig<T>[]  // Deprecated: use rowToolbar

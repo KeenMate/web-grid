@@ -74,6 +74,7 @@
                         <option value="left">Left</option>
                         <option value="right">Right</option>
                         <option value="top">Top</option>
+                        <option value="inline">Inline (column)</option>
                     </select>
                 </label>
                 <label>
@@ -269,6 +270,40 @@ grid.rowToolbar = [
     { id: 'export', icon: '📤', title: 'Export row', row: 2, group: 1 },
     { id: 'preview', icon: '👁', title: 'Preview', label: 'View', row: 2, group: 1 },
     { id: 'archive', icon: '📦', title: 'Archive', row: 2, group: 2 }
+]</pre>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Inline Actions Column</h2>
+            <p>Use <code>toolbarPosition="inline"</code> to render toolbar buttons as a fixed column instead of a floating popup.
+               Buttons are always visible, with support for <code>disabled</code> and <code>hidden</code> callbacks per row.
+               Keyboard shortcuts via <code>rowShortcuts</code> work when hovering over a row (try <kbd>Delete</kbd> or <kbd>A</kbd>).</p>
+            <web-grid id="grid3" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+            <div class="code-block" style="margin-top: 1rem;">
+                <pre>grid.showRowToolbar = true
+grid.toolbarPosition = 'inline'  // Renders as column
+grid.inlineActionsTitle = 'Actions'  // Optional header
+
+grid.rowToolbar = [
+    {
+        id: 'edit',
+        icon: '✏️',
+        title: 'Edit',
+        disabled: (row) => row.status === 'Done'  // Disable for completed tasks
+    },
+    {
+        id: 'delete',
+        icon: '🗑️',
+        title: 'Delete',
+        danger: true,
+        hidden: (row) => row.priority === 'High'  // Hide for high priority tasks
+    },
+    {
+        id: 'archive',
+        icon: '📦',
+        title: 'Archive'
+    }
 ]</pre>
             </div>
         </div>
@@ -587,6 +622,86 @@ grid.rowToolbar = [
                 }
                 default:
                     showToast(`${item.title}: ${row.title}`)
+            }
+        }
+
+        // ============================================================
+        // Inline actions column example
+        // ============================================================
+        const grid3 = document.getElementById('grid3')
+        let tasks3 = tasks.map(t => ({...t}))  // Clone for independent data
+        grid3.items = tasks3
+        grid3.columns = columns
+
+        grid3.showRowToolbar = true
+        grid3.toolbarPosition = 'inline'  // Key setting: renders as column
+        grid3.inlineActionsTitle = 'Actions'
+
+        // Inline toolbar with disabled/hidden callbacks
+        grid3.rowToolbar = [
+            {
+                id: 'edit',
+                icon: '✏️',
+                title: 'Edit task',
+                disabled: (row) => row.status === 'Done'  // Disable for completed
+            },
+            {
+                id: 'delete',
+                icon: '🗑️',
+                title: 'Delete task',
+                danger: true,
+                hidden: (row) => row.priority === 'High'  // Hide for high priority
+            },
+            {
+                id: 'archive',
+                icon: '📦',
+                title: 'Archive task'
+            }
+        ]
+
+        // Keyboard shortcuts - triggered by hovering a row and pressing the key
+        grid3.rowShortcuts = [
+            {
+                key: 'Delete',
+                id: 'delete',
+                label: 'Delete row',
+                action: (ctx) => {
+                    // Respect hidden callback
+                    if (ctx.row.priority === 'High') {
+                        showToast('Cannot delete high priority tasks', 'error')
+                        return
+                    }
+                    const deleted = tasks3.splice(ctx.rowIndex, 1)[0]
+                    grid3.items = [...tasks3]
+                    showToast(`Deleted: ${deleted.title}`, 'error')
+                }
+            },
+            {
+                key: 'a',
+                id: 'archive',
+                label: 'Archive row',
+                action: (ctx) => {
+                    showToast(`Archived: ${ctx.row.title}`, 'success')
+                }
+            }
+        ]
+
+        grid3.ontoolbarclick = (detail) => {
+            const { item, rowIndex, row } = detail
+
+            switch (item.id) {
+                case 'edit':
+                    showToast(`Editing: ${row.title}`)
+                    break
+                case 'delete': {
+                    const deleted = tasks3.splice(rowIndex, 1)[0]
+                    grid3.items = [...tasks3]
+                    showToast(`Deleted: ${deleted.title}`, 'error')
+                    break
+                }
+                case 'archive':
+                    showToast(`Archived: ${row.title}`, 'success')
+                    break
             }
         }
     </script>
