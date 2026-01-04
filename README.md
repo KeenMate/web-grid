@@ -1,6 +1,26 @@
-# @keenmate/web-grid
+# Web Grid Component
 
-A framework-agnostic data grid web component with sorting, filtering, inline editing, and keyboard navigation.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/@keenmate/web-grid.svg)](https://www.npmjs.com/package/@keenmate/web-grid)
+
+A lightweight, accessible data grid web component with sorting, filtering, inline editing, and excellent keyboard navigation.
+
+## Features
+
+- **Sorting** - Single and multi-column sorting with visual indicators
+- **Filtering** - Column-based filtering with customizable inputs
+- **Pagination** - Built-in pagination with customizable page sizes
+- **Inline Editing** - Text, number, date, select, combobox, autocomplete, checkbox, custom editors
+- **Keyboard Navigation** - Excel-like navigation with Enter, Tab, Arrow keys
+- **Row Toolbar** - Floating action buttons (add, delete, duplicate, move)
+- **Context Menu** - Right-click menus with custom actions
+- **Keyboard Shortcuts** - Custom grid-level shortcuts with help overlay
+- **Virtual Scrolling** - Efficient rendering for large datasets (10,000+ rows)
+- **Infinite Scroll** - Load more data as user scrolls
+- **Custom Styling** - Cell and row styling via callbacks
+- **Dark Mode** - Automatic dark mode support via CSS variables
+- **Shadow DOM** - Encapsulated styles that don't leak
+- **Framework Agnostic** - Works with any framework or vanilla JS
 
 ## Installation
 
@@ -8,183 +28,205 @@ A framework-agnostic data grid web component with sorting, filtering, inline edi
 npm install @keenmate/web-grid
 ```
 
-## Quick Start
+## Usage
+
+### Basic HTML
 
 ```html
 <script type="module">
   import '@keenmate/web-grid'
-
-  const grid = document.querySelector('web-grid')
-
-  // Define columns
-  grid.columns = [
-    { field: 'name', title: 'Name' },
-    { field: 'email', title: 'Email' },
-    { field: 'age', title: 'Age', align: 'right' }
-  ]
-
-  // Set data
-  grid.items = [
-    { name: 'John', email: 'john@example.com', age: 30 },
-    { name: 'Jane', email: 'jane@example.com', age: 25 }
-  ]
 </script>
 
-<web-grid></web-grid>
+<web-grid id="grid" striped hoverable></web-grid>
 ```
 
-## Column Configuration
+### With JavaScript/TypeScript
 
-Columns define how data is displayed and edited. Each column maps to a field in your data:
+```typescript
+import '@keenmate/web-grid'
 
-```javascript
+const grid = document.querySelector('web-grid')
+
+// Define columns
 grid.columns = [
-  {
-    field: 'name',           // Property name in data objects
-    title: 'Full Name',      // Header text
-    width: '150px',          // Fixed width (optional)
-    minWidth: '100px',       // Minimum width
-    align: 'left',           // 'left' | 'center' | 'right'
-
-    // Sorting & filtering
-    sortable: true,          // Allow sorting by this column
-    filterable: true,        // Show filter input in header
-
-    // Display formatting
-    formatCallback: (value, row) => value.toUpperCase(),
-    tooltipCallback: (value, row) => `Full name: ${value}`,
-
-    // Editing (see Editor Types section)
-    editable: true,
-    editor: 'text',
-    editorOptions: { /* editor-specific options */ }
+  { field: 'name', title: 'Name', editor: 'text' },
+  { field: 'email', title: 'Email', editor: 'text' },
+  { field: 'department', title: 'Department', editor: 'select',
+    editorOptions: {
+      options: [
+        { value: 'eng', label: 'Engineering' },
+        { value: 'sales', label: 'Sales' }
+      ]
+    }
+  },
+  { field: 'salary', title: 'Salary', align: 'right', editor: 'number',
+    formatCallback: (val) => `$${val.toLocaleString()}`
   }
 ]
+
+// Set data
+grid.items = [
+  { name: 'John', email: 'john@example.com', department: 'eng', salary: 85000 },
+  { name: 'Jane', email: 'jane@example.com', department: 'sales', salary: 72000 }
+]
+
+// Configure behavior
+grid.editable = true
+grid.editTrigger = 'navigate'
+grid.sortMode = 'multi'
+grid.pageable = true
+grid.pageSize = 25
+
+// Listen for changes
+grid.onrowchange = (detail) => {
+  console.log('Changed:', detail.field, detail.oldValue, '→', detail.newValue)
+}
 ```
 
-### Column Properties Reference
+## Attributes
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `field` | string | Property name in row data (required) |
-| `title` | string | Column header text (required) |
-| `width` | string | Fixed column width (e.g., `'150px'`) |
-| `minWidth` | string | Minimum column width |
-| `maxWidth` | string | Maximum column width |
-| `align` | string | Text alignment: `'left'`, `'center'`, `'right'` |
-| `textOverflow` | string | `'wrap'` or `'ellipsis'` for long text |
-| `sortable` | boolean | Enable sorting for this column |
-| `filterable` | boolean | Show filter input in header |
-| `editable` | boolean | Enable inline editing |
-| `editor` | string | Editor type (see below) |
-| `editorOptions` | object | Editor-specific configuration |
-| `headerInfo` | string | Info tooltip next to header (shows icon) |
-| `cellClass` | string | CSS class(es) for all cells in column |
-| `cellClassCallback` | function | Dynamic CSS class based on value/row |
-| `formatCallback` | function | Transform value for display |
-| `tooltipCallback` | function | Dynamic cell tooltip |
-| `validateCallback` | function | Validate before commit |
-| `beforeCommitCallback` | function | Validate and transform value |
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `striped` | boolean | `false` | Alternating row colors |
+| `hoverable` | boolean | `false` | Highlight row on hover |
+| `sortable` | boolean | `false` | Enable sorting (deprecated, use `sort-mode`) |
+| `sort-mode` | `'none' \| 'single' \| 'multi'` | `'none'` | Sorting mode |
+| `filterable` | boolean | `false` | Show column filters |
+| `pageable` | boolean | `false` | Enable pagination |
+| `page-size` | number | `10` | Rows per page |
+| `editable` | boolean | `false` | Enable inline editing |
+| `edit-trigger` | `'click' \| 'dblclick' \| 'navigate'` | `'dblclick'` | How to start editing |
+| `show-row-numbers` | boolean | `false` | Show row number column |
+| `virtual-scroll` | boolean | `false` | Enable virtual scrolling |
+| `virtual-scroll-threshold` | number | `100` | Auto-enable when items >= threshold |
+
+## Properties
+
+```typescript
+// Data
+grid.items = [...];           // Array of row objects
+grid.columns = [...];         // Column definitions
+
+// Sorting & filtering
+grid.sortMode = 'multi';      // 'none' | 'single' | 'multi'
+grid.sort = [{ column: 'name', direction: 'asc' }];  // Current sort state
+
+// Pagination
+grid.pageable = true;
+grid.pageSize = 25;
+grid.currentPage = 1;
+grid.totalItems = 1000;       // For server-side pagination
+grid.pageSizes = [10, 25, 50, 100];
+
+// Editing
+grid.editable = true;
+grid.editTrigger = 'navigate';
+grid.dropdownToggleVisibility = 'on-focus';  // 'always' | 'on-focus'
+
+// Row toolbar
+grid.showRowToolbar = true;
+grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown'];
+grid.toolbarPosition = 'right';  // 'auto' | 'left' | 'right' | 'top'
+grid.toolbarTrigger = 'hover';   // 'hover' | 'click' | 'button'
+
+// Context menu
+grid.contextMenu = [...];
+
+// Keyboard shortcuts
+grid.rowShortcuts = [...];
+grid.showShortcutsHelp = true;
+
+// Virtual scroll
+grid.virtualScroll = true;
+grid.virtualScrollRowHeight = 38;
+grid.virtualScrollBuffer = 10;
+
+// Infinite scroll
+grid.infiniteScroll = true;
+grid.hasMoreItems = true;
+```
+
+## Column Definition
+
+```typescript
+{
+  field: 'name',              // Property name in row data (required)
+  title: 'Full Name',         // Header text (required)
+  width: '150px',             // Fixed width
+  minWidth: '100px',          // Minimum width
+  align: 'left',              // 'left' | 'center' | 'right'
+  textOverflow: 'ellipsis',   // 'wrap' | 'ellipsis'
+
+  // Sorting & filtering
+  sortable: true,
+  filterable: true,
+
+  // Display
+  headerInfo: 'Tooltip text', // Info icon in header
+  formatCallback: (value, row) => value.toUpperCase(),
+  tooltipCallback: (value, row) => `Details: ${value}`,
+  cellClass: 'custom-class',
+  cellClassCallback: (value, row) => value > 100 ? 'high' : null,
+
+  // Editing
+  editable: true,
+  editor: 'text',             // 'text' | 'number' | 'date' | 'select' | 'combobox' | 'autocomplete' | 'checkbox' | 'custom'
+  editorOptions: { ... },
+  validateCallback: (value, row) => value ? null : 'Required',
+  beforeCommitCallback: (ctx) => ({ valid: true, transformedValue: ctx.value.trim() })
+}
+```
 
 ## Editor Types
 
-The grid supports multiple editor types for inline editing:
-
 ### Text Editor
 ```javascript
-{
-  field: 'name',
-  editor: 'text',
-  editorOptions: {
-    placeholder: 'Enter name...',
-    maxLength: 100,
-    pattern: '[A-Za-z ]+',
-    inputMode: 'text'  // 'text' | 'numeric' | 'email' | 'tel' | 'url'
-  }
-}
+{ editor: 'text', editorOptions: { placeholder: 'Enter...', maxLength: 100 } }
 ```
 
 ### Number Editor
 ```javascript
-{
-  field: 'salary',
-  editor: 'number',
-  formatCallback: (val) => `$${val.toLocaleString()}`,
-  editorOptions: {
-    min: 0,
-    max: 1000000,
-    step: 1000,
-    decimalPlaces: 2,
-    allowNegative: false
-  }
-}
+{ editor: 'number', editorOptions: { min: 0, max: 1000, step: 10, decimalPlaces: 2 } }
 ```
 
 ### Date Editor
 ```javascript
-{
-  field: 'startDate',
-  editor: 'date',
-  editorOptions: {
-    dateFormat: 'DD.MM.YYYY',     // Display format
-    outputFormat: 'iso',          // 'date' | 'iso' | 'timestamp'
-    minDate: '2020-01-01',
-    maxDate: '2030-12-31'
-  }
-}
+{ editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY', outputFormat: 'iso' } }
 ```
 
-### Select Editor (Dropdown)
+### Select Editor
 ```javascript
 {
-  field: 'department',
   editor: 'select',
   editorOptions: {
     options: [
       { value: 'eng', label: 'Engineering', icon: '⚙️', subtitle: 'Tech team' },
-      { value: 'sales', label: 'Sales', icon: '💼' },
-      { value: 'hr', label: 'HR', disabled: true }
+      { value: 'sales', label: 'Sales', disabled: true }
     ],
-    allowEmpty: true,
-    emptyLabel: '-- Select --',
-    iconMember: 'icon',           // Property for icon
-    subtitleMember: 'subtitle',   // Property for subtitle
-    disabledMember: 'disabled'    // Property for disabled state
+    iconMember: 'icon',
+    subtitleMember: 'subtitle',
+    disabledMember: 'disabled'
   }
 }
 ```
 
-### Combobox Editor (Editable Dropdown)
+### Combobox Editor
 ```javascript
-{
-  field: 'location',
-  editor: 'combobox',
-  editorOptions: {
-    options: [
-      { value: 'NYC', label: 'New York' },
-      { value: 'LA', label: 'Los Angeles' }
-    ]
-    // User can type custom values not in the list
-  }
-}
+{ editor: 'combobox', editorOptions: { options: [...] } }  // User can type custom values
 ```
 
-### Autocomplete Editor (Search-based)
+### Autocomplete Editor
 ```javascript
 {
-  field: 'manager',
   editor: 'autocomplete',
   editorOptions: {
-    initialOptions: [
-      { value: 'john', label: 'John Doe' },
-      { value: 'jane', label: 'Jane Smith' }
-    ],
-    placeholder: 'Search managers...',
+    initialOptions: [...],
+    placeholder: 'Search...',
     minSearchLength: 2,
     debounceMs: 300,
     onSearchCallback: async (query, row, signal) => {
-      const response = await fetch(`/api/managers?q=${query}`, { signal })
-      return response.json()  // Returns [{ value, label }, ...]
+      const response = await fetch(`/api/search?q=${query}`, { signal })
+      return response.json()
     }
   }
 }
@@ -192,175 +234,97 @@ The grid supports multiple editor types for inline editing:
 
 ### Checkbox Editor
 ```javascript
-{
-  field: 'active',
-  editor: 'checkbox',
-  editorOptions: {
-    trueValue: 'yes',    // Value when checked (default: true)
-    falseValue: 'no'     // Value when unchecked (default: false)
-  }
-}
+{ editor: 'checkbox', editorOptions: { trueValue: 'yes', falseValue: 'no' } }
 ```
 
 ### Custom Editor
 ```javascript
 {
-  field: 'notes',
   editor: 'custom',
-  cellEditCallback: (context) => {
-    // context.value - current value
-    // context.row - full row data
-    // context.rowIndex - row index
-    // context.field - column field name
-    // context.commit(newValue) - save and close
-    // context.cancel() - discard and close
-
-    const newValue = prompt('Edit:', context.value)
-    if (newValue !== null) {
-      context.commit(newValue)
-    } else {
-      context.cancel()
-    }
+  cellEditCallback: (ctx) => {
+    const value = prompt('Edit:', ctx.value)
+    value !== null ? ctx.commit(value) : ctx.cancel()
   }
 }
 ```
 
-## Grid Properties
+## Methods
 
-Configure grid behavior via attributes or properties:
-
-```html
-<!-- Via attributes -->
-<web-grid
-  striped
-  hoverable
-  sortable
-  pageable
-  page-size="25"
-></web-grid>
-```
-
-```javascript
-// Via JavaScript
-grid.striped = true
-grid.hoverable = true
-grid.sortMode = 'multi'        // 'none' | 'single' | 'multi'
-grid.pageable = true
-grid.pageSize = 25
-grid.editable = true
-grid.editTrigger = 'navigate'  // 'click' | 'dblclick' | 'navigate'
-grid.showRowNumbers = true
-```
-
-### Grid Properties Reference
-
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `items` | array | `[]` | Data array |
-| `columns` | array | `[]` | Column definitions |
-| `striped` | boolean | `false` | Alternating row colors |
-| `hoverable` | boolean | `false` | Highlight row on hover |
-| `sortMode` | string | `'none'` | `'none'`, `'single'`, or `'multi'` |
-| `filterable` | boolean | `false` | Show column filters |
-| `pageable` | boolean | `false` | Enable pagination |
-| `pageSize` | number | `10` | Rows per page |
-| `pageSizes` | array | `[10,25,50,100]` | Page size options |
-| `currentPage` | number | `1` | Current page (1-based) |
-| `editable` | boolean | `false` | Enable inline editing |
-| `editTrigger` | string | `'dblclick'` | How to start editing |
-| `showRowNumbers` | boolean | `false` | Show row number column |
-| `virtualScroll` | boolean | `false` | Enable virtual scrolling |
-| `virtualScrollThreshold` | number | `100` | Auto-enable virtual scroll |
+| Method | Description |
+|--------|-------------|
+| `focusCell(rowIndex, colIndex)` | Focus a specific cell |
+| `startEdit(rowIndex, colIndex)` | Start editing a cell |
+| `commitEdit()` | Commit current edit |
+| `cancelEdit()` | Cancel current edit |
+| `moveRow(fromIndex, toIndex)` | Move a row |
+| `deleteRow(index)` | Delete a row |
 
 ## Events
 
-Listen for grid events:
+| Event | Detail | Description |
+|-------|--------|-------------|
+| `onrowchange` | `{ row, field, oldValue, newValue, isValid }` | Value changed |
+| `ondatarequest` | `{ sort, page, pageSize, skip, trigger }` | Sort/page changed |
+| `onroweditstart` | `{ row, rowIndex, field }` | Edit started |
+| `onroweditcancel` | `{ row, rowIndex, field }` | Edit cancelled |
+| `onvalidationerror` | `{ row, rowIndex, field, error }` | Validation failed |
+| `onrowdelete` | `{ row, rowIndex }` | Ctrl+Delete pressed |
+| `ontoolbarclick` | `{ item, row, rowIndex }` | Toolbar button clicked |
 
-```javascript
-// Row value changed
-grid.onrowchange = (detail) => {
-  console.log('Changed:', detail.field, detail.oldValue, '→', detail.newValue)
-  console.log('Row:', detail.row)
-  console.log('Is valid:', detail.isValid)
-}
+## Keyboard Shortcuts
 
-// Data request (sort/page changed)
-grid.ondatarequest = (detail) => {
-  console.log('Sort:', detail.sort)        // [{ column, direction }]
-  console.log('Page:', detail.page)
-  console.log('PageSize:', detail.pageSize)
-  console.log('Skip:', detail.skip)        // For server-side offset
+### Navigation
+| Key | Action |
+|-----|--------|
+| Arrow keys | Navigate cells |
+| Tab / Shift+Tab | Next/previous editable cell |
+| Home / End | First/last cell in row |
+| Ctrl+Home / Ctrl+End | First/last cell in grid |
+| PageUp / PageDown | Move by ~10 rows |
 
-  // Fetch new data from server
-  fetchData(detail).then(data => {
-    grid.items = data.items
-    grid.totalItems = data.total
-  })
-}
+### Editing
+| Key | Action |
+|-----|--------|
+| Enter / F2 | Start editing |
+| Escape | Cancel edit / clear focus |
+| Space | Toggle checkbox / open dropdown |
+| Type any character | Start editing with that character |
 
-// Edit started
-grid.onroweditstart = ({ row, rowIndex, field }) => {
-  console.log('Started editing:', field)
-}
+### Row Operations
+| Key | Action |
+|-----|--------|
+| Ctrl+Up / Ctrl+Down | Move row up/down |
+| Ctrl+Delete | Delete row (fires `onrowdelete`) |
 
-// Edit cancelled
-grid.onroweditcancel = ({ row, rowIndex, field }) => {
-  console.log('Cancelled editing:', field)
-}
+## Advanced Features
 
-// Validation error
-grid.onvalidationerror = ({ row, rowIndex, field, error }) => {
-  console.log('Validation failed:', error)
-}
-
-// Row delete (Ctrl+Delete pressed)
-grid.onrowdelete = ({ row, rowIndex }) => {
-  if (confirm(`Delete ${row.name}?`)) {
-    grid.items = grid.items.filter((_, i) => i !== rowIndex)
-  }
-}
-```
-
-## Row Toolbar
-
-Add a floating toolbar with action buttons:
+### Row Toolbar
 
 ```javascript
 grid.showRowToolbar = true
-grid.toolbarPosition = 'right'     // 'auto' | 'left' | 'right' | 'top'
-grid.toolbarTrigger = 'hover'      // 'hover' | 'click' | 'button'
+grid.toolbarPosition = 'right'
+grid.toolbarTrigger = 'hover'
 
-// Predefined actions
-grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
-
-// Custom actions
 grid.rowToolbar = [
-  'delete',
+  'delete',  // Predefined action
   {
     id: 'edit',
     icon: '✏️',
     title: 'Edit',
-    onclick: ({ row, rowIndex }) => openEditDialog(row)
+    onclick: ({ row, rowIndex }) => openDialog(row)
   },
   {
     id: 'archive',
     icon: '📦',
     title: 'Archive',
     danger: true,
-    disabled: (row, rowIndex) => row.status === 'archived',
-    onclick: ({ row }) => archiveRow(row)
+    disabled: (row) => row.archived,
+    onclick: ({ row }) => archive(row)
   }
 ]
-
-// Handle toolbar clicks
-grid.ontoolbarclick = ({ item, row, rowIndex }) => {
-  console.log('Toolbar clicked:', item.id)
-}
 ```
 
-## Context Menu
-
-Add a right-click context menu:
+### Context Menu
 
 ```javascript
 grid.contextMenu = [
@@ -372,27 +336,18 @@ grid.contextMenu = [
     onclick: (ctx) => navigator.clipboard.writeText(ctx.cellValue)
   },
   {
-    id: 'edit',
-    label: (ctx) => `Edit ${ctx.column.title}`,
-    icon: '✏️',
-    onclick: (ctx) => grid.startEdit(ctx.rowIndex, ctx.colIndex)
-  },
-  {
     id: 'delete',
     label: 'Delete row',
     icon: '🗑️',
     danger: true,
     dividerBefore: true,
     disabled: (ctx) => ctx.row.protected,
-    visible: (ctx) => ctx.row.canDelete,
     onclick: (ctx) => deleteRow(ctx.rowIndex)
   }
 ]
 ```
 
-## Keyboard Shortcuts
-
-Define custom shortcuts for the grid:
+### Custom Keyboard Shortcuts
 
 ```javascript
 grid.rowShortcuts = [
@@ -407,96 +362,98 @@ grid.rowShortcuts = [
     id: 'duplicate',
     label: 'Duplicate row',
     action: (ctx) => duplicateRow(ctx.row)
-  },
-  {
-    key: 'F3',
-    id: 'open-detail',
-    label: 'Open detail',
-    disabled: (ctx) => !ctx.row.id,
-    action: (ctx) => openDetail(ctx.row)
   }
 ]
 
-grid.showShortcutsHelp = true              // Show ? icon
-grid.shortcutsHelpPosition = 'top-right'   // Icon position
+grid.showShortcutsHelp = true
 ```
 
-### Built-in Keyboard Navigation
-
-| Key | Action |
-|-----|--------|
-| Arrow keys | Navigate cells |
-| Tab / Shift+Tab | Next/previous editable cell |
-| Enter / F2 | Start editing |
-| Escape | Cancel edit / clear focus |
-| Space | Toggle checkbox / open dropdown |
-| Home / End | First/last cell in row |
-| Ctrl+Home / Ctrl+End | First/last cell in grid |
-| PageUp / PageDown | Move by ~10 rows |
-| Ctrl+Up / Ctrl+Down | Move row up/down |
-| Ctrl+Delete | Delete row (fires `onrowdelete`) |
-
-## Virtual Scrolling
-
-For large datasets (1000+ rows), enable virtual scrolling:
+### Virtual Scrolling
 
 ```javascript
 grid.virtualScroll = true
-grid.virtualScrollRowHeight = 38    // Row height in pixels
-grid.virtualScrollBuffer = 10       // Extra rows rendered above/below
-
-// Or auto-enable based on item count
-grid.virtualScrollThreshold = 100   // Enable when items >= 100
+grid.virtualScrollRowHeight = 38
+grid.virtualScrollBuffer = 10
+grid.virtualScrollThreshold = 100  // Auto-enable when items >= 100
 ```
 
-## Infinite Scroll
-
-Load more data as user scrolls:
+### Server-Side Data
 
 ```javascript
-grid.infiniteScroll = true
-grid.hasMoreItems = true
-grid.infiniteScrollThreshold = 100  // Distance from bottom in px
-
 grid.ondatarequest = async (detail) => {
-  if (detail.trigger === 'loadMore') {
-    const moreData = await fetchMore(detail.skip, detail.pageSize)
-    grid.items = [...grid.items, ...moreData.items]
-    grid.hasMoreItems = moreData.hasMore
-  }
+  const response = await fetch('/api/data?' + new URLSearchParams({
+    sort: JSON.stringify(detail.sort),
+    skip: detail.skip,
+    take: detail.pageSize
+  }))
+
+  const data = await response.json()
+  grid.items = data.items
+  grid.totalItems = data.total
 }
 ```
 
-## Custom Styling
-
-### Cell & Row Styling
+### Custom Cell & Row Styling
 
 ```javascript
 // Static cell class
 { field: 'status', cellClass: 'status-cell' }
 
 // Dynamic cell class
-{
-  field: 'salary',
-  cellClassCallback: (value, row) => value > 100000 ? 'high-salary' : null
-}
+{ field: 'salary', cellClassCallback: (val, row) => val > 100000 ? 'high' : null }
 
 // Dynamic row class
-grid.rowClassCallback = (row, index) => {
-  if (row.status === 'inactive') return 'row-inactive'
-  return null
-}
+grid.rowClassCallback = (row, index) => row.status === 'inactive' ? 'row-inactive' : null
 
-// Inject custom CSS into shadow DOM
+// Inject CSS into shadow DOM
 grid.customStylesCallback = () => `
-  .high-salary { background-color: #d1fae5 !important; }
+  .high { background-color: #d1fae5 !important; }
   .row-inactive { opacity: 0.6; }
 `
 ```
 
-### CSS Variables
+## Theming
 
-Override CSS custom properties for theming:
+### Theme Designer
+
+The easiest way to customize the appearance is using the **KeenMate Theme Designer**:
+
+**[theme-designer.keenmate.dev](https://theme-designer.keenmate.dev)**
+
+1. Choose 3 base colors - background, text, and accent
+2. Preview changes live
+3. Export your theme as CSS, JSON, or SCSS
+
+### CSS Variable Layers
+
+KeenMate components support a **two-layer theming architecture**:
+
+**Standalone Mode** - Override component-specific variables:
+
+```css
+:root {
+  --wg-accent-color: #your-brand-color;
+  --wg-header-background: #your-background;
+  --wg-text-color: #your-text-color;
+}
+```
+
+**Cascading Mode** - Share a base layer across all KeenMate components:
+
+```css
+:root {
+  /* Base layer - single source of truth */
+  --base-accent-color: #3b82f6;
+  --base-layer-1: #ffffff;
+  --base-text-color-1: #111827;
+
+  /* Components reference base layer automatically */
+}
+```
+
+Change `--base-accent-color` once → web-grid, web-multiselect, and web-daterangepicker all update.
+
+### CSS Custom Properties
 
 ```css
 web-grid {
@@ -506,6 +463,7 @@ web-grid {
   --wg-header-background: #f8fafc;
   --wg-row-hover-background: #f1f5f9;
   --wg-row-stripe-background: #fafafa;
+  --wg-border-color: #e2e8f0;
 
   /* Typography */
   --wg-font-family: system-ui, sans-serif;
@@ -514,68 +472,41 @@ web-grid {
   /* Spacing */
   --wg-cell-padding: 8px 12px;
   --wg-border-radius: 4px;
+
+  /* Editor */
+  --wg-input-focus-border-color: var(--wg-accent-color);
+  --wg-dropdown-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
 }
 ```
 
-The grid integrates with [@keenmate/theme-designer](https://github.com/keenmate/theme-designer) via `--base-*` CSS variables for consistent theming across KeenMate components.
+### Unified Variable Naming
 
-## Server-Side Operations
+All KeenMate components follow consistent naming:
 
-For server-side sorting, filtering, and pagination:
-
-```javascript
-grid.ondatarequest = async (detail) => {
-  // detail contains: sort, page, pageSize, skip, trigger
-  const response = await fetch('/api/data?' + new URLSearchParams({
-    sort: JSON.stringify(detail.sort),
-    skip: detail.skip,
-    take: detail.pageSize
-  }))
-
-  const data = await response.json()
-  grid.items = data.items
-  grid.totalItems = data.total  // For pagination
-}
-```
-
-## Features
-
-- **Sorting** - Single and multi-column sorting with visual indicators
-- **Filtering** - Column-based filtering
-- **Pagination** - Built-in pagination with customizable page sizes
-- **Inline Editing** - Multiple editor types (text, number, date, select, combobox, autocomplete, checkbox, custom)
-- **Keyboard Navigation** - Excel-like navigation with Enter, Tab, Arrow keys
-- **Row Toolbar** - Floating action buttons (add, delete, duplicate, move)
-- **Context Menu** - Right-click menus with custom actions
-- **Keyboard Shortcuts** - Custom grid-level shortcuts with help overlay
-- **Virtual Scrolling** - Efficient rendering for large datasets (10,000+ rows)
-- **Infinite Scroll** - Load more data as user scrolls
-- **Custom Styling** - Cell and row styling via callbacks
-- **Dark Mode** - Automatic dark mode support via CSS variables
-- **Shadow DOM** - Encapsulated styles that don't leak
-
-## Documentation
-
-See the [live showcase](https://web-grid.keenmate.com) for interactive examples and full API documentation.
+| Purpose | web-grid | web-multiselect | web-daterangepicker |
+|---------|----------|-----------------|---------------------|
+| Brand color | `--wg-accent-color` | `--ms-accent-color` | `--drp-accent-color` |
+| Background | `--wg-header-background` | `--ms-primary-bg` | `--drp-primary-bg` |
+| Text color | `--wg-text-color` | `--ms-text-primary` | `--drp-text-primary` |
+| Border | `--wg-border-color` | `--ms-border-color` | `--drp-border-color` |
 
 ## Development
 
-This is a monorepo using npm workspaces:
-
-```
-web-grid/
-├── packages/web-grid/   # The library
-└── docs/                # Documentation site
-```
-
-### Commands
-
 ```bash
-make setup     # Install dependencies
-make dev       # Start dev server with HMR
-make build     # Build library and docs
-make package   # Build library for publishing
-make publish   # Publish to npm
+# Install dependencies
+make setup
+
+# Start dev server with HMR
+make dev
+
+# Build library and docs
+make build
+
+# Build library for publishing
+make package
+
+# Publish to npm
+make publish
 ```
 
 ## Browser Support
@@ -586,9 +517,17 @@ Modern browsers with Custom Elements v1 support:
 - Safari 10.1+
 - Edge 79+
 
+## Documentation
+
+See the [live showcase](https://web-grid.keenmate.com) for interactive examples and full API documentation.
+
 ## License
 
 MIT
+
+## Credits
+
+Created by [Keenmate](https://github.com/keenmate) as part of the Pure Admin design system.
 
 ## Related
 
