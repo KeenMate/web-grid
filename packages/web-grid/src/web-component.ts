@@ -246,6 +246,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	isUserFiltering = false
 	justSelected = false
 	isOpeningDropdown = false  // Flag to skip scroll events during dropdown opening
+	private isProgrammaticScroll = false  // Flag to skip handleVirtualScroll during keyboard nav
 
 	// Autocomplete async state
 	searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -798,7 +799,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					if (this.grid.shouldUseVirtualScroll()) {
 						const oldFocus = this.grid.focusedCell
 						this.grid.setFocusedCell(0, 0)
-						scrollToRowPosition(this, 0)
+						this.scrollToRowProgrammatically(0)
 						const cell = this.shadow.querySelector(`td[data-row="0"][data-col="0"]`) as HTMLElement
 						if (cell) {
 							cell.focus({ preventScroll: true })
@@ -820,7 +821,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					if (this.grid.shouldUseVirtualScroll()) {
 						const oldFocus = this.grid.focusedCell
 						this.grid.setFocusedCell(lastRow, lastCol)
-						scrollToRowPosition(this, lastRow)
+						this.scrollToRowProgrammatically(lastRow)
 						const cell = this.shadow.querySelector(`td[data-row="${lastRow}"][data-col="${lastCol}"]`) as HTMLElement
 						if (cell) {
 							cell.focus({ preventScroll: true })
@@ -840,7 +841,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					if (this.grid.shouldUseVirtualScroll()) {
 						const oldFocus = this.grid.focusedCell
 						this.grid.setFocusedCell(0, colIndex)
-						scrollToRowPosition(this, 0)
+						this.scrollToRowProgrammatically(0)
 						const cell = this.shadow.querySelector(`td[data-row="0"][data-col="${colIndex}"]`) as HTMLElement
 						if (cell) {
 							cell.focus({ preventScroll: true })
@@ -854,7 +855,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					if (this.grid.shouldUseVirtualScroll()) {
 						const oldFocus = this.grid.focusedCell
 						this.grid.setFocusedCell(newRowUp, colIndex)
-						scrollToRowPosition(this, newRowUp)
+						this.scrollToRowProgrammatically(newRowUp)
 						const cell = this.shadow.querySelector(`td[data-row="${newRowUp}"][data-col="${colIndex}"]`) as HTMLElement
 						if (cell) {
 							cell.focus({ preventScroll: true })
@@ -873,7 +874,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					if (this.grid.shouldUseVirtualScroll()) {
 						const oldFocus = this.grid.focusedCell
 						this.grid.setFocusedCell(lastRow, colIndex)
-						scrollToRowPosition(this, lastRow)
+						this.scrollToRowProgrammatically(lastRow)
 						const cell = this.shadow.querySelector(`td[data-row="${lastRow}"][data-col="${colIndex}"]`) as HTMLElement
 						if (cell) {
 							cell.focus({ preventScroll: true })
@@ -887,7 +888,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					if (this.grid.shouldUseVirtualScroll()) {
 						const oldFocus = this.grid.focusedCell
 						this.grid.setFocusedCell(newRowDown, colIndex)
-						scrollToRowPosition(this, newRowDown)
+						this.scrollToRowProgrammatically(newRowDown)
 						// Focus the cell after scroll (renderVirtualRows may not run if range unchanged)
 						const cell = this.shadow.querySelector(`td[data-row="${newRowDown}"][data-col="${colIndex}"]`) as HTMLElement
 						if (cell) {
@@ -1949,9 +1950,53 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// ==========================================================================
 
 	/**
+	 * Scroll to a row position programmatically (keyboard navigation).
+	 * Pre-renders the target row range ONCE, then scrolls. Flag prevents
+	 * the scroll event from redundantly calling handleVirtualScroll.
+	 */
+	private scrollToRowProgrammatically(targetRow: number): void {
+		const container = this.shadow.querySelector('.wg') as HTMLElement
+		if (!container) return
+
+		const items = this.grid.displayItems
+		const rowHeight = this.grid.virtualScrollRowHeight
+		const buffer = this.grid.virtualScrollBuffer
+		const viewportHeight = container.clientHeight
+
+		// Calculate scroll position (target row as second visible row)
+		const targetScrollTop = Math.max(0, (targetRow - 1) * rowHeight)
+		const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight)
+		const clampedScrollTop = Math.min(targetScrollTop, maxScroll)
+
+		// Calculate the virtual range for this scroll position
+		let newStartIndex = Math.max(0, Math.floor(clampedScrollTop / rowHeight) - buffer)
+		const visibleCount = Math.ceil(viewportHeight / rowHeight) + buffer * 2
+		let newEndIndex = Math.min(items.length, newStartIndex + visibleCount)
+
+		// Ensure target row is in range
+		if (targetRow < newStartIndex) newStartIndex = targetRow
+		if (targetRow >= newEndIndex) newEndIndex = targetRow + 1
+
+		// Update range and render ONCE (before scroll)
+		if (newStartIndex !== this.virtualScrollStart || newEndIndex !== this.virtualScrollEnd) {
+			this.virtualScrollStart = newStartIndex
+			this.virtualScrollEnd = newEndIndex
+			this.renderVirtualRows(container)
+		}
+
+		// Now scroll - flag prevents handleVirtualScroll from re-rendering
+		this.isProgrammaticScroll = true
+		container.scrollTop = clampedScrollTop
+		queueMicrotask(() => { this.isProgrammaticScroll = false })
+	}
+
+	/**
 	 * Handle virtual scroll - recalculate visible range and re-render if changed
 	 */
 	private handleVirtualScroll(container: HTMLElement): void {
+		// Skip during programmatic scroll (keyboard nav already handles row visibility)
+		if (this.isProgrammaticScroll) return
+
 		const items = this.grid.displayItems
 		const rowHeight = this.grid.virtualScrollRowHeight
 		const buffer = this.grid.virtualScrollBuffer
@@ -2524,8 +2569,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.grid.setFocusedCell(targetRow, colIndex)
 
 			if (this.grid.shouldUseVirtualScroll()) {
-				// Virtual scroll: scroll to position and let scroll handler re-render
-				scrollToRowPosition(this, targetRow)
+				// Virtual scroll: scroll to position (programmatic flag prevents redundant handleVirtualScroll)
+				this.scrollToRowProgrammatically(targetRow)
 				// After scroll settles, focus the cell
 				requestAnimationFrame(() => {
 					requestAnimationFrame(() => {
