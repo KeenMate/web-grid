@@ -656,11 +656,11 @@ export function updateConnector<T>(
 /**
  * Render the toolbar trigger button HTML
  */
-export function renderTriggerButton(rowIndex: number, isActive: boolean): string {
+export function renderTriggerButton(rowIndex: number, isActive: boolean, title: string = 'Row actions'): string {
 	const activeClass = isActive ? 'wg__toolbar-trigger--active' : ''
 	return `<button
 		class="wg__toolbar-trigger ${activeClass}"
 		data-toolbar-trigger="${rowIndex}"
-		title="Row actions"
+		title="${title}"
 	>⋮</button>`
 }

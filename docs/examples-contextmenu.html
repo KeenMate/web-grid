@@ -101,6 +101,14 @@
             background: #5a67d8;
         }
         .hidden { display: none !important; }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .control-group label {
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -137,6 +145,8 @@
                 <h3>Grid Properties</h3>
                 <table class="props-table">
                     <tr><td><code>contextMenu</code></td><td>Array of menu item configurations</td></tr>
+                    <tr><td><code>contextMenuXOffset</code></td><td>Horizontal offset from click (default: 0)</td></tr>
+                    <tr><td><code>contextMenuYOffset</code></td><td>Vertical offset from click (default: 4)</td></tr>
                     <tr><td><code>oncontextmenuopen</code></td><td>Callback fired when context menu opens</td></tr>
                 </table>
 
@@ -191,6 +201,25 @@
 ]</pre>
                 </div>
             </div>
+        </div>
+
+        <div class="card">
+            <h2>Menu Position Offset</h2>
+            <p style="color: #666; margin-bottom: 1rem;">
+                Control where the context menu appears relative to the click position.
+                Adjust the sliders and right-click to see the effect.
+            </p>
+            <div class="grid-2" style="margin-bottom: 1rem;">
+                <div class="control-group">
+                    <label for="xOffsetSlider">X Offset: <strong id="xOffsetValue">8</strong>px</label>
+                    <input type="range" id="xOffsetSlider" min="-50" max="50" value="8" style="width: 100%;">
+                </div>
+                <div class="control-group">
+                    <label for="yOffsetSlider">Y Offset: <strong id="yOffsetValue">0</strong>px</label>
+                    <input type="range" id="yOffsetSlider" min="-50" max="50" value="0" style="width: 100%;">
+                </div>
+            </div>
+            <web-grid id="grid3" striped hoverable style="max-width: 100%; max-height: 250px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
     </div>
 
@@ -444,6 +473,35 @@
                 products[detail.rowIndex] = { ...products[detail.rowIndex], [detail.field]: detail.newValue }
             }
         }
+
+        // =============================================================
+        // Offset Configuration Grid
+        // =============================================================
+
+        const grid3 = document.getElementById('grid3')
+        grid3.items = products.slice(0, 4)
+        grid3.columns = readOnlyColumns
+        grid3.contextMenu = [
+            { id: 'action1', label: 'Action 1', icon: '📋' },
+            { id: 'action2', label: 'Action 2', icon: '✏️' },
+            { id: 'action3', label: 'Action 3', icon: '🗑️', danger: true, dividerBefore: true }
+        ]
+
+        // Offset sliders
+        const xOffsetSlider = document.getElementById('xOffsetSlider')
+        const yOffsetSlider = document.getElementById('yOffsetSlider')
+        const xOffsetValue = document.getElementById('xOffsetValue')
+        const yOffsetValue = document.getElementById('yOffsetValue')
+
+        xOffsetSlider.addEventListener('input', () => {
+            grid3.contextMenuXOffset = parseInt(xOffsetSlider.value)
+            xOffsetValue.textContent = xOffsetSlider.value
+        })
+
+        yOffsetSlider.addEventListener('input', () => {
+            grid3.contextMenuYOffset = parseInt(yOffsetSlider.value)
+            yOffsetValue.textContent = yOffsetSlider.value
+        })
     </script>
 </body>
 </html>

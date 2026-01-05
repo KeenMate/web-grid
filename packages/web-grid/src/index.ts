@@ -53,6 +53,9 @@ export type {
 	DataRequestDetail,
 	DataRequestTrigger,
 
+	// Labels/i18n
+	GridLabels,
+
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,

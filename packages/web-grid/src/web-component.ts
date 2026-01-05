@@ -29,7 +29,8 @@ import type {
 	PaginationLabelsCallback,
 	SummaryContentCallback,
 	ValidationTooltipContext,
-	ToolbarPosition
+	ToolbarPosition,
+	GridLabels
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -234,8 +235,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	private toolbarHovered = false
 	private toolbarShortcutHandler: ((e: KeyboardEvent) => void) | null = null
 
-	// Hovered row tracking (for inline mode shortcuts)
-	private hoveredRowIndex: number | null = null
+	// Inline shortcuts handler (hovered row tracked in WebGrid.hoveredRowIndex)
 	private inlineShortcutHandler: ((e: KeyboardEvent) => void) | null = null
 
 	// Dropdown state for combobox/autocomplete
@@ -418,6 +418,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get contextMenu(): ContextMenuItem<T>[] | undefined { return this.grid.contextMenu }
 	set contextMenu(value: ContextMenuItem<T>[] | undefined) { this.grid.contextMenu = value }
 
+	get contextMenuXOffset(): number { return this.grid.contextMenuXOffset }
+	set contextMenuXOffset(value: number) { this.grid.contextMenuXOffset = value }
+
+	get contextMenuYOffset(): number { return this.grid.contextMenuYOffset }
+	set contextMenuYOffset(value: number) { this.grid.contextMenuYOffset = value }
+
 	// Row keyboard shortcuts
 	get rowShortcuts(): RowShortcut<T>[] | undefined { return this.grid.rowShortcuts }
 	set rowShortcuts(value: RowShortcut<T>[] | undefined) { this.grid.rowShortcuts = value }
@@ -527,6 +533,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	get rowClassCallback(): ((row: T, rowIndex: number) => string | null) | undefined { return this.grid.rowClassCallback }
 	set rowClassCallback(value: ((row: T, rowIndex: number) => string | null) | undefined) { this.grid.rowClassCallback = value }
+
+	get labels(): GridLabels { return this.grid.labels }
+	set labels(value: Partial<GridLabels>) { this.grid.labels = value }
 
 	get summaryMetadata(): unknown { return this.grid.summaryMetadata }
 	set summaryMetadata(value: unknown) { this.grid.summaryMetadata = value }
@@ -1758,7 +1767,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const row = target.closest('.wg__row') as HTMLElement
 			if (row) {
 				const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
-				this.hoveredRowIndex = rowIndex
+				this.grid.setHoveredRow(rowIndex)
 
 				// For inline mode, setup shortcuts
 				if (this.grid.toolbarPosition === 'inline') {
@@ -1790,7 +1799,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (this.grid.toolbarPosition === 'inline') {
 					setTimeout(() => {
 						if (!table.matches(':hover')) {
-							this.hoveredRowIndex = null
+							this.grid.setHoveredRow(null)
 							this.removeInlineShortcuts()
 						}
 					}, 50)
@@ -1811,7 +1820,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						const isHoveringTable = table.matches(':hover')
 
 						if (!isHoveringToolbar && !isHoveringTable) {
-							this.hoveredRowIndex = null
+							this.grid.setHoveredRow(null)
 							this.closeToolbarAndReset()
 							// Don't re-render if editing - would destroy the editor
 							if (!this.grid.editingCell) {
@@ -2066,7 +2075,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		return `
 			<div class="wg__shortcuts-help ${positionClass}">
-				<button class="wg__shortcuts-help-icon" type="button" title="Keyboard shortcuts">
+				<button class="wg__shortcuts-help-icon" type="button" title="${this.grid.labels.keyboardShortcuts}">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<circle cx="12" cy="12" r="10"></circle>
 						<path d="M12 16v-4"></path>
@@ -2075,7 +2084,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				</button>
 				<div class="wg__shortcuts-help-overlay">
 					${customContent ? `<div class="wg__shortcuts-help-custom">${customContent}</div>` : ''}
-					<div class="wg__shortcuts-help-title">Keyboard Shortcuts</div>
+					<div class="wg__shortcuts-help-title">${this.grid.labels.keyboardShortcuts}</div>
 					<div class="wg__shortcuts-help-list">
 						${shortcutsHtml}
 					</div>
@@ -2655,11 +2664,25 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			;(this.grid.oncontextmenuopen as (ctx: any) => void)(menuContext)
 		}
 
+		// Sync any shadowed own properties to grid (workaround for property shadowing)
+		const ownXOffset = Object.getOwnPropertyDescriptor(this, 'contextMenuXOffset')
+		const ownYOffset = Object.getOwnPropertyDescriptor(this, 'contextMenuYOffset')
+		if (ownXOffset && 'value' in ownXOffset) {
+			this.grid.contextMenuXOffset = ownXOffset.value
+			delete (this as any).contextMenuXOffset // Remove shadow
+		}
+		if (ownYOffset && 'value' in ownYOffset) {
+			this.grid.contextMenuYOffset = ownYOffset.value
+			delete (this as any).contextMenuYOffset // Remove shadow
+		}
+
 		// Open the context menu
 		this.contextMenuElement = openContextMenu(
 			this,
 			e.clientX,
 			e.clientY,
+			this.grid.contextMenuXOffset,
+			this.grid.contextMenuYOffset,
 			contextMenuItems,
 			menuContext,
 			(itemId: string) => {
@@ -2746,7 +2769,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		this.removeInlineShortcuts()
 
 		const shortcuts = this.grid.rowShortcuts
-		if (!shortcuts?.length || this.hoveredRowIndex === null) return
+		if (!shortcuts?.length || this.grid.hoveredRowIndex === null) return
 
 		this.inlineShortcutHandler = (e: KeyboardEvent) => {
 			// Skip if focus is in an input/editor
@@ -2755,7 +2778,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				return
 			}
 
-			const rowIndex = this.hoveredRowIndex
+			const rowIndex = this.grid.hoveredRowIndex
 			if (rowIndex === null) return
 
 			const row = this.grid.displayItems[rowIndex]

@@ -28,8 +28,28 @@ import type {
 	PaginationLabelsCallback,
 	SummaryContentCallback,
 	ValidationTooltipContext,
-	ToolbarPosition
+	ToolbarPosition,
+	GridLabels
 } from './types.js'
+
+// Default labels (English)
+const DEFAULT_LABELS: GridLabels = {
+	// Toolbar
+	rowActions: 'Row actions',
+	inlineActionsHeader: 'Actions',
+
+	// Shortcuts help
+	keyboardShortcuts: 'Keyboard shortcuts',
+
+	// Pagination
+	paginationFirst: '⏮',
+	paginationPrevious: '◀',
+	paginationNext: '▶',
+	paginationLast: '⏭',
+	paginationPageInfo: 'Page {current} of {total}',
+	paginationItemCount: '{count} items',
+	paginationPerPage: 'per page'
+}
 
 /**
  * WebGrid - Core logic class for the data grid
@@ -69,6 +89,8 @@ export class WebGrid<T = unknown> {
 	protected _toolbarPosition: ToolbarPosition = 'auto'
 	protected _inlineActionsTitle: string = ''
 	protected _contextMenu: ContextMenuItem<T>[] | undefined = undefined
+	protected _contextMenuXOffset: number = 8
+	protected _contextMenuYOffset: number = 0
 	protected _rowShortcuts: RowShortcut<T>[] | undefined = undefined
 	protected _showShortcutsHelp: boolean = false
 	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
@@ -117,6 +139,9 @@ export class WebGrid<T = unknown> {
 	protected _customStylesCallback?: () => string
 	protected _rowClassCallback?: (row: T, rowIndex: number) => string | null
 
+	// Labels/i18n
+	protected _labels: GridLabels = { ...DEFAULT_LABELS }
+
 	// Virtual scroll
 	protected _virtualScroll: boolean = false
 	protected _virtualScrollThreshold: number = 100
@@ -139,6 +164,10 @@ export class WebGrid<T = unknown> {
 	protected _focusedCell: FocusedCell = null
 	protected _isCommittingFromKeyboard: boolean = false
 	protected _skipNextDropdownAutoEdit: boolean = false
+
+	// Interaction state (centralized tracking for hover, focus, edit)
+	protected _hoveredRowIndex: number | null = null
+	protected _onInteractionChange: ((type: 'hoveredRow' | 'focusedCell' | 'editingCell', detail: { prev: any, current: any }) => void) | null = null
 
 	// ==========================================================================
 	// Public API - Getters/Setters
@@ -280,6 +309,7 @@ export class WebGrid<T = unknown> {
 	get editingCell(): EditingCell { return this._editingCell }
 	get isValidating(): boolean { return this._isValidating }
 	get currentCellError(): string | null { return this._currentCellError }
+	get hoveredRowIndex(): number | null { return this._hoveredRowIndex }
 
 	get showRowToolbar(): boolean { return this._showRowToolbar }
 	set showRowToolbar(value: boolean) {
@@ -334,6 +364,16 @@ export class WebGrid<T = unknown> {
 	set contextMenu(value: ContextMenuItem<T>[] | undefined) {
 		this._contextMenu = value
 		this.requestUpdate()
+	}
+
+	get contextMenuXOffset(): number { return this._contextMenuXOffset }
+	set contextMenuXOffset(value: number) {
+		this._contextMenuXOffset = value
+	}
+
+	get contextMenuYOffset(): number { return this._contextMenuYOffset }
+	set contextMenuYOffset(value: number) {
+		this._contextMenuYOffset = value
 	}
 
 	// Row keyboard shortcuts
@@ -438,6 +478,13 @@ export class WebGrid<T = unknown> {
 	get rowClassCallback(): ((row: T, rowIndex: number) => string | null) | undefined { return this._rowClassCallback }
 	set rowClassCallback(value: ((row: T, rowIndex: number) => string | null) | undefined) {
 		this._rowClassCallback = value
+		this.requestUpdate()
+	}
+
+	// Labels/i18n - merge with defaults so partial updates work
+	get labels(): GridLabels { return this._labels }
+	set labels(value: Partial<GridLabels>) {
+		this._labels = { ...DEFAULT_LABELS, ...value }
 		this.requestUpdate()
 	}
 
@@ -799,12 +846,14 @@ export class WebGrid<T = unknown> {
 			this._draftRows.set(rowIndex, { ...item })
 		}
 
+		const prev = this._editingCell
 		this._editingCell = {
 			rowIndex,
 			field,
 			initialSearchQuery: options?.initialSearchQuery,
 			cursorPosition: options?.cursorPosition
 		}
+		this._onInteractionChange?.('editingCell', { prev, current: this._editingCell })
 		this._currentCellError = null
 		this.requestUpdate()
 
@@ -821,7 +870,8 @@ export class WebGrid<T = unknown> {
 	 */
 	cancelEdit(): void {
 		if (this._editingCell) {
-			const { rowIndex, field } = this._editingCell
+			const prev = this._editingCell
+			const { rowIndex, field } = prev
 			const item = this.displayItems[rowIndex]
 			if (item) {
 				this._onroweditcancel?.({
@@ -831,6 +881,7 @@ export class WebGrid<T = unknown> {
 				})
 			}
 			this._editingCell = null
+			this._onInteractionChange?.('editingCell', { prev, current: null })
 			this._currentCellError = null
 			this.requestUpdate()
 		}
@@ -947,7 +998,9 @@ export class WebGrid<T = unknown> {
 		})
 
 		// Exit edit mode
+		const prevEditingCell = this._editingCell
 		this._editingCell = null
+		this._onInteractionChange?.('editingCell', { prev: prevEditingCell, current: null })
 		this.requestUpdate()
 	}
 
@@ -996,7 +1049,11 @@ export class WebGrid<T = unknown> {
 	 * NOTE: Does NOT call requestUpdate() - GridElement handles DOM updates surgically
 	 */
 	setFocusedCell(rowIndex: number, colIndex: number): void {
-		this._focusedCell = { rowIndex, colIndex }
+		const prev = this._focusedCell
+		const next: FocusedCell = { rowIndex, colIndex }
+		if (prev?.rowIndex === next.rowIndex && prev?.colIndex === next.colIndex) return
+		this._focusedCell = next
+		this._onInteractionChange?.('focusedCell', { prev, current: next })
 		// Don't call requestUpdate() - focus updates are handled surgically in GridElement
 	}
 
@@ -1005,8 +1062,22 @@ export class WebGrid<T = unknown> {
 	 * NOTE: Does NOT call requestUpdate() - GridElement handles DOM updates surgically
 	 */
 	clearFocusedCell(): void {
+		const prev = this._focusedCell
+		if (prev === null) return
 		this._focusedCell = null
+		this._onInteractionChange?.('focusedCell', { prev, current: null })
 		// Don't call requestUpdate() - focus updates are handled surgically in GridElement
+	}
+
+	/**
+	 * Set the hovered row index (for toolbar/shortcuts)
+	 * NOTE: Does NOT call requestUpdate() - GridElement handles UI updates
+	 */
+	setHoveredRow(rowIndex: number | null): void {
+		if (this._hoveredRowIndex === rowIndex) return
+		const prev = this._hoveredRowIndex
+		this._hoveredRowIndex = rowIndex
+		this._onInteractionChange?.('hoveredRow', { prev, current: rowIndex })
 	}
 }
 

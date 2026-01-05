@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0-rc06] - Unreleased
+## [1.0.0-rc07] - Unreleased
 
 ### Added
 - **Row Keyboard Shortcuts** - Grid-level keyboard shortcuts for row operations
@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Context Menu Shortcuts** - Keyboard shortcuts for context menu items
   - `shortcut` property on `ContextMenuItem` displays shortcut hint
   - Pressing shortcut key while menu is open triggers the action
+- **Context Menu Position Offset** - Control context menu position relative to click
+  - `contextMenuXOffset` - Horizontal offset in pixels (default: 8)
+  - `contextMenuYOffset` - Vertical offset in pixels (default: 0)
+  - Matches svelte-treeview positioning behavior
 - **Public Focus API** - New `focusCell(rowIndex, colIndex)` method for programmatic focus
 - **Public Edit API** - New `startEditing(rowIndex, colIndex)` method for programmatic editing
 - **Toolbar Position Property** - New `toolbarPosition` property to control toolbar placement
@@ -36,9 +40,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `toolbarPosition="left"` - Prefer left side
   - `toolbarPosition="right"` - Prefer right side
   - `toolbarPosition="top"` - Prefer above the row
+  - `toolbarPosition="inline"` - Render as fixed column instead of floating popup
   - Uses floating-ui for intelligent fallback when preferred position has no space
+- **Inline Actions Column** - Render toolbar buttons as a table column
+  - Set `toolbarPosition="inline"` to enable
+  - `inlineActionsTitle` property sets the column header text
+  - Supports `disabled` and `hidden` callbacks per row
+  - Multi-row button layout via `row` property on toolbar items
+  - Keyboard shortcuts (`rowShortcuts`) work on hovered row
+- **Labels/i18n Support** - Centralized labels object for translations
+  - `grid.labels` property accepts `Partial<GridLabels>` (merged with defaults)
+  - Translatable strings: `rowActions`, `inlineActionsHeader`, `keyboardShortcuts`
+  - Pagination labels: `paginationFirst`, `paginationPrevious`, `paginationNext`, `paginationLast`, `paginationPageInfo`, `paginationItemCount`, `paginationPerPage`
+  - Placeholder syntax for dynamic values: `{current}`, `{total}`, `{count}`
 
 ### Changed
+- **Centralized Interaction State** - Refactored hover/focus/edit state tracking
+  - All interaction state now managed in `WebGrid` class (single source of truth)
+  - `grid.hoveredRowIndex` getter for reading hovered row
+  - `grid.setHoveredRow()` method for updating hover state
+  - Internal `_onInteractionChange` callback for state change notifications
+  - Enables future features like "shortcuts on focused row when no hover"
 - **Readonly Cell Background** - `--wg-cell-readonly-bg` now uses `var(--base-disabled-bg, var(--wg-surface-2))` instead of `var(--wg-surface-2)`, providing visual distinction from striped rows when theme-designer's `--base-disabled-bg` is set
 - **Toolbar Positioning** - Refactored to use floating-ui library for better space detection and automatic fallback positioning
 - **Font Inheritance** - Changed default font-family fallback from `system-ui, sans-serif` to `inherit`, allowing grid to inherit font from parent context (Bootstrap, Tailwind, etc.)

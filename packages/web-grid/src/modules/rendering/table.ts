@@ -35,7 +35,7 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 	// Inline actions column (toolbarPosition="inline")
 	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
 	const inlineActionsHeaderHtml = showInlineActions
-		? `<th class="wg__header wg__inline-actions-header">${ctx.escapeHtml(ctx.grid.inlineActionsTitle || '')}</th>`
+		? `<th class="wg__header wg__inline-actions-header">${ctx.escapeHtml(ctx.grid.inlineActionsTitle || ctx.grid.labels.inlineActionsHeader)}</th>`
 		: ''
 
 	// Actions column for button trigger mode (floating toolbar trigger)
@@ -141,7 +141,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
 				<td class="wg__cell wg__actions-column">
-					${renderTriggerButton(rowIndex, isActive)}
+					${renderTriggerButton(rowIndex, isActive, ctx.grid.labels.rowActions)}
 				</td>
 			`
 		}
@@ -372,7 +372,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			const isActive = activeToolbarRow === rowIndex
 			actionsCell = `
 				<td class="wg__cell wg__actions-column">
-					${renderTriggerButton(rowIndex, isActive)}
+					${renderTriggerButton(rowIndex, isActive, ctx.grid.labels.rowActions)}
 				</td>
 			`
 		}
@@ -507,15 +507,19 @@ export function renderPagination<T>(ctx: GridContext<T>, position: string = 'bot
 		? ctx.grid.totalItems
 		: (ctx.grid as unknown as { sortedItems: T[] }).sortedItems.length
 
-	// Build labels (defaults + custom from callback)
+	// Build labels (grid.labels → paginationLabelsCallback → final)
+	const gridLabels = ctx.grid.labels
 	const defaultLabels = {
-		first: 'First',
-		previous: 'Previous',
-		next: 'Next',
-		last: 'Last',
-		pageInfo: `Page ${currentPage} of ${totalPages}`,
-		itemCount: `(${totalItems} item${totalItems !== 1 ? 's' : ''})`,
-		perPage: 'per page'
+		first: gridLabels.paginationFirst,
+		previous: gridLabels.paginationPrevious,
+		next: gridLabels.paginationNext,
+		last: gridLabels.paginationLast,
+		pageInfo: gridLabels.paginationPageInfo
+			.replace('{current}', String(currentPage))
+			.replace('{total}', String(totalPages)),
+		itemCount: gridLabels.paginationItemCount
+			.replace('{count}', String(totalItems)),
+		perPage: gridLabels.paginationPerPage
 	}
 
 	const labelsCallback = ctx.grid.paginationLabelsCallback

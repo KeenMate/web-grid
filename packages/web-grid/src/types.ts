@@ -399,6 +399,8 @@ export type QuickGridProps<T> = {
 	toolbarTopPosition?: 'start' | 'center' | 'end' | 'cursor'  // Deprecated: use toolbarHorizontalAlign
 	// Context menu
 	contextMenu?: ContextMenuItem<T>[]
+	contextMenuXOffset?: number           // Horizontal offset from click (default: 0)
+	contextMenuYOffset?: number           // Vertical offset from click (default: 4)
 	oncontextmenuopen?: (context: ContextMenuContext<T>) => void
 	// Row keyboard shortcuts
 	rowShortcuts?: RowShortcut<T>[]              // Shortcut definitions
@@ -511,6 +513,25 @@ export type PaginationLabelsContext = {
 }
 
 export type PaginationLabelsCallback = (context: PaginationLabelsContext) => Partial<PaginationLabels>
+
+// Grid labels for translation/i18n
+export type GridLabels = {
+	// Toolbar
+	rowActions: string              // Toolbar trigger button title
+	inlineActionsHeader: string     // Default inline actions column header
+
+	// Shortcuts help
+	keyboardShortcuts: string       // Shortcuts help icon title
+
+	// Pagination (defaults, can be overridden by paginationLabelsCallback)
+	paginationFirst: string
+	paginationPrevious: string
+	paginationNext: string
+	paginationLast: string
+	paginationPageInfo: string      // e.g., "Page {current} of {total}"
+	paginationItemCount: string     // e.g., "{count} items"
+	paginationPerPage: string       // e.g., "per page"
+}
 
 // Summary content callback
 export type SummaryContext<T> = {

@@ -24,7 +24,9 @@
       "Bash(wc:*)",
       "Bash(make dev:*)",
       "Bash(make package:*)",
-      "Bash(npm pack:*)"
+      "Bash(npm pack:*)",
+      "Bash(npm view:*)",
+      "Bash(tree:*)"
     ]
   }
 }

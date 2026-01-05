@@ -2,7 +2,7 @@
 // Context Menu Module
 // =============================================================================
 
-import { computePosition, flip, shift, offset } from '@floating-ui/dom'
+import { computePosition, flip, shift } from '@floating-ui/dom'
 import type { ContextMenuItem, ContextMenuContext } from '../../types.js'
 import type { GridContext } from '../types.js'
 
@@ -166,6 +166,8 @@ export function openContextMenu<T>(
 	ctx: GridContext<T>,
 	x: number,
 	y: number,
+	xOffset: number,
+	yOffset: number,
 	items: ContextMenuItem<T>[],
 	menuContext: ContextMenuContext<T>,
 	onItemClick: (itemId: string) => void,
@@ -184,24 +186,27 @@ export function openContextMenu<T>(
 
 	const menu = container.querySelector('.wg-context-menu') as HTMLElement
 
-	// Position using a virtual element at the click coordinates
+	// Apply offsets to click coordinates
+	const menuX = x + xOffset
+	const menuY = y + yOffset
+
+	// Position using a virtual element at the adjusted coordinates
 	const virtualEl = {
 		getBoundingClientRect: () => ({
 			width: 0,
 			height: 0,
-			x,
-			y,
-			top: y,
-			left: x,
-			right: x,
-			bottom: y
+			x: menuX,
+			y: menuY,
+			top: menuY,
+			left: menuX,
+			right: menuX,
+			bottom: menuY
 		})
 	}
 
 	computePosition(virtualEl, menu, {
 		placement: 'bottom-start',
 		middleware: [
-			offset(4),
 			flip({ fallbackPlacements: ['top-start', 'bottom-end', 'top-end'] }),
 			shift({ padding: 8 })
 		]

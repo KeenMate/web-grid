@@ -13,12 +13,14 @@ A lightweight, accessible data grid web component with sorting, filtering, inlin
 - **Inline Editing** - Text, number, date, select, combobox, autocomplete, checkbox, custom editors
 - **Keyboard Navigation** - Excel-like navigation with Enter, Tab, Arrow keys
 - **Row Toolbar** - Floating action buttons (add, delete, duplicate, move)
+- **Inline Actions Column** - Render toolbar buttons as a fixed table column
 - **Context Menu** - Right-click menus with custom actions
 - **Keyboard Shortcuts** - Custom grid-level shortcuts with help overlay
 - **Virtual Scrolling** - Efficient rendering for large datasets (10,000+ rows)
 - **Infinite Scroll** - Load more data as user scrolls
 - **Custom Styling** - Cell and row styling via callbacks
 - **Dark Mode** - Automatic dark mode support via CSS variables
+- **i18n/Labels** - Centralized labels object for translations
 - **Shadow DOM** - Encapsulated styles that don't leak
 - **Framework Agnostic** - Works with any framework or vanilla JS
 
@@ -126,8 +128,9 @@ grid.dropdownToggleVisibility = 'on-focus';  // 'always' | 'on-focus'
 // Row toolbar
 grid.showRowToolbar = true;
 grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown'];
-grid.toolbarPosition = 'right';  // 'auto' | 'left' | 'right' | 'top'
+grid.toolbarPosition = 'right';  // 'auto' | 'left' | 'right' | 'top' | 'inline'
 grid.toolbarTrigger = 'hover';   // 'hover' | 'click' | 'button'
+grid.inlineActionsTitle = 'Actions';  // Header for inline mode
 
 // Context menu
 grid.contextMenu = [...];
@@ -144,6 +147,13 @@ grid.virtualScrollBuffer = 10;
 // Infinite scroll
 grid.infiniteScroll = true;
 grid.hasMoreItems = true;
+
+// Labels/i18n
+grid.labels = {
+  rowActions: 'Row actions',
+  keyboardShortcuts: 'Keyboard shortcuts',
+  paginationPageInfo: 'Page {current} of {total}'
+};
 ```
 
 ## Column Definition
@@ -324,6 +334,32 @@ grid.rowToolbar = [
 ]
 ```
 
+### Inline Actions Column
+
+Render toolbar buttons as a fixed table column instead of floating popup:
+
+```javascript
+grid.showRowToolbar = true
+grid.toolbarPosition = 'inline'
+grid.inlineActionsTitle = 'Actions'
+
+grid.rowToolbar = [
+  {
+    id: 'edit',
+    icon: '✏️',
+    title: 'Edit',
+    disabled: (row) => row.status === 'Done'
+  },
+  {
+    id: 'delete',
+    icon: '🗑️',
+    title: 'Delete',
+    danger: true,
+    hidden: (row) => row.protected
+  }
+]
+```
+
 ### Context Menu
 
 ```javascript
@@ -366,6 +402,30 @@ grid.rowShortcuts = [
 ]
 
 grid.showShortcutsHelp = true
+```
+
+### Labels/i18n
+
+Customize or translate UI strings:
+
+```javascript
+grid.labels = {
+  // Toolbar
+  rowActions: 'Akce řádku',
+  inlineActionsHeader: 'Akce',
+
+  // Shortcuts help
+  keyboardShortcuts: 'Klávesové zkratky',
+
+  // Pagination (use {placeholders} for dynamic values)
+  paginationFirst: '⏮',
+  paginationPrevious: '◀',
+  paginationNext: '▶',
+  paginationLast: '⏭',
+  paginationPageInfo: 'Stránka {current} z {total}',
+  paginationItemCount: '{count} položek',
+  paginationPerPage: 'na stránku'
+}
 ```
 
 ### Virtual Scrolling
