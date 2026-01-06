@@ -248,21 +248,21 @@
 
         // Sample employee data with varied salaries and statuses
         const sampleData = [
-            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, sex: 'F', status: 'Active' },
-            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, sex: 'M', status: 'Active' },
-            { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 92000, sex: 'F', status: 'Active' },
-            { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, sex: 'M', status: 'Inactive' },
-            { id: 5, name: 'Eva Martinez', department: 'HR', salary: 65000, sex: 'F', status: 'Active' },
-            { id: 6, name: 'Frank Lee', department: 'Engineering', salary: 88000, sex: 'M', status: 'Active' },
-            { id: 7, name: 'Grace Kim', department: 'Marketing', salary: 75000, sex: 'F', status: 'Inactive' },
-            { id: 8, name: 'Henry Chen', department: 'Sales', salary: 71000, sex: 'M', status: 'Active' },
-            { id: 9, name: 'Ivy Wang', department: 'Engineering', salary: 98000, sex: 'F', status: 'Active' },
-            { id: 10, name: 'Jack Davis', department: 'HR', salary: 62000, sex: 'M', status: 'Active' },
-            { id: 11, name: 'Karen Wilson', department: 'Engineering', salary: 89000, sex: 'F', status: 'Active' },
-            { id: 12, name: 'Leo Garcia', department: 'Marketing', salary: 73000, sex: 'M', status: 'Inactive' },
-            { id: 13, name: 'Maria Lopez', department: 'Finance', salary: 85000, sex: 'F', status: 'Active' },
-            { id: 14, name: 'Frosty McSnowface', department: 'Sales', salary: 67000, sex: 'snowman', status: 'Active' },
-            { id: 15, name: 'Olivia Moore', department: 'Engineering', salary: 102000, sex: 'F', status: 'Active' },
+            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, hireDate: '2020-03-15', sex: 'F', status: 'Active', notes: 'Team lead' },
+            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, hireDate: '2019-07-22', sex: 'M', status: 'Active', notes: '' },
+            { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 92000, hireDate: '2018-11-01', sex: 'F', status: 'Active', notes: 'Senior dev' },
+            { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, hireDate: '2021-01-10', sex: 'M', status: 'Inactive', notes: 'On sabbatical' },
+            { id: 5, name: 'Eva Martinez', department: 'HR', salary: 65000, hireDate: '2020-06-20', sex: 'F', status: 'Active', notes: '' },
+            { id: 6, name: 'Frank Lee', department: 'Engineering', salary: 88000, hireDate: '2019-02-14', sex: 'M', status: 'Active', notes: '' },
+            { id: 7, name: 'Grace Kim', department: 'Marketing', salary: 75000, hireDate: '2020-09-05', sex: 'F', status: 'Inactive', notes: 'Parental leave' },
+            { id: 8, name: 'Henry Chen', department: 'Sales', salary: 71000, hireDate: '2021-04-18', sex: 'M', status: 'Active', notes: '' },
+            { id: 9, name: 'Ivy Wang', department: 'Engineering', salary: 98000, hireDate: '2017-08-30', sex: 'F', status: 'Active', notes: 'Architect' },
+            { id: 10, name: 'Jack Davis', department: 'HR', salary: 62000, hireDate: '2022-02-01', sex: 'M', status: 'Active', notes: '' },
+            { id: 11, name: 'Karen Wilson', department: 'Engineering', salary: 89000, hireDate: '2019-05-12', sex: 'F', status: 'Active', notes: '' },
+            { id: 12, name: 'Leo Garcia', department: 'Marketing', salary: 73000, hireDate: '2020-11-25', sex: 'M', status: 'Inactive', notes: 'Transitioning' },
+            { id: 13, name: 'Maria Lopez', department: 'Finance', salary: 85000, hireDate: '2018-04-08', sex: 'F', status: 'Active', notes: 'CFO assistant' },
+            { id: 14, name: 'Frosty McSnowface', department: 'Sales', salary: 67000, hireDate: '2023-12-25', sex: 'snowman', status: 'Active', notes: 'Seasonal' },
+            { id: 15, name: 'Olivia Moore', department: 'Engineering', salary: 102000, hireDate: '2016-03-01', sex: 'F', status: 'Active', notes: 'VP Engineering' },
         ]
 
         // Helper function to get salary color class (rainbow gradient)
@@ -278,25 +278,60 @@
             return 'salary-8'                       // Purple
         }
 
+        // Options for editors
+        const departmentOptions = [
+            { value: 'Engineering', label: 'Engineering' },
+            { value: 'Marketing', label: 'Marketing' },
+            { value: 'Sales', label: 'Sales' },
+            { value: 'HR', label: 'HR' },
+            { value: 'Finance', label: 'Finance' }
+        ]
+
+        const statusOptions = [
+            { value: 'Active', label: 'Active' },
+            { value: 'Inactive', label: 'Inactive' },
+            { value: 'On Leave', label: 'On Leave' }
+        ]
+
         // Column definitions
         const columns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center' },
-            { field: 'name', title: 'Name', width: '180px' },
-            { field: 'department', title: 'Department', width: '140px' },
+            { field: 'id', title: 'ID', width: '60px', align: 'center', editable: false },
+            { field: 'name', title: 'Name', width: '180px', editor: 'text' },
+            {
+                field: 'department',
+                title: 'Dept (combo)',
+                width: '140px',
+                editor: 'combobox',
+                editorOptions: {
+                    options: departmentOptions,
+                    editStartSelection: 'selectAll'
+                }
+            },
             {
                 field: 'salary',
                 title: 'Salary',
                 width: '120px',
                 align: 'right',
+                editor: 'number',
                 formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : '',
                 // Dynamic cell styling based on salary value
                 cellClassCallback: (value, row) => getSalaryClass(value)
+            },
+            {
+                field: 'hireDate',
+                title: 'Hire Date',
+                width: '120px',
+                editor: 'date',
+                editorOptions: {
+                    dateFormat: 'DD.MM.YYYY'
+                }
             },
             {
                 field: 'sex',
                 title: 'Sex',
                 width: '60px',
                 align: 'center',
+                editable: false,
                 // Use templateCallback to render Font Awesome icons
                 templateCallback: (row) => {
                     if (row.sex === 'M') return '<i class="fa-solid fa-mars sex-male"></i>'
@@ -309,7 +344,82 @@
                 field: 'status',
                 title: 'Status',
                 width: '100px',
-                align: 'center'
+                align: 'center',
+                editor: 'select',
+                editorOptions: {
+                    options: statusOptions
+                }
+            },
+            {
+                field: 'notes',
+                title: 'Notes (custom)',
+                width: '150px',
+                editor: 'custom',
+                cellEditCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
+                    // Detect dark mode
+                    const isDark = document.documentElement.classList.contains('dark')
+
+                    // Create a simple custom editor with a textarea
+                    const container = document.createElement('div')
+                    container.style.cssText = `
+                        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                        background: ${isDark ? '#1e1e32' : 'white'};
+                        color: ${isDark ? '#f0f0f0' : '#1a1a1a'};
+                        padding: 16px; border-radius: 8px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,${isDark ? '0.5' : '0.2'});
+                        border: 1px solid ${isDark ? '#3d3d5c' : '#e0e0e0'};
+                        z-index: 1000; min-width: 300px;
+                    `
+
+                    container.innerHTML = `
+                        <div style="margin-bottom: 12px; font-weight: 600;">Edit Notes for ${row.name}</div>
+                        <textarea id="customNotes" style="
+                            width: 100%; height: 80px; padding: 8px;
+                            border: 1px solid ${isDark ? '#3d3d5c' : '#ccc'};
+                            border-radius: 4px; resize: vertical;
+                            background: ${isDark ? '#252542' : 'white'};
+                            color: ${isDark ? '#f0f0f0' : '#1a1a1a'};
+                        ">${value || ''}</textarea>
+                        <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end;">
+                            <button id="cancelBtn" style="
+                                padding: 6px 12px;
+                                border: 1px solid ${isDark ? '#3d3d5c' : '#ccc'};
+                                background: ${isDark ? '#252542' : 'white'};
+                                color: ${isDark ? '#f0f0f0' : '#1a1a1a'};
+                                border-radius: 4px; cursor: pointer;
+                            ">Cancel</button>
+                            <button id="saveBtn" style="
+                                padding: 6px 12px; border: none;
+                                background: ${isDark ? '#818cf8' : '#3b82f6'};
+                                color: white; border-radius: 4px; cursor: pointer;
+                            ">Save</button>
+                        </div>
+                    `
+
+                    document.body.appendChild(container)
+
+                    const textarea = container.querySelector('#customNotes')
+                    textarea.focus()
+                    textarea.select()
+
+                    container.querySelector('#saveBtn').onclick = () => {
+                        commit(textarea.value)
+                        container.remove()
+                    }
+
+                    container.querySelector('#cancelBtn').onclick = () => {
+                        cancel()
+                        container.remove()
+                    }
+
+                    // Handle Escape key
+                    textarea.onkeydown = (e) => {
+                        if (e.key === 'Escape') {
+                            cancel()
+                            container.remove()
+                        }
+                    }
+                }
             }
         ]
 
@@ -319,6 +429,7 @@
         grid.columns = columns
         grid.striped = false  // Disable striping to better show custom colors
         grid.hoverable = true
+        grid.editable = true
 
         // Dynamic row styling - gray out inactive employees
         grid.rowClassCallback = (row, index) => {
