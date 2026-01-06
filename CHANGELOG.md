@@ -69,6 +69,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Override "No options" and "Searching..." messages per column
   - Falls back to `grid.labels.dropdownNoOptions` / `dropdownSearching` if not specified
   - Reactive: updates when column definition changes (useful for i18n)
+- **Showcase: Row Locking Feature Page** - New `/features/row-locking` page with live demos
+  - Property-based locking (lockedMember, lockInfoMember)
+  - Callback-based locking (getLockInfoCallback)
+  - External API locking (lockRowById, unlockRowById) with interactive controls
 
 ### Changed
 - **Centralized Interaction State** - Refactored hover/focus/edit state tracking
