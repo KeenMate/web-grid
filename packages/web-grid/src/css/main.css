@@ -25,6 +25,7 @@
 @import '_table.css';
 @import '_header.css';
 @import '_cells.css';
+@import '_row-locking.css';
 @import '_editors.css';
 @import '_dropdown.css';
 @import '_navigation.css';

@@ -6,6 +6,7 @@
 import type { GridContext } from '../types.js'
 import type { DateOutputFormat } from '../../types.js'
 import { moveFocus } from '../navigation/index.js'
+import { renderCell } from '../rendering/index.js'
 
 /**
  * Convert date input value (YYYY-MM-DD) to the specified output format
@@ -28,6 +29,18 @@ function convertDateValue(dateString: string, outputFormat: string): Date | stri
 			// Return just the date part (YYYY-MM-DD) for cleaner display
 			return dateString
 	}
+}
+
+/**
+ * Surgically restore a cell from editing mode to display mode.
+ * Uses centralized renderCell() to ensure all states are correct.
+ */
+export function restoreCellToDisplayMode<T>(
+	ctx: GridContext<T>,
+	rowIndex: number,
+	colIndex: number
+): void {
+	renderCell(ctx, rowIndex, colIndex)
 }
 
 /**
@@ -95,6 +108,9 @@ export function toggleCheckboxAndMove<T>(
 	// Commit the toggle
 	ctx.grid.commitEdit(rowIndex, field, newValue)
 
+	// Re-render the cell to show new checkbox state
+	renderCell(ctx, rowIndex, colIndex)
+
 	// Move to next row
 	const displayItems = ctx.grid.displayItems
 	if (rowIndex < displayItems.length - 1) {
@@ -117,7 +133,17 @@ export function handleEditorBlur<T>(
 	}
 	// Only commit if we're still in edit mode (not already cancelled)
 	if (ctx.grid.editingCell) {
+		// Get row/col before committing (editingCell will be cleared)
+		const rowIndex = parseInt(input.dataset.row || '0', 10)
+		const field = input.dataset.field || ''
+		const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
+
 		commitCurrentEditor(ctx, input)
+
+		// Restore cell to display mode with formatted value
+		if (colIndex >= 0) {
+			restoreCellToDisplayMode(ctx, rowIndex, colIndex)
+		}
 	}
 }
 
@@ -165,11 +191,12 @@ export function moveFocusAfterCommit<T>(
 		}
 	}
 
-	// Use requestAnimationFrame to focus after editor is removed from DOM
-	requestAnimationFrame(() => {
-		moveFocus(ctx, targetRow, targetCol)
-		ctx.isCommittingFromKeyboard = false
-	})
+	// Surgical update: restore current cell to display mode
+	restoreCellToDisplayMode(ctx, rowIndex, colIndex)
+
+	// Move focus to target cell
+	moveFocus(ctx, targetRow, targetCol)
+	ctx.isCommittingFromKeyboard = false
 }
 
 /**
@@ -183,10 +210,11 @@ export function focusCellAfterCancel<T>(
 	const columns = ctx.grid.columns
 	const colIndex = columns.findIndex(c => String(c.field) === field)
 	if (colIndex >= 0) {
-		// Use requestAnimationFrame to focus after editor is removed from DOM
-		requestAnimationFrame(() => {
-			moveFocus(ctx, rowIndex, colIndex)
-			ctx.isCommittingFromKeyboard = false
-		})
+		// Surgical update: restore cell to display mode
+		restoreCellToDisplayMode(ctx, rowIndex, colIndex)
+
+		// Focus the cell
+		moveFocus(ctx, rowIndex, colIndex)
+		ctx.isCommittingFromKeyboard = false
 	}
 }

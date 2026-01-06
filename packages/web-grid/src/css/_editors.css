@@ -43,6 +43,8 @@
   display: flex;
   align-items: center;
   background: var(--wg-editor-bg);
+  /* Match cell padding so content aligns with display mode */
+  padding: var(--wg-cell-padding);
 }
 
 .wg__date-input {
@@ -52,7 +54,7 @@
   border: none;
   background: transparent;
   font: inherit;
-  padding: var(--wg-cell-padding-block) var(--wg-cell-padding-inline);
+  padding: 0;  /* Container has padding */
   outline: none;
   color: inherit;
 }

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGrid - Row Locking</title>
+    <link rel="stylesheet" href="examples-shared.css">
+    <style>
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast.error { background: #e53e3e; }
+        .toast.success { background: #38a169; }
+        .toast.warning { background: #dd6b20; }
+
+        .lock-controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .lock-controls input {
+            width: 80px;
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+        .lock-controls button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .lock-controls button.lock {
+            background: #ed8936;
+            color: white;
+        }
+        .lock-controls button.unlock {
+            background: #48bb78;
+            color: white;
+        }
+        .lock-controls button.update {
+            background: #4299e1;
+            color: white;
+        }
+        .lock-controls button:hover {
+            opacity: 0.9;
+        }
+
+        .external-locks {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f7fafc;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+        .external-locks:empty::after {
+            content: 'No external locks';
+            color: #a0aec0;
+        }
+        .lock-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0;
+        }
+        .lock-item .lock-icon {
+            color: #ed8936;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">← Back to Examples</a>
+            <h1>🔒 Row Locking</h1>
+            <p class="subtitle">Collaborative editing with row-level locking for real-time applications</p>
+        </header>
+
+        <div class="card">
+            <h2>External Lock API (WebSocket Simulation)</h2>
+            <p>Simulate real-time locking from another user via WebSocket. Enter a row ID and click Lock/Unlock.</p>
+
+            <div class="lock-controls">
+                <label>
+                    Row ID:
+                    <input type="number" id="lockRowId" value="2" min="1">
+                </label>
+                <label>
+                    Locker:
+                    <input type="text" id="lockerName" value="John" style="width: 100px;">
+                </label>
+                <button class="lock" onclick="lockRow()">🔒 Lock Row</button>
+                <button class="unlock" onclick="unlockRow()">🔓 Unlock Row</button>
+                <button class="update" onclick="updateRow()">📝 Update Row</button>
+            </div>
+
+            <div class="external-locks" id="externalLocks"></div>
+        </div>
+
+        <div class="card">
+            <h2>Employees Grid</h2>
+            <p>
+                Row locking prevents editing of locked rows. Locked rows show a 🔒 icon in the row number column.
+                Try editing cells - locked rows will block editing.
+            </p>
+
+            <web-grid id="grid" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>Lock Sources</h2>
+                <p>Rows can be locked from three different sources:</p>
+
+                <h3>1. Property-based</h3>
+                <p>Lock status comes directly from row data:</p>
+                <div class="code-block">
+                    <pre>grid.rowLocking = {
+    lockedMember: 'isLocked'  // Boolean field
+}
+
+// Or with full lock info:
+grid.rowLocking = {
+    lockInfoMember: 'lockInfo'  // RowLockInfo object
+}</pre>
+                </div>
+
+                <h3>2. Callback-based</h3>
+                <p>Compute lock status from row data:</p>
+                <div class="code-block">
+                    <pre>grid.rowLocking = {
+    isLockedCallback: (row) => row.status === 'approved',
+    getLockInfoCallback: (row) => ({
+        isLocked: row.status === 'approved',
+        lockedBy: row.approvedBy,
+        reason: 'Approved records cannot be edited'
+    })
+}</pre>
+                </div>
+
+                <h3>3. External API</h3>
+                <p>Lock/unlock via JavaScript (WebSocket scenarios):</p>
+                <div class="code-block">
+                    <pre>// Lock a row
+grid.lockRowById(123, { lockedBy: 'John' })
+
+// Unlock a row
+grid.unlockRowById(123)
+
+// Update row data (e.g., from server)
+grid.updateRowById(123, { name: 'Updated Name' })</pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Configuration</h2>
+                <div class="code-block">
+                    <pre>// Required: Configure row identification
+grid.idValueMember = 'id'
+// Or use callback:
+// grid.idValueCallback = (row) => row.employeeId
+
+// Configure row locking
+grid.rowLocking = {
+    // Property sources
+    lockedMember: 'isLocked',
+    lockInfoMember: 'lockInfo',
+
+    // Callback sources
+    isLockedCallback: (row) => row.status === 'locked',
+    getLockInfoCallback: (row) => ({ ... }),
+
+    // Edit behavior
+    lockedEditBehavior: 'block',  // 'block' | 'allow' | 'callback'
+    canEditLockedCallback: (row, lockInfo) => {
+        return lockInfo.lockedBy === currentUser
+    },
+
+    // Custom tooltip
+    lockTooltipCallback: (lockInfo, row) => {
+        return `Locked by ${lockInfo.lockedBy} at ${lockInfo.lockedAt}`
+    }
+}
+
+// Listen for lock changes
+grid.onrowlockchange = (detail) => {
+    console.log('Lock changed:', detail)
+}</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Edit Behavior Options</h2>
+            <p>Control what happens when a user tries to edit a locked row:</p>
+
+            <div class="controls" style="margin-bottom: 1rem;">
+                <label>
+                    Edit Behavior:
+                    <select id="editBehavior">
+                        <option value="block">Block (default) - Cannot edit locked rows</option>
+                        <option value="allow">Allow - Can edit, shows locked visual</option>
+                        <option value="callback">Callback - Custom logic decides</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="code-block">
+                <pre>// Block all editing (default)
+grid.rowLocking = { lockedEditBehavior: 'block' }
+
+// Allow editing but show locked indicator
+grid.rowLocking = { lockedEditBehavior: 'allow' }
+
+// Custom callback to decide
+grid.rowLocking = {
+    lockedEditBehavior: 'callback',
+    canEditLockedCallback: (row, lockInfo) => {
+        // Allow if current user is the locker
+        return lockInfo.lockedBy === currentUser
+    }
+}</pre>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Row Update Methods</h2>
+            <p>Update row data programmatically (useful for real-time updates from server):</p>
+
+            <div class="code-block">
+                <pre>// Partial update - merges with existing data
+grid.updateRowById(123, {
+    name: 'New Name',
+    salary: 75000
+})
+
+// Full replacement - replaces entire row
+grid.replaceRowById(123, {
+    id: 123,
+    name: 'New Name',
+    department: 'Engineering',
+    salary: 75000,
+    status: 'Active'
+})
+
+// Find row by ID
+const result = grid.findRowById(123)
+if (result) {
+    console.log('Found row:', result.row, 'at index:', result.index)
+}</pre>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>API Reference</h2>
+            <table class="actions-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f7fafc;">
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0;">Method</th>
+                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0;">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>getRowId(row)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Get the unique ID for a row</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>findRowById(id)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Find row by ID, returns { row, index } or null</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>isRowLocked(rowOrId)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Check if a row is locked</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>getRowLockInfo(rowOrId)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Get full lock info for a row</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>lockRowById(id, info)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Lock a row externally</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>unlockRowById(id)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Unlock an externally locked row</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>getExternalLocks()</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Get Map of all external locks</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>clearExternalLocks()</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Clear all external locks</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>updateRowById(id, data)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Partial update of row data</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>replaceRowById(id, row)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Replace entire row data</td></tr>
+                    <tr><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;"><code>canEditCell(rowIndex, field)</code></td><td style="padding: 0.75rem; border-bottom: 1px solid #e2e8f0;">Check if cell can be edited (respects locks)</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import '@keenmate/web-grid'
+
+        // Sample employee data
+        let employees = [
+            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 85000, status: 'Active' },
+            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, status: 'Active' },
+            { id: 3, name: 'Carol Williams', department: 'HR', salary: 68000, status: 'Active', isLocked: true, lockInfo: { isLocked: true, lockedBy: 'System', reason: 'Under review' } },
+            { id: 4, name: 'David Brown', department: 'Engineering', salary: 92000, status: 'Active' },
+            { id: 5, name: 'Eve Davis', department: 'Finance', salary: 78000, status: 'Active' },
+            { id: 6, name: 'Frank Miller', department: 'Engineering', salary: 88000, status: 'Inactive' },
+            { id: 7, name: 'Grace Wilson', department: 'Marketing', salary: 71000, status: 'Active' },
+            { id: 8, name: 'Henry Taylor', department: 'HR', salary: 65000, status: 'Active' },
+            { id: 9, name: 'Ivy Anderson', department: 'Finance', salary: 82000, status: 'Active' },
+            { id: 10, name: 'Jack Thomas', department: 'Engineering', salary: 95000, status: 'Active' }
+        ]
+
+        const columns = [
+            { field: 'id', title: 'ID', width: '60px', align: 'center', editable: false },
+            { field: 'name', title: 'Name', editable: true, editor: 'text' },
+            { field: 'department', title: 'Department', width: '120px', editable: true, editor: 'select',
+                editorOptions: {
+                    options: [
+                        { value: 'Engineering', label: 'Engineering' },
+                        { value: 'Marketing', label: 'Marketing' },
+                        { value: 'HR', label: 'HR' },
+                        { value: 'Finance', label: 'Finance' }
+                    ]
+                }
+            },
+            { field: 'salary', title: 'Salary', width: '100px', align: 'right', editable: true, editor: 'number',
+                formatCallback: (v) => '$' + Number(v).toLocaleString()
+            },
+            { field: 'status', title: 'Status', width: '100px', editable: true, editor: 'select',
+                editorOptions: {
+                    options: [
+                        { value: 'Active', label: 'Active' },
+                        { value: 'Inactive', label: 'Inactive' }
+                    ]
+                }
+            }
+        ]
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div')
+            toast.className = `toast ${type}`
+            toast.textContent = message
+            document.body.appendChild(toast)
+            setTimeout(() => toast.remove(), 3000)
+        }
+
+        // Make functions global for onclick handlers
+        window.showToast = showToast
+
+        // Initialize grid
+        const grid = document.getElementById('grid')
+        grid.items = employees
+        grid.columns = columns
+        grid.showRowNumbers = true
+        grid.mode = 'excel'
+
+        // Configure row identification (required for external locks)
+        grid.idValueMember = 'id'
+
+        // Configure row locking
+        grid.rowLocking = {
+            // Property-based: check these fields on row data
+            lockedMember: 'isLocked',
+            lockInfoMember: 'lockInfo',
+
+            // Edit behavior
+            lockedEditBehavior: 'block'
+        }
+
+        // Listen for row changes
+        grid.onrowchange = (detail) => {
+            console.log('Row changed:', detail)
+            if (detail.isValid) {
+                showToast(`Updated ${detail.field}: ${detail.newValue}`, 'success')
+            }
+        }
+
+        // Listen for lock changes
+        grid.onrowlockchange = (detail) => {
+            console.log('Lock changed:', detail)
+            updateExternalLocksDisplay()
+        }
+
+        // Update external locks display
+        function updateExternalLocksDisplay() {
+            const container = document.getElementById('externalLocks')
+            const locks = grid.getExternalLocks()
+
+            if (locks.size === 0) {
+                container.innerHTML = ''
+                return
+            }
+
+            let html = '<strong>External Locks:</strong>'
+            for (const [id, info] of locks) {
+                html += `<div class="lock-item">
+                    <span class="lock-icon">🔒</span>
+                    Row ID ${id} - Locked by <strong>${info.lockedBy || 'Unknown'}</strong>
+                </div>`
+            }
+            container.innerHTML = html
+        }
+
+        // Lock row function
+        window.lockRow = function() {
+            const id = parseInt(document.getElementById('lockRowId').value)
+            const lockerName = document.getElementById('lockerName').value || 'Unknown'
+
+            if (grid.isRowLocked(id)) {
+                showToast(`Row ${id} is already locked`, 'warning')
+                return
+            }
+
+            grid.lockRowById(id, {
+                lockedBy: lockerName,
+                lockedAt: new Date().toISOString()
+            })
+            showToast(`Row ${id} locked by ${lockerName}`, 'warning')
+        }
+
+        // Unlock row function
+        window.unlockRow = function() {
+            const id = parseInt(document.getElementById('lockRowId').value)
+
+            if (!grid.isRowLocked(id)) {
+                showToast(`Row ${id} is not locked`, 'warning')
+                return
+            }
+
+            grid.unlockRowById(id)
+            showToast(`Row ${id} unlocked`, 'success')
+        }
+
+        // Update row function (simulate server push)
+        window.updateRow = function() {
+            const id = parseInt(document.getElementById('lockRowId').value)
+            const found = grid.findRowById(id)
+
+            if (!found) {
+                showToast(`Row ${id} not found`, 'error')
+                return
+            }
+
+            // Simulate a server update
+            const newSalary = found.row.salary + 1000
+            grid.updateRowById(id, {
+                salary: newSalary
+            })
+            showToast(`Row ${id} salary updated to $${newSalary.toLocaleString()}`, 'success')
+        }
+
+        // Edit behavior control
+        document.getElementById('editBehavior').addEventListener('change', (e) => {
+            const behavior = e.target.value
+            grid.rowLocking = {
+                ...grid.rowLocking,
+                lockedEditBehavior: behavior,
+                // For callback mode, allow editing if you're the locker
+                canEditLockedCallback: behavior === 'callback'
+                    ? (row, lockInfo) => {
+                        const currentUser = document.getElementById('lockerName').value
+                        return lockInfo.lockedBy === currentUser
+                    }
+                    : undefined
+            }
+            showToast(`Edit behavior set to: ${behavior}`)
+        })
+
+        // Initial display update
+        updateExternalLocksDisplay()
+    </script>
+</body>
+</html>

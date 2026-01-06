@@ -9,7 +9,8 @@ export {
 	toggleCheckboxAndMove,
 	handleEditorBlur,
 	moveFocusAfterCommit,
-	focusCellAfterCancel
+	focusCellAfterCancel,
+	restoreCellToDisplayMode
 } from './lifecycle.js'
 
 // Renderers

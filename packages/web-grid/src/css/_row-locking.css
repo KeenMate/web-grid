@@ -1,0 +1,38 @@
+/* ==============================================================================
+   ROW LOCKING STYLES
+   ============================================================================== */
+
+/* CSS Variables */
+:host {
+	--wg-row-locked-bg: var(--base-disabled-bg, #f5f5f5);
+	--wg-row-locked-opacity: 0.7;
+}
+
+/* Locked row base styling */
+.wg__row--locked {
+	background: var(--wg-row-locked-bg) !important;
+}
+
+/* Muted appearance for locked row cells */
+.wg__row--locked .wg__cell {
+	opacity: var(--wg-row-locked-opacity);
+}
+
+/* Locked editable cells - remove edit affordances */
+.wg__row--locked .wg__cell--editable {
+	cursor: not-allowed;
+}
+
+.wg__row--locked .wg__cell--editable:hover {
+	background: inherit;
+}
+
+.wg__row--locked .wg__cell--editable:hover::after {
+	display: none;
+}
+
+/* Lock icon in row number column */
+.wg__row-number--locked {
+	opacity: 1 !important;  /* Override row opacity */
+	cursor: help;
+}

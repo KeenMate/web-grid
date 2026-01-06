@@ -36,7 +36,10 @@ export function renderDropdown<T>(
 
 	// Render options
 	if (options.length === 0) {
-		dropdown.innerHTML = `<div class="wg__dropdown-empty">${ctx.isSearching ? 'Searching...' : 'No options'}</div>`
+		const message = ctx.isSearching
+			? ctx.grid.labels.dropdownSearching
+			: ctx.grid.labels.dropdownNoOptions
+		dropdown.innerHTML = `<div class="wg__dropdown-empty">${ctx.escapeHtml(message)}</div>`
 	} else {
 		// Get current value for isSelected check
 		const editingCell = ctx.grid.editingCell

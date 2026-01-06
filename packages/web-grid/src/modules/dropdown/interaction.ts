@@ -7,6 +7,7 @@ import type { EditorOptions } from '../../types.js'
 import type { GridContext } from '../types.js'
 import { getOptionValue, getOptionLabel, isOptionDisabled } from './options.js'
 import { renderDropdown, removeDropdown } from './rendering.js'
+import { renderCell } from '../rendering/index.js'
 
 /**
  * Select dropdown option by index
@@ -45,14 +46,8 @@ export function selectDropdownOption<T>(
 		// Move focus to next row in same column (like Enter does for other editors)
 		ctx.moveFocusAfterCommit(editingCell.rowIndex, editingCell.field, 'down')
 	} else {
-		// Stay on current cell with focused state (green border, not blue)
-		const cell = ctx.shadow.querySelector(
-			`[data-row="${editingCell.rowIndex}"][data-col="${colIndex}"]`
-		) as HTMLElement
-		if (cell) {
-			cell.classList.remove('wg__cell--editing')
-			cell.classList.add('wg__cell--focused')
-		}
+		// Stay on current cell with focused state - re-render to show new value
+		renderCell(ctx, editingCell.rowIndex, colIndex)
 	}
 
 	// Reset justSelected after focus moves
@@ -264,19 +259,16 @@ export function updateSelectFilter<T>(
 	})
 	ctx.highlightedIndex = ctx.dropdownOptions.length > 0 ? 0 : -1
 
-	// Open or update dropdown
+	// Open or update dropdown (show "No options" message when empty)
 	const wrapper = ctx.shadow.querySelector('.wg__editor--select') as HTMLElement
 	if (wrapper) {
+		const dropdown = renderDropdown(ctx, wrapper, ctx.dropdownOptions, opts)
+		attachDropdownListeners(ctx, dropdown)
+		// Restore filterText after renderDropdown
+		ctx.filterText = savedFilterText
 		if (ctx.dropdownOptions.length > 0) {
-			const dropdown = renderDropdown(ctx, wrapper, ctx.dropdownOptions, opts)
-			attachDropdownListeners(ctx, dropdown)
-			// Restore filterText after renderDropdown
-			ctx.filterText = savedFilterText
 			ctx.highlightedIndex = 0
 			updateDropdownHighlight(ctx)
-		} else {
-			// No matches - close dropdown
-			removeDropdown(ctx)
 		}
 	}
 }

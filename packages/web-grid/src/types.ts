@@ -531,6 +531,10 @@ export type GridLabels = {
 	paginationPageInfo: string      // e.g., "Page {current} of {total}"
 	paginationItemCount: string     // e.g., "{count} items"
 	paginationPerPage: string       // e.g., "per page"
+
+	// Dropdown
+	dropdownNoOptions: string       // "No options" - shown when filter returns empty
+	dropdownSearching: string       // "Searching..." - shown during async search
 }
 
 // Summary content callback
@@ -544,3 +548,49 @@ export type SummaryContext<T> = {
 }
 
 export type SummaryContentCallback<T> = (context: SummaryContext<T>) => string
+
+// =============================================================================
+// Row Locking Types
+// =============================================================================
+
+// Lock information for a row
+export type RowLockInfo = {
+	isLocked: boolean
+	lockedBy?: string        // Who locked (user name/ID)
+	lockedAt?: Date | string // When locked
+	reason?: string          // Why locked
+	[key: string]: unknown   // Allow extra properties
+}
+
+// Edit behavior for locked rows
+export type LockedRowEditBehavior =
+	| 'block'      // Cannot edit (default)
+	| 'allow'      // Can edit, just show visual
+	| 'callback'   // Consumer decides via callback
+
+// Row locking configuration
+export type RowLockingOptions<T> = {
+	// Property-based sources
+	lockedMember?: keyof T                    // Field with boolean
+	lockInfoMember?: keyof T                  // Field with RowLockInfo
+
+	// Callback-based sources
+	isLockedCallback?: (row: T, rowIndex: number) => boolean
+	getLockInfoCallback?: (row: T, rowIndex: number) => RowLockInfo | null
+
+	// Edit behavior
+	lockedEditBehavior?: LockedRowEditBehavior
+	canEditLockedCallback?: (row: T, lockInfo: RowLockInfo) => boolean
+
+	// Visual options
+	lockTooltipCallback?: (lockInfo: RowLockInfo, row: T) => string | null
+}
+
+// Event for lock changes
+export type RowLockChangeDetail<T> = {
+	rowId: unknown
+	row: T | null
+	rowIndex: number
+	lockInfo: RowLockInfo | null
+	source: 'property' | 'callback' | 'external'
+}

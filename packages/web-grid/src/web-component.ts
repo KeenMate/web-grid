@@ -30,7 +30,10 @@ import type {
 	SummaryContentCallback,
 	ValidationTooltipContext,
 	ToolbarPosition,
-	GridLabels
+	GridLabels,
+	RowLockInfo,
+	RowLockingOptions,
+	RowLockChangeDetail
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -79,7 +82,8 @@ import {
 	toggleCheckboxAndMove,
 	handleEditorBlur,
 	moveFocusAfterCommit,
-	focusCellAfterCancel
+	focusCellAfterCancel,
+	renderCellEditor
 } from './modules/editing/index.js'
 
 import {
@@ -294,6 +298,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Override requestUpdate to trigger DOM render
 		;(this.grid as unknown as { requestUpdate: () => void }).requestUpdate = () => this.requestUpdate()
+
+		// Handle interaction changes (cleanup dropdown when editing is cancelled externally)
+		;(this.grid as unknown as { _onInteractionChange: ((type: string, detail: { prev: unknown, current: unknown }) => void) | null })._onInteractionChange = (type, detail) => {
+			if (type === 'editingCell' && detail.current === null) {
+				// Editing was cancelled - clean up dropdown if open
+				removeDropdown(this)
+			}
+		}
 	}
 
 	// ==========================================================================
@@ -544,6 +556,20 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get summaryInline(): boolean { return this.grid.summaryInline }
 	set summaryInline(value: boolean) { this.grid.summaryInline = value }
 
+	// Row identification
+	get idValueMember(): keyof T | undefined { return this.grid.idValueMember }
+	set idValueMember(value: keyof T | undefined) { this.grid.idValueMember = value }
+
+	get idValueCallback(): ((row: T) => unknown) | undefined { return this.grid.idValueCallback }
+	set idValueCallback(value: ((row: T) => unknown) | undefined) { this.grid.idValueCallback = value }
+
+	// Row locking
+	get rowLocking(): RowLockingOptions<T> | undefined { return this.grid.rowLocking }
+	set rowLocking(value: RowLockingOptions<T> | undefined) { this.grid.rowLocking = value }
+
+	get onrowlockchange(): ((detail: RowLockChangeDetail<T>) => void) | undefined { return this.grid.onrowlockchange }
+	set onrowlockchange(value: ((detail: RowLockChangeDetail<T>) => void) | undefined) { this.grid.onrowlockchange = value }
+
 	// Virtual scroll
 	get virtualScroll(): boolean { return this.grid.virtualScroll }
 	set virtualScroll(value: boolean) { this.grid.virtualScroll = value }
@@ -583,6 +609,25 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	isCellInvalid(rowIndex: number, field: string): boolean { return this.grid.isCellInvalid(rowIndex, field) }
 	getCellValidationError(rowIndex: number, field: string): string | null { return this.grid.getCellValidationError(rowIndex, field) }
 
+	// Row identification methods
+	getRowId(row: T): unknown | undefined { return this.grid.getRowId(row) }
+	findRowById(id: unknown): { row: T; index: number } | null { return this.grid.findRowById(id) }
+
+	// Row locking methods
+	isRowLocked(rowOrId: T | unknown): boolean { return this.grid.isRowLocked(rowOrId) }
+	getRowLockInfo(rowOrId: T | unknown): RowLockInfo | null { return this.grid.getRowLockInfo(rowOrId) }
+	lockRowById(id: unknown, lockerInfo?: Partial<RowLockInfo>): boolean { return this.grid.lockRowById(id, lockerInfo) }
+	unlockRowById(id: unknown): boolean { return this.grid.unlockRowById(id) }
+	getExternalLocks(): Map<unknown, RowLockInfo> { return this.grid.getExternalLocks() }
+	clearExternalLocks(): void { this.grid.clearExternalLocks() }
+
+	// Row update methods (for WebSocket/external updates)
+	updateRowById(id: unknown, newData: Partial<T>): boolean { return this.grid.updateRowById(id, newData) }
+	replaceRowById(id: unknown, newRow: T): boolean { return this.grid.replaceRowById(id, newRow) }
+
+	// Edit permission check
+	canEditCell(rowIndex: number, field: string): boolean { return this.grid.canEditCell(rowIndex, field) }
+
 	// Public methods for focus and editing
 	/**
 	 * Programmatically focus a cell. Updates state and focuses the DOM element.
@@ -605,6 +650,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	/**
 	 * Programmatically start editing a cell.
+	 * Uses surgical DOM update instead of full re-render.
 	 */
 	startEditing(rowIndex: number, colIndex: number): void {
 		const columns = this.grid.columns
@@ -612,7 +658,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		const column = columns[colIndex]
 		const field = String(column.field)
+
+		// Update state (no longer triggers requestUpdate)
 		this.grid.startEdit(rowIndex, field)
+
+		// Surgical DOM update
+		const cell = this.shadow.querySelector(
+			`td[data-row="${rowIndex}"][data-col="${colIndex}"]`
+		) as HTMLElement
+		if (cell) {
+			cell.classList.remove('wg__cell--focused')
+			cell.classList.add('wg__cell--editing')
+			cell.innerHTML = renderCellEditor(this, rowIndex, colIndex, column)
+		}
 	}
 
 	// ==========================================================================
@@ -1606,7 +1664,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Blur events
+		// Blur events (use capture: blur doesn't bubble)
 		table.addEventListener('blur', (e: Event) => {
 			const target = e.target as HTMLElement
 			if (target.matches('.wg__editor--text, .wg__editor--number')) {
@@ -1738,7 +1796,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					// Toggle toolbar for this row
 					if (isToolbarOpenForRow(rowIndex)) {
 						this.closeToolbarAndReset()
-						this.render()
+						// No render() needed - closeToolbar() surgically removes toolbar
 					} else {
 						this.showToolbarForRow(rowElement, rowIndex)
 					}
@@ -1823,10 +1881,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						if (!isHoveringToolbar && !isHoveringTable) {
 							this.grid.setHoveredRow(null)
 							this.closeToolbarAndReset()
-							// Don't re-render if editing - would destroy the editor
-							if (!this.grid.editingCell) {
-								this.render()
-							}
+							// No render() needed - closeToolbar() already removes toolbar from DOM
 						}
 					}, 150)
 				}
@@ -1845,7 +1900,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// Toggle toolbar
 				if (isToolbarOpenForRow(rowIndex)) {
 					this.closeToolbarAndReset()
-					this.render()
+					// No render() needed - closeToolbar() surgically removes toolbar
 				} else {
 					this.showToolbarForRow(row, rowIndex, mouseEvent.clientX)
 				}
@@ -1876,7 +1931,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// Close toolbar if clicking outside
 				if (getActiveToolbarRowIndex() !== null) {
 					this.closeToolbarAndReset()
-					this.render()
+					// No render() needed - closeToolbar() surgically removes toolbar
 				}
 			})
 		}
@@ -1887,7 +1942,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			window.addEventListener('scroll', () => {
 				if (getActiveToolbarRowIndex() !== null) {
 					this.closeToolbarAndReset()
-					this.render()
+					// No render() needed - closeToolbar() surgically removes toolbar
 				}
 			}, true)  // Use capture to catch all scroll events
 		}
@@ -2975,7 +3030,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 						if (!isHoveringTable && !isHoveringToolbar) {
 							this.closeToolbarAndReset()
-							this.render()
+							// No render() needed - closeToolbar() surgically removes toolbar
 						}
 					}, 150)
 				})
@@ -3021,7 +3076,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		if (currentIndex === -1) {
 			// Row was deleted, close toolbar
 			this.closeToolbarAndReset()
-			this.render()
+			// No render() needed - items setter already triggered requestUpdate()
 			return
 		}
 
@@ -3050,7 +3105,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// For delete action, close toolbar (row is gone)
 		if (item.id === 'delete') {
 			this.closeToolbarAndReset()
-			this.render()
+			// No render() needed - delete onclick should have modified items, triggering requestUpdate()
 			return
 		}
 

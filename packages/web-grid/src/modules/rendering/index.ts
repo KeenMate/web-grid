@@ -16,3 +16,9 @@ export type { VirtualScrollParams } from './table.js'
 export {
 	renderCellDisplay
 } from './display.js'
+
+export {
+	renderCell
+} from './cell.js'
+
+export type { RenderCellOptions } from './cell.js'

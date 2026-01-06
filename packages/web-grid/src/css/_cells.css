@@ -10,6 +10,10 @@
   /* Account for sticky header when scrolling into view */
   scroll-margin-top: 3rem;
   scroll-margin-bottom: 0.5rem;
+  /* Prevent text selection flash on double-click */
+  user-select: none;
+  /* Prevent child content from extending beyond cell boundary */
+  overflow: hidden;
 }
 
 /* Cell text - prevent selection flash on double-click */

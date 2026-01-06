@@ -125,10 +125,22 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 	const activeToolbarRow = getActiveToolbarRowIndex()
 
 	return items.map((item, rowIndex) => {
-		// Row number cell
-		const rowNumberCell = showRowNumbers
-			? `<td class="wg__cell wg__row-number">${rowIndex + 1}</td>`
-			: ''
+		// Check lock state
+		const lockInfo = ctx.grid.getRowLockInfo(item)
+		const isLocked = lockInfo?.isLocked === true
+
+		// Row number cell (shows lock icon when locked)
+		let rowNumberCell = ''
+		if (showRowNumbers) {
+			if (isLocked) {
+				const lockTooltip = lockInfo?.lockedBy
+					? `Locked by ${lockInfo.lockedBy}`
+					: 'This row is locked'
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked" data-tooltip="${ctx.escapeHtml(lockTooltip)}">🔒</td>`
+			} else {
+				rowNumberCell = `<td class="wg__cell wg__row-number">${rowIndex + 1}</td>`
+			}
+		}
 
 		// Inline actions cell (toolbarPosition="inline")
 		const inlineActionsCell = showInlineActions
@@ -240,12 +252,18 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 
 		// Build row classes
 		const rowClasses = ['wg__row']
+		if (isLocked) rowClasses.push('wg__row--locked')
 		if (ctx.grid.rowClassCallback) {
 			const dynamicClass = ctx.grid.rowClassCallback(item, rowIndex)
 			if (dynamicClass) rowClasses.push(dynamicClass)
 		}
 
-		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}">${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}</tr>`
+		// Row tooltip for locked rows (when no row numbers visible)
+		const rowTooltipAttr = isLocked && !showRowNumbers
+			? `data-tooltip="${ctx.escapeHtml(lockInfo?.lockedBy ? `Locked by ${lockInfo.lockedBy}` : 'This row is locked')}"`
+			: ''
+
+		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}</tr>`
 	}).join('')
 }
 
@@ -356,10 +374,22 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 		const item = items[i]
 		const rowIndex = i  // Absolute index in the data array
 
-		// Row number cell
-		const rowNumberCell = showRowNumbers
-			? `<td class="wg__cell wg__row-number">${rowIndex + 1}</td>`
-			: ''
+		// Check lock state
+		const lockInfo = ctx.grid.getRowLockInfo(item)
+		const isLocked = lockInfo?.isLocked === true
+
+		// Row number cell (shows lock icon when locked)
+		let rowNumberCell = ''
+		if (showRowNumbers) {
+			if (isLocked) {
+				const lockTooltip = lockInfo?.lockedBy
+					? `Locked by ${lockInfo.lockedBy}`
+					: 'This row is locked'
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked" data-tooltip="${ctx.escapeHtml(lockTooltip)}">🔒</td>`
+			} else {
+				rowNumberCell = `<td class="wg__cell wg__row-number">${rowIndex + 1}</td>`
+			}
+		}
 
 		// Inline actions cell (toolbarPosition="inline")
 		const inlineActionsCell = showInlineActions
@@ -470,12 +500,18 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 
 		// Build row classes
 		const rowClasses = ['wg__row']
+		if (isLocked) rowClasses.push('wg__row--locked')
 		if (ctx.grid.rowClassCallback) {
 			const dynamicClass = ctx.grid.rowClassCallback(item, rowIndex)
 			if (dynamicClass) rowClasses.push(dynamicClass)
 		}
 
-		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}">${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}</tr>`)
+		// Row tooltip for locked rows (when no row numbers visible)
+		const rowTooltipAttr = isLocked && !showRowNumbers
+			? `data-tooltip="${ctx.escapeHtml(lockInfo?.lockedBy ? `Locked by ${lockInfo.lockedBy}` : 'This row is locked')}"`
+			: ''
+
+		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}</tr>`)
 	}
 
 	// Bottom spacer row - height on TD for better browser compatibility

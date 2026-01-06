@@ -29,7 +29,10 @@ import type {
 	SummaryContentCallback,
 	ValidationTooltipContext,
 	ToolbarPosition,
-	GridLabels
+	GridLabels,
+	RowLockInfo,
+	RowLockingOptions,
+	RowLockChangeDetail
 } from './types.js'
 
 // Default labels (English)
@@ -48,7 +51,11 @@ const DEFAULT_LABELS: GridLabels = {
 	paginationLast: '⏭',
 	paginationPageInfo: 'Page {current} of {total}',
 	paginationItemCount: '{count} items',
-	paginationPerPage: 'per page'
+	paginationPerPage: 'per page',
+
+	// Dropdown
+	dropdownNoOptions: 'No options',
+	dropdownSearching: 'Searching...'
 }
 
 /**
@@ -95,6 +102,15 @@ export class WebGrid<T = unknown> {
 	protected _showShortcutsHelp: boolean = false
 	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
 	protected _shortcutsHelpContentCallback: (() => string) | undefined = undefined
+
+	// Row identification
+	protected _idValueMember: keyof T | undefined = undefined
+	protected _idValueCallback: ((row: T) => unknown) | undefined = undefined
+
+	// Row locking
+	protected _rowLocking: RowLockingOptions<T> | undefined = undefined
+	protected _externalLocks: Map<unknown, RowLockInfo> = new Map()
+	protected _onrowlockchange: ((detail: RowLockChangeDetail<T>) => void) | undefined = undefined
 
 	// ==========================================================================
 	// Callbacks
@@ -599,6 +615,29 @@ export class WebGrid<T = unknown> {
 		this._onrowdelete = value
 	}
 
+	// Row identification
+	get idValueMember(): keyof T | undefined { return this._idValueMember }
+	set idValueMember(value: keyof T | undefined) {
+		this._idValueMember = value
+	}
+
+	get idValueCallback(): ((row: T) => unknown) | undefined { return this._idValueCallback }
+	set idValueCallback(value: ((row: T) => unknown) | undefined) {
+		this._idValueCallback = value
+	}
+
+	// Row locking
+	get rowLocking(): RowLockingOptions<T> | undefined { return this._rowLocking }
+	set rowLocking(value: RowLockingOptions<T> | undefined) {
+		this._rowLocking = value
+		this.requestUpdate()
+	}
+
+	get onrowlockchange(): ((detail: RowLockChangeDetail<T>) => void) | undefined { return this._onrowlockchange }
+	set onrowlockchange(value: ((detail: RowLockChangeDetail<T>) => void) | undefined) {
+		this._onrowlockchange = value
+	}
+
 	// ==========================================================================
 	// Computed Properties (Data Pipeline)
 	// ==========================================================================
@@ -838,6 +877,11 @@ export class WebGrid<T = unknown> {
 	 * Start editing a cell
 	 */
 	startEdit(rowIndex: number, field: string, options?: { initialSearchQuery?: string; cursorPosition?: number }): void {
+		// Check if edit is allowed (respects locking)
+		if (!this.canEditCell(rowIndex, field)) {
+			return  // Silently block edit
+		}
+
 		const item = this.displayItems[rowIndex]
 		if (!item) return
 
@@ -855,7 +899,7 @@ export class WebGrid<T = unknown> {
 		}
 		this._onInteractionChange?.('editingCell', { prev, current: this._editingCell })
 		this._currentCellError = null
-		this.requestUpdate()
+		// NOTE: No requestUpdate() - caller (tryStartEdit) handles surgical DOM update
 
 		// Fire callback
 		this._onroweditstart?.({
@@ -883,7 +927,7 @@ export class WebGrid<T = unknown> {
 			this._editingCell = null
 			this._onInteractionChange?.('editingCell', { prev, current: null })
 			this._currentCellError = null
-			this.requestUpdate()
+			// NOTE: No requestUpdate() - caller handles surgical DOM update
 		}
 	}
 
@@ -1001,7 +1045,7 @@ export class WebGrid<T = unknown> {
 		const prevEditingCell = this._editingCell
 		this._editingCell = null
 		this._onInteractionChange?.('editingCell', { prev: prevEditingCell, current: null })
-		this.requestUpdate()
+		// NOTE: No requestUpdate() - caller handles surgical DOM update
 	}
 
 	// ==========================================================================
@@ -1078,6 +1122,245 @@ export class WebGrid<T = unknown> {
 		const prev = this._hoveredRowIndex
 		this._hoveredRowIndex = rowIndex
 		this._onInteractionChange?.('hoveredRow', { prev, current: rowIndex })
+	}
+
+	// ==========================================================================
+	// Row Identification
+	// ==========================================================================
+
+	/**
+	 * Get the unique ID for a row using configured idValueMember/idValueCallback
+	 */
+	getRowId(row: T): unknown | undefined {
+		if (this._idValueCallback) {
+			return this._idValueCallback(row)
+		}
+		if (this._idValueMember) {
+			return (row as Record<string, unknown>)[String(this._idValueMember)]
+		}
+		return undefined
+	}
+
+	/**
+	 * Find a row by its ID
+	 */
+	findRowById(id: unknown): { row: T; index: number } | null {
+		const index = this._items.findIndex(row => this.getRowId(row) === id)
+		if (index === -1) return null
+		return { row: this._items[index], index }
+	}
+
+	// ==========================================================================
+	// Row Locking
+	// ==========================================================================
+
+	/**
+	 * Get lock info for a row (combines all sources: external, callback, property)
+	 */
+	getRowLockInfo(rowOrId: T | unknown): RowLockInfo | null {
+		let row: T | undefined
+		let id: unknown
+		let rowIndex: number = -1
+
+		// Determine if input is a row object or an ID
+		if (typeof rowOrId === 'object' && rowOrId !== null) {
+			row = rowOrId as T
+			id = this.getRowId(row)
+			rowIndex = this._items.indexOf(row)
+			if (rowIndex === -1) {
+				// Row might be from displayItems
+				rowIndex = this.displayItems.indexOf(row)
+			}
+		} else {
+			id = rowOrId
+			const found = this.findRowById(id)
+			if (found) {
+				row = found.row
+				rowIndex = found.index
+			}
+		}
+
+		// 1. Check external locks first (highest priority - real-time)
+		if (id !== undefined && this._externalLocks.has(id)) {
+			return this._externalLocks.get(id)!
+		}
+
+		// If no row object, can't check property/callback sources
+		if (!row) return null
+
+		const opts = this._rowLocking
+		if (!opts) return null
+
+		// 2. Callback-based sources
+		if (opts.getLockInfoCallback) {
+			const info = opts.getLockInfoCallback(row, rowIndex)
+			if (info?.isLocked) return info
+		}
+		if (opts.isLockedCallback) {
+			if (opts.isLockedCallback(row, rowIndex)) {
+				return { isLocked: true }
+			}
+		}
+
+		// 3. Property-based sources
+		if (opts.lockInfoMember) {
+			const info = (row as Record<string, unknown>)[String(opts.lockInfoMember)] as RowLockInfo | undefined
+			if (info?.isLocked) return info
+		}
+		if (opts.lockedMember) {
+			const locked = (row as Record<string, unknown>)[String(opts.lockedMember)]
+			if (locked) return { isLocked: true }
+		}
+
+		return null
+	}
+
+	/**
+	 * Check if a row is locked
+	 */
+	isRowLocked(rowOrId: T | unknown): boolean {
+		const lockInfo = this.getRowLockInfo(rowOrId)
+		return lockInfo?.isLocked === true
+	}
+
+	/**
+	 * Lock a row by ID (external lock for WebSocket scenarios)
+	 */
+	lockRowById(id: unknown, lockerInfo?: Partial<RowLockInfo>): boolean {
+		const lockInfo: RowLockInfo = {
+			isLocked: true,
+			lockedBy: lockerInfo?.lockedBy,
+			lockedAt: lockerInfo?.lockedAt ?? new Date(),
+			reason: lockerInfo?.reason,
+			...lockerInfo
+		}
+		this._externalLocks.set(id, lockInfo)
+
+		// Cancel editing if the locked row is currently being edited
+		const found = this.findRowById(id)
+		if (found && this._editingCell && this._editingCell.rowIndex === found.index) {
+			this.cancelEdit()
+		}
+
+		this.requestUpdate()
+
+		// Fire callback
+		this._onrowlockchange?.({
+			rowId: id,
+			row: found?.row ?? null,
+			rowIndex: found?.index ?? -1,
+			lockInfo,
+			source: 'external'
+		})
+
+		return true
+	}
+
+	/**
+	 * Unlock a row by ID
+	 */
+	unlockRowById(id: unknown): boolean {
+		const wasLocked = this._externalLocks.has(id)
+		this._externalLocks.delete(id)
+		if (wasLocked) {
+			this.requestUpdate()
+
+			const found = this.findRowById(id)
+			this._onrowlockchange?.({
+				rowId: id,
+				row: found?.row ?? null,
+				rowIndex: found?.index ?? -1,
+				lockInfo: null,
+				source: 'external'
+			})
+		}
+		return wasLocked
+	}
+
+	/**
+	 * Get all external locks (for debugging/inspection)
+	 */
+	getExternalLocks(): Map<unknown, RowLockInfo> {
+		return new Map(this._externalLocks)
+	}
+
+	/**
+	 * Clear all external locks
+	 */
+	clearExternalLocks(): void {
+		this._externalLocks.clear()
+		this.requestUpdate()
+	}
+
+	// ==========================================================================
+	// Row Update Methods (for WebSocket/external updates)
+	// ==========================================================================
+
+	/**
+	 * Update a row's data by ID (partial update, preserves other fields)
+	 */
+	updateRowById(id: unknown, newData: Partial<T>): boolean {
+		const found = this.findRowById(id)
+		if (!found) return false
+
+		// Update original data
+		Object.assign(this._items[found.index], newData)
+
+		// Update draft if exists
+		const draft = this._draftRows.get(found.index)
+		if (draft) {
+			Object.assign(draft, newData)
+		}
+
+		this.requestUpdate()
+		return true
+	}
+
+	/**
+	 * Replace entire row by ID
+	 */
+	replaceRowById(id: unknown, newRow: T): boolean {
+		const found = this.findRowById(id)
+		if (!found) return false
+
+		this._items[found.index] = newRow
+
+		// Clear draft for this row (data was replaced externally)
+		this._draftRows.delete(found.index)
+
+		this.requestUpdate()
+		return true
+	}
+
+	// ==========================================================================
+	// Edit Lock Checking
+	// ==========================================================================
+
+	/**
+	 * Check if a cell can be edited (respects lock state)
+	 */
+	canEditCell(rowIndex: number, field: string): boolean {
+		const column = this._columns.find(c => String(c.field) === field)
+		if (!column || !this.isCellEditable(column)) return false
+
+		const item = this.displayItems[rowIndex]
+		if (!item) return false
+
+		const lockInfo = this.getRowLockInfo(item)
+		if (!lockInfo?.isLocked) return true  // Not locked
+
+		const opts = this._rowLocking
+		const behavior = opts?.lockedEditBehavior ?? 'block'
+
+		switch (behavior) {
+			case 'allow':
+				return true
+			case 'callback':
+				return opts?.canEditLockedCallback?.(item, lockInfo) ?? false
+			case 'block':
+			default:
+				return false
+		}
 	}
 }
 

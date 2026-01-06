@@ -5,6 +5,7 @@
 
 import type { FocusedCell } from '../../types.js'
 import type { GridContext } from '../types.js'
+import { renderCell } from '../rendering/index.js'
 
 /**
  * Focus a cell element in the DOM
@@ -107,36 +108,60 @@ export function scrollToRowPosition<T>(ctx: GridContext<T>, rowIndex: number): v
 	container.scrollTop = Math.min(targetScrollTop, maxScroll)
 }
 
+// Track last focus visual update to debounce rapid changes during double-click
+let lastFocusVisualUpdate = 0
+const FOCUS_VISUAL_DEBOUNCE_MS = 100
+
 /**
  * Update focus visual state surgically (without full re-render)
- * This directly manipulates CSS classes on existing DOM elements
+ * Uses centralized renderCell() to ensure all states are correct
  */
 export function updateFocusVisual<T>(
 	ctx: GridContext<T>,
 	oldFocus: FocusedCell | null,
 	newFocus: FocusedCell | null
 ): void {
-	// Remove focus from old cell
+	// Debounce rapid focus visual changes on SAME cell (happens during double-click)
+	// Don't debounce when focus is actually moving to a different cell
+	const isSameCell = oldFocus && newFocus &&
+		oldFocus.rowIndex === newFocus.rowIndex &&
+		oldFocus.colIndex === newFocus.colIndex
+	const now = Date.now()
+	if (isSameCell && now - lastFocusVisualUpdate < FOCUS_VISUAL_DEBOUNCE_MS) {
+		return
+	}
+	lastFocusVisualUpdate = now
+
+	const editingCell = ctx.grid.editingCell
+
+	// Re-render old cell (will remove --focused class)
+	// Skip if this cell is currently being edited (don't disrupt editor)
 	if (oldFocus) {
-		const oldCell = ctx.shadow.querySelector(
-			`[data-row="${oldFocus.rowIndex}"][data-col="${oldFocus.colIndex}"]`
-		) as HTMLElement
-		oldCell?.classList.remove('wg__cell--focused')
+		const isOldCellEditing = editingCell &&
+			editingCell.rowIndex === oldFocus.rowIndex &&
+			ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === oldFocus.colIndex
+		if (!isOldCellEditing) {
+			renderCell(ctx, oldFocus.rowIndex, oldFocus.colIndex)
+		}
 	}
 
-	// Add focus to new cell
+	// Re-render new cell (will add --focused class)
+	// Skip if this cell is currently being edited (don't disrupt editor)
 	if (newFocus) {
-		const newCell = ctx.shadow.querySelector(
-			`[data-row="${newFocus.rowIndex}"][data-col="${newFocus.colIndex}"]`
-		) as HTMLElement
-		newCell?.classList.add('wg__cell--focused')
+		const isNewCellEditing = editingCell &&
+			editingCell.rowIndex === newFocus.rowIndex &&
+			ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === newFocus.colIndex
+		if (!isNewCellEditing) {
+			renderCell(ctx, newFocus.rowIndex, newFocus.colIndex)
+		}
 	}
 }
 
 /**
  * Surgically remove the editing visual (blue border) from current editing cell.
- * Call this BEFORE cancelEdit() to ensure the DOM class is removed immediately,
- * rather than waiting for the async re-render.
+ * Call this BEFORE cancelEdit() to ensure the DOM class is removed immediately.
+ * NOTE: This just removes the class - full cell restoration happens via renderCell()
+ * after cancelEdit() clears the state.
  */
 export function clearEditingVisual<T>(ctx: GridContext<T>): void {
 	const editingCell = ctx.grid.editingCell
@@ -151,6 +176,10 @@ export function clearEditingVisual<T>(ctx: GridContext<T>): void {
 	}
 }
 
+// Track last focus update to debounce rapid changes during double-click
+let lastFocusUpdate = 0
+const FOCUS_DEBOUNCE_MS = 50
+
 /**
  * Handle cell focus event
  */
@@ -160,6 +189,15 @@ export function handleCellFocus<T>(
 	colIndex: number
 ): void {
 	if (!ctx.grid.isNavigateMode) return
+
+	// Debounce rapid focus changes (happens during double-click)
+	const now = Date.now()
+	if (now - lastFocusUpdate < FOCUS_DEBOUNCE_MS) {
+		// Still update state, but skip visual update
+		ctx.grid.setFocusedCell(rowIndex, colIndex)
+		return
+	}
+	lastFocusUpdate = now
 
 	const oldFocus = ctx.grid.focusedCell
 	const newFocus = { rowIndex, colIndex }
@@ -186,6 +224,7 @@ export function moveFocus<T>(
 
 /**
  * Try to start editing a cell (checks if editable first)
+ * Uses centralized renderCell() for surgical DOM update
  */
 export function tryStartEdit<T>(
 	ctx: GridContext<T>,
@@ -193,8 +232,7 @@ export function tryStartEdit<T>(
 	colIndex: number,
 	options?: { initialSearchQuery?: string; cursorPosition?: number }
 ): void {
-	const columns = ctx.grid.columns
-	const column = columns[colIndex]
+	const column = ctx.grid.columns[colIndex]
 	if (!column) return
 
 	// Check if cell is editable
@@ -203,7 +241,22 @@ export function tryStartEdit<T>(
 	}
 
 	const field = String(column.field)
+
+	// Clear old focus visual if editing a different cell
+	const oldFocus = ctx.grid.focusedCell
+	if (oldFocus && (oldFocus.rowIndex !== rowIndex || oldFocus.colIndex !== colIndex)) {
+		renderCell(ctx, oldFocus.rowIndex, oldFocus.colIndex)
+	}
+
+	// Update state (no longer triggers requestUpdate)
 	ctx.grid.startEdit(rowIndex, field, options)
+
+	// Re-render the cell in edit mode with focus
+	renderCell(ctx, rowIndex, colIndex, {
+		focusEditor: true,
+		cursorPosition: options?.cursorPosition,
+		initialSearchQuery: options?.initialSearchQuery
+	})
 }
 
 /**

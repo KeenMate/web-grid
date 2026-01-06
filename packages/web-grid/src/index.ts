@@ -56,6 +56,12 @@ export type {
 	// Labels/i18n
 	GridLabels,
 
+	// Row locking types
+	RowLockInfo,
+	RowLockingOptions,
+	RowLockChangeDetail,
+	LockedRowEditBehavior,
+
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,
