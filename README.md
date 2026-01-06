@@ -19,6 +19,7 @@ A lightweight, accessible data grid web component with sorting, filtering, inlin
 - **Virtual Scrolling** - Efficient rendering for large datasets (10,000+ rows)
 - **Infinite Scroll** - Load more data as user scrolls
 - **Custom Styling** - Cell and row styling via callbacks
+- **Row Locking** - Lock rows for collaborative editing (property, callback, or external API)
 - **Dark Mode** - Automatic dark mode support via CSS variables
 - **i18n/Labels** - Centralized labels object for translations
 - **Shadow DOM** - Encapsulated styles that don't leak
@@ -154,6 +155,17 @@ grid.labels = {
   keyboardShortcuts: 'Keyboard shortcuts',
   paginationPageInfo: 'Page {current} of {total}'
 };
+
+// Row identification (for locking & updates)
+grid.idValueMember = 'id';           // Property name for row ID
+grid.idValueCallback = (row) => row.id;  // Or callback for complex IDs
+
+// Row locking
+grid.rowLocking = {
+  lockedMember: 'isLocked',          // Property-based
+  lockInfoMember: 'lockInfo',        // Or full lock info object
+  lockedEditBehavior: 'block'        // 'block' | 'allow' | 'callback'
+};
 ```
 
 ## Column Definition
@@ -268,6 +280,14 @@ grid.labels = {
 | `cancelEdit()` | Cancel current edit |
 | `moveRow(fromIndex, toIndex)` | Move a row |
 | `deleteRow(index)` | Delete a row |
+| `getRowId(row)` | Get row's ID value |
+| `findRowById(id)` | Find row and index by ID |
+| `isRowLocked(rowOrId)` | Check if row is locked |
+| `getRowLockInfo(rowOrId)` | Get lock info for row |
+| `lockRowById(id, info?)` | Lock row externally |
+| `unlockRowById(id)` | Unlock row externally |
+| `updateRowById(id, data)` | Partial update row by ID |
+| `replaceRowById(id, row)` | Replace entire row by ID |
 
 ## Events
 
@@ -470,6 +490,64 @@ grid.customStylesCallback = () => `
   .high { background-color: #d1fae5 !important; }
   .row-inactive { opacity: 0.6; }
 `
+```
+
+### Row Locking
+
+Lock rows for collaborative editing scenarios. Three sources: property-based, callback-based, or external API.
+
+**Property-based** - Lock status from row data:
+```javascript
+grid.idValueMember = 'id'
+grid.rowLocking = {
+  lockedMember: 'isLocked',    // boolean field
+  // Or with full lock info:
+  lockInfoMember: 'lockInfo'   // { isLocked, lockedBy, lockedAt, reason }
+}
+```
+
+**Callback-based** - Compute lock status:
+```javascript
+grid.rowLocking = {
+  getLockInfoCallback: (row) => row.status === 'editing'
+    ? { isLocked: true, lockedBy: row.editingUser }
+    : null
+}
+```
+
+**External API** - Lock via JavaScript (WebSocket scenario):
+```javascript
+// Lock row when server notifies
+socket.on('row-locked', ({ id, user }) => {
+  grid.lockRowById(id, { lockedBy: user })
+})
+
+// Unlock when released
+socket.on('row-unlocked', ({ id }) => {
+  grid.unlockRowById(id)
+})
+
+// Update row data from server
+socket.on('row-updated', ({ id, data }) => {
+  grid.updateRowById(id, data)  // Partial update
+  // or
+  grid.replaceRowById(id, newRow)  // Full replacement
+})
+```
+
+**Visual indicators:**
+- Row shows muted styling with `--wg-row-locked-bg` background
+- Lock icon (🔒) replaces row number when `showRowNumbers` is enabled
+- Tooltip shows who locked the row (via Floating UI)
+
+**Edit behavior** - Control what happens when editing locked rows:
+```javascript
+grid.rowLocking = {
+  lockedEditBehavior: 'block',  // Cannot edit (default)
+  // or 'allow' - can edit, just visual indicator
+  // or 'callback' - use canEditLockedCallback to decide
+  canEditLockedCallback: (row, lockInfo) => lockInfo.lockedBy === currentUser
+}
 ```
 
 ## Theming

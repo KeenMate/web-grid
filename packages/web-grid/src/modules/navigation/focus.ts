@@ -6,6 +6,7 @@
 import type { FocusedCell } from '../../types.js'
 import type { GridContext } from '../types.js'
 import { renderCell } from '../rendering/index.js'
+import { removeDropdown } from '../dropdown/rendering.js'
 
 /**
  * Focus a cell element in the DOM
@@ -176,6 +177,18 @@ export function clearEditingVisual<T>(ctx: GridContext<T>): void {
 	}
 }
 
+/**
+ * Fully restore an editing cell to display mode.
+ * Must be called AFTER cancelEdit() so the cell renders in display mode.
+ */
+export function restoreEditingCellToDisplayMode<T>(
+	ctx: GridContext<T>,
+	rowIndex: number,
+	colIndex: number
+): void {
+	renderCell(ctx, rowIndex, colIndex)
+}
+
 // Track last focus update to debounce rapid changes during double-click
 let lastFocusUpdate = 0
 const FOCUS_DEBOUNCE_MS = 50
@@ -241,6 +254,11 @@ export function tryStartEdit<T>(
 	}
 
 	const field = String(column.field)
+
+	// Remove any open dropdown before transitioning to new cell
+	if (ctx.dropdownOpen) {
+		removeDropdown(ctx)
+	}
 
 	// Clear old focus visual if editing a different cell
 	const oldFocus = ctx.grid.focusedCell

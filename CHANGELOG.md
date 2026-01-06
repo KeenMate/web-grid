@@ -53,6 +53,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Translatable strings: `rowActions`, `inlineActionsHeader`, `keyboardShortcuts`
   - Pagination labels: `paginationFirst`, `paginationPrevious`, `paginationNext`, `paginationLast`, `paginationPageInfo`, `paginationItemCount`, `paginationPerPage`
   - Placeholder syntax for dynamic values: `{current}`, `{total}`, `{count}`
+- **Row Locking** - Lock rows to prevent editing (for collaborative scenarios)
+  - Three lock sources: property-based, callback-based, external API
+  - Property-based: `rowLocking.lockedMember` or `rowLocking.lockInfoMember`
+  - Callback-based: `rowLocking.isLockedCallback` or `rowLocking.getLockInfoCallback`
+  - External API: `lockRowById(id, info)`, `unlockRowById(id)` for WebSocket scenarios
+  - Visual indicator: lock icon replaces row number, muted row styling
+  - Configurable edit behavior: `lockedEditBehavior` ('block' | 'allow' | 'callback')
+  - Row identification: `idValueMember` or `idValueCallback` for ID-based operations
+  - Row update methods: `updateRowById(id, data)`, `replaceRowById(id, row)`
+  - Automatic edit cancellation when row is locked while editing
+  - Lock tooltips use Floating UI (consistent with other tooltips)
+  - New labels: `dropdownNoOptions`, `dropdownSearching`
 
 ### Changed
 - **Centralized Interaction State** - Refactored hover/focus/edit state tracking

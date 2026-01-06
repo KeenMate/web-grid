@@ -176,7 +176,16 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 		}
 	}
 
-	const wrapper = ctx.shadow.querySelector('.wg__editor--select, .wg__editor--combobox, .wg__editor--autocomplete') as HTMLElement
+	// Use specific selector with row and field to avoid finding stale editor elements
+	const editingCellInfo = ctx.grid.editingCell
+	if (!editingCellInfo) return
+
+	const { rowIndex, field } = editingCellInfo
+	const wrapper = ctx.shadow.querySelector(
+		`.wg__editor--select[data-row="${rowIndex}"][data-field="${field}"],
+		 .wg__editor--combobox[data-row="${rowIndex}"][data-field="${field}"],
+		 .wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
+	) as HTMLElement
 	if (wrapper && ctx.dropdownOptions.length > 0) {
 		// Save filterText before renderDropdown (which calls removeDropdown that clears it)
 		const savedFilterText = ctx.filterText
@@ -190,8 +199,14 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 		ctx.highlightedIndex = targetIndex
 		updateDropdownHighlight(ctx)
 		// Refocus the editor after dropdown renders (select trigger or input)
-		const selectTrigger = ctx.shadow.querySelector('.wg__select-trigger') as HTMLElement
-		const input = ctx.shadow.querySelector('.wg__combobox-input, .wg__autocomplete-input') as HTMLElement
+		// Use specific selectors to avoid finding stale elements
+		const selectTrigger = ctx.shadow.querySelector(
+			`.wg__select-trigger[data-row="${rowIndex}"][data-field="${field}"]`
+		) as HTMLElement
+		const input = ctx.shadow.querySelector(
+			`.wg__combobox-input[data-row="${rowIndex}"][data-field="${field}"],
+			 .wg__autocomplete-input[data-row="${rowIndex}"][data-field="${field}"]`
+		) as HTMLElement
 		const focusTarget = selectTrigger || input
 		if (focusTarget) {
 			focusTarget.focus()

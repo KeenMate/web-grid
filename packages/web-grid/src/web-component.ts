@@ -92,7 +92,8 @@ import {
 	renderDataRows,
 	renderDataRowsVirtual,
 	renderPagination,
-	renderSummary
+	renderSummary,
+	renderCell
 } from './modules/rendering/index.js'
 
 import type { VirtualScrollParams } from './modules/rendering/index.js'
@@ -1448,9 +1449,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					if (colIndex >= 0) {
 						this.isTransitioningCells = true
 						if (this.grid.editingCell) {
+							// Save old cell info BEFORE cancelEdit clears it
+							const oldEditingCell = this.grid.editingCell
+							const oldColIndex = this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+
 							removeDropdown(this)
 							clearEditingVisual(this)
 							this.grid.cancelEdit()
+
+							// Re-render old cell to remove editor HTML
+							if (oldColIndex >= 0) {
+								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
+							}
 						}
 						tryStartEdit(this, rowIndex, colIndex)
 						requestAnimationFrame(() => {
@@ -1481,9 +1491,16 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						if (rowIndex !== editingCell.rowIndex || colIndex !== editingColIndex) {
 							e.preventDefault()
 							this.isTransitioningCells = true
+							// Save old editing cell info
+							const oldRowIndex = editingCell.rowIndex
+							const oldColIndex = editingColIndex
 							removeDropdown(this)
 							clearEditingVisual(this)
 							this.grid.cancelEdit()
+							// Re-render old cell AFTER cancelEdit so it renders in display mode
+							if (oldColIndex >= 0) {
+								renderCell(this, oldRowIndex, oldColIndex)
+							}
 							const newColumn = this.grid.columns[colIndex]
 							const trigger = newColumn?.editTrigger || this.grid.editTrigger
 							// Capture click position for cursor placement
@@ -1525,10 +1542,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					const colIndex = this.grid.columns.findIndex(c => String(c.field) === field)
 					if (colIndex >= 0) {
 						this.isTransitioningCells = true
-						if (this.grid.editingCell) {
+						// Save old editing cell info before clearing
+						const oldEditingCell = this.grid.editingCell
+						const oldColIndex = oldEditingCell
+							? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+							: -1
+						if (oldEditingCell) {
 							removeDropdown(this)
 							clearEditingVisual(this)
 							this.grid.cancelEdit()
+							// Re-render old cell AFTER cancelEdit so it renders in display mode
+							if (oldColIndex >= 0) {
+								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
+							}
 						}
 						tryStartEdit(this, rowIndex, colIndex)
 						requestAnimationFrame(() => {
@@ -1552,10 +1578,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					const colIndex = this.grid.columns.findIndex(c => String(c.field) === field)
 					if (colIndex >= 0) {
 						this.isTransitioningCells = true
-						if (this.grid.editingCell) {
+						// Save old editing cell info before clearing
+						const oldEditingCell = this.grid.editingCell
+						const oldColIndex = oldEditingCell
+							? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+							: -1
+						if (oldEditingCell) {
 							removeDropdown(this)
 							clearEditingVisual(this)
 							this.grid.cancelEdit()
+							// Re-render old cell AFTER cancelEdit so it renders in display mode
+							if (oldColIndex >= 0) {
+								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
+							}
 						}
 						tryStartEdit(this, rowIndex, colIndex)
 						requestAnimationFrame(() => {
@@ -1713,9 +1748,20 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			container.addEventListener('scroll', () => {
 				// Close dropdown on scroll
 				if (this.dropdownOpen && !this.isTransitioningCells && !this.isOpeningDropdown) {
+					// Save editing cell info BEFORE cancelEdit clears it
+					const oldEditingCell = this.grid.editingCell
+					const oldColIndex = oldEditingCell
+						? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+						: -1
+
 					removeDropdown(this)
 					clearEditingVisual(this)
 					this.grid.cancelEdit()
+
+					// Re-render old cell to remove editor HTML (toggle, etc.)
+					if (oldEditingCell && oldColIndex >= 0) {
+						renderCell(this, oldEditingCell.rowIndex, oldColIndex)
+					}
 				}
 
 				// Virtual scroll: recalculate visible range
@@ -1740,9 +1786,20 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.wheelListenerAdded = true
 			window.addEventListener('scroll', () => {
 				if (this.dropdownOpen && !this.isTransitioningCells) {
+					// Save editing cell info BEFORE cancelEdit clears it
+					const oldEditingCell = this.grid.editingCell
+					const oldColIndex = oldEditingCell
+						? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+						: -1
+
 					removeDropdown(this)
 					clearEditingVisual(this)
 					this.grid.cancelEdit()
+
+					// Re-render old cell to remove editor HTML (toggle, etc.)
+					if (oldEditingCell && oldColIndex >= 0) {
+						renderCell(this, oldEditingCell.rowIndex, oldColIndex)
+					}
 				}
 			}, { passive: true, capture: true })
 		}
@@ -2343,9 +2400,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Auto-focus editor if in edit mode
 		if (this.grid.editingCell) {
-			let editor = this.shadow.querySelector('.wg__combobox-input, .wg__autocomplete-input, .wg__select-trigger, .wg__date-input') as HTMLElement
+			const { rowIndex, field } = this.grid.editingCell
+			// Use specific selectors to avoid finding stale editor elements
+			let editor = this.shadow.querySelector(
+				`.wg__combobox-input[data-row="${rowIndex}"][data-field="${field}"],
+				 .wg__autocomplete-input[data-row="${rowIndex}"][data-field="${field}"],
+				 .wg__select-trigger[data-row="${rowIndex}"][data-field="${field}"],
+				 .wg__date-input[data-row="${rowIndex}"][data-field="${field}"]`
+			) as HTMLElement
 			if (!editor) {
-				editor = this.shadow.querySelector('.wg__editor') as HTMLElement
+				editor = this.shadow.querySelector(
+					`.wg__editor[data-row="${rowIndex}"][data-field="${field}"]`
+				) as HTMLElement
 			}
 			if (editor) {
 				editor.focus()

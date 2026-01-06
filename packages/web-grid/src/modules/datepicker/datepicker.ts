@@ -496,6 +496,13 @@ export class DatePicker {
 
 		// Setup auto-update for repositioning
 		this.cleanupAutoUpdate = autoUpdate(this.anchor, picker, () => {
+			// Close datepicker silently if anchor is no longer valid
+			// Silent because something else (cell transition) already handled the edit state
+			if (!this.anchor!.isConnected) {
+				this.close(true)
+				return
+			}
+
 			computePosition(this.anchor!, picker, {
 				placement: 'bottom-start',
 				middleware: [
