@@ -72,6 +72,8 @@ export type EditorOptions<T = unknown> = {
 	// Other shared options
 	allowEmpty?: boolean    // Allow null/empty selection
 	emptyLabel?: string     // Label for empty option (default: "-- Select --")
+	noOptionsText?: string  // Override "No options" message (falls back to grid.labels.dropdownNoOptions)
+	searchingText?: string  // Override "Searching..." message (falls back to grid.labels.dropdownSearching)
 
 	// === TEXT ===
 	maxLength?: number

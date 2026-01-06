@@ -125,9 +125,17 @@ export async function performAutocompleteSearch<T>(
 		const results = await opts.onSearchCallback(query, item, signal)
 
 		if (!signal.aborted) {
+			// Clear searching state BEFORE rendering so dropdown shows correct message
+			ctx.isSearching = false
+			updateLoadingIndicator(ctx, false)
+
 			ctx.dropdownOptions = results
 
-			const wrapper = ctx.shadow.querySelector('.wg__editor--autocomplete') as HTMLElement
+			// Use specific selector to avoid finding stale editor elements
+			const { rowIndex, field } = editingCell
+			const wrapper = ctx.shadow.querySelector(
+				`.wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
+			) as HTMLElement
 			if (wrapper) {
 				const dropdown = renderDropdown(ctx, wrapper, ctx.dropdownOptions, opts)
 				attachDropdownListeners(ctx, dropdown)
@@ -140,16 +148,22 @@ export async function performAutocompleteSearch<T>(
 			return // Expected - ignore
 		}
 		console.error('Autocomplete search failed:', error)
+
+		// Clear searching state BEFORE rendering
+		ctx.isSearching = false
+		updateLoadingIndicator(ctx, false)
+
 		ctx.dropdownOptions = []
-		const wrapper = ctx.shadow.querySelector('.wg__editor--autocomplete') as HTMLElement
-		if (wrapper) {
-			const dropdown = renderDropdown(ctx, wrapper, ctx.dropdownOptions, opts)
-			attachDropdownListeners(ctx, dropdown)
-		}
-	} finally {
-		if (!signal.aborted) {
-			ctx.isSearching = false
-			updateLoadingIndicator(ctx, false)
+		const editingCell = ctx.grid.editingCell
+		if (editingCell) {
+			const { rowIndex, field } = editingCell
+			const wrapper = ctx.shadow.querySelector(
+				`.wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
+			) as HTMLElement
+			if (wrapper) {
+				const dropdown = renderDropdown(ctx, wrapper, ctx.dropdownOptions, opts)
+				attachDropdownListeners(ctx, dropdown)
+			}
 		}
 	}
 }

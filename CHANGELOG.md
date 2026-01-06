@@ -65,6 +65,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic edit cancellation when row is locked while editing
   - Lock tooltips use Floating UI (consistent with other tooltips)
   - New labels: `dropdownNoOptions`, `dropdownSearching`
+- **Column-Level Dropdown Text Overrides** - `editorOptions.noOptionsText` and `editorOptions.searchingText`
+  - Override "No options" and "Searching..." messages per column
+  - Falls back to `grid.labels.dropdownNoOptions` / `dropdownSearching` if not specified
+  - Reactive: updates when column definition changes (useful for i18n)
 
 ### Changed
 - **Centralized Interaction State** - Refactored hover/focus/edit state tracking
@@ -81,6 +85,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Font Size Alignment** - Aligned font size scale with web-multiselect and web-daterangepicker: `--wg-font-size-base` now uses `--base-font-size-sm` (14px) instead of `--base-font-size-base` (16px), ensuring consistent text size across all KeenMate components
 
 ### Fixed
+- **Cross-Column Dropdown Bug** - Rapidly clicking between dropdown cells in different columns no longer opens dropdown on wrong cell. Fixed generic selectors to use specific `data-row`/`data-field` attributes.
+- **Dropdown Toggle Stays Visible After Scroll** - Scrolling while dropdown is open now properly re-renders the cell to remove editor HTML (toggle button)
+- **Datepicker Stays Open When Switching Cells** - Datepicker now auto-closes silently when its anchor becomes disconnected (e.g., clicking another cell)
+- **Focus Border Not Cleared** - Clicking a dropdown toggle while another cell is focused now clears the focus border from the old cell
+- **Autocomplete Stuck at "Searching..."** - Empty search results now correctly show "No options" instead of staying at "Searching..."
 - **Virtual Scroll Flickering on Keyboard Navigation** - Pressing Ctrl+PageDown, Ctrl+Home, PageUp/Down no longer causes grid to flicker/redraw multiple times. Keyboard navigation now pre-renders target row range once before scrolling, with flag to skip redundant scroll event handlers.
 - **Edit Mode Full Re-render** - Entering and exiting edit mode (click, F2, Enter, Tab, Escape) no longer causes full grid re-render. Uses surgical DOM updates to replace only the cell content, preserving any DevTools modifications to other cells.
 - **Focus Following Row on Move** - `focusCell()` now updates state synchronously before render, fixing focus not following row when using keyboard shortcuts to move rows up/down

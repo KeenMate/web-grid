@@ -263,6 +263,8 @@ export function tryStartEdit<T>(
 	// Clear old focus visual if editing a different cell
 	const oldFocus = ctx.grid.focusedCell
 	if (oldFocus && (oldFocus.rowIndex !== rowIndex || oldFocus.colIndex !== colIndex)) {
+		// Clear focus state BEFORE re-rendering so cell renders without focus visual
+		ctx.grid.clearFocusedCell()
 		renderCell(ctx, oldFocus.rowIndex, oldFocus.colIndex)
 	}
 
