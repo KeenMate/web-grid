@@ -231,7 +231,7 @@ grid.ondatarequest = (detail) => {
         const renderedRowsEl = document.getElementById('renderedRows')
 
         grid1.columns = columns
-        grid1.sortable = true
+        grid1.sortMode = 'multi'
         grid1.editable = true  // Enable editing to test with virtual scroll
         grid1.editTrigger = 'navigate'  // Enable focus visual on click
 
@@ -312,7 +312,7 @@ grid.ondatarequest = (detail) => {
         const hasMoreEl = document.getElementById('hasMore')
 
         grid2.columns = columns
-        grid2.sortable = true
+        grid2.sortMode = 'multi'
 
         // Enable both virtual scroll and infinite scroll
         grid2.virtualScroll = true

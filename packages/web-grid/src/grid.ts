@@ -207,13 +207,6 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	/** @deprecated Use sortMode instead. sortable=true maps to sortMode="multi", sortable=false maps to sortMode="none" */
-	get sortable(): boolean { return this._sortMode !== "none" }
-	set sortable(value: boolean) {
-		this._sortMode = value ? "multi" : "none"
-		this.requestUpdate()
-	}
-
 	get filterable(): boolean { return this._filterable }
 	set filterable(value: boolean) {
 		this._filterable = value

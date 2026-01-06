@@ -256,7 +256,7 @@
         grid.editable = true
         grid.editTrigger = 'navigate'
         grid.showRowNumbers = true
-        grid.sortable = true
+        grid.sortMode = 'multi'
         grid.tooltipShowDelay = 0
         grid.tooltipHideDelay = 100
 
@@ -306,7 +306,7 @@
         })
 
         document.getElementById('sortable').addEventListener('change', (e) => {
-            grid.sortable = e.target.checked
+            grid.sortMode = e.target.checked ? 'multi' : 'none'
         })
 
         document.getElementById('pageable').addEventListener('change', (e) => {

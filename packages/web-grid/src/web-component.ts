@@ -350,9 +350,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get columns(): Column<T>[] { return this.grid.columns }
 	set columns(value: Column<T>[]) { this.grid.columns = value }
 
-	get sortable(): boolean { return this.grid.sortable }
-	set sortable(value: boolean) { this.grid.sortable = value }
-
 	get filterable(): boolean { return this.grid.filterable }
 	set filterable(value: boolean) { this.grid.filterable = value }
 

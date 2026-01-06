@@ -84,6 +84,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Line Height** - Changed `--wg-line-height-base` from absolute value (`2 * --wg-rem` = 20px) to unitless multiplier (`1.5`), matching web-multiselect and standard CSS best practices
 - **Font Size Alignment** - Aligned font size scale with web-multiselect and web-daterangepicker: `--wg-font-size-base` now uses `--base-font-size-sm` (14px) instead of `--base-font-size-base` (16px), ensuring consistent text size across all KeenMate components
 
+### Removed
+- **Deprecated `sortable` Property** - The grid-level `sortable` boolean property has been removed
+  - Use `sortMode` instead: `'none'` (disabled), `'single'` (one column), `'multi'` (multi-column with Ctrl+click)
+  - Migration: `grid.sortable = true` → `grid.sortMode = 'multi'`
+  - Column-level `sortable` property (to disable sorting per column) is unchanged
+
 ### Fixed
 - **Cross-Column Dropdown Bug** - Rapidly clicking between dropdown cells in different columns no longer opens dropdown on wrong cell. Fixed generic selectors to use specific `data-row`/`data-field` attributes.
 - **Dropdown Toggle Stays Visible After Scroll** - Scrolling while dropdown is open now properly re-renders the cell to remove editor HTML (toggle button)

@@ -398,7 +398,7 @@ grid.summaryInline = false  // Each on its own row</pre>
 
         grid1.items = allData.slice(0, 50)  // 50 items for client-side demo
         grid1.columns = columns
-        grid1.sortable = true
+        grid1.sortMode = 'multi'
         grid1.pageable = true
         grid1.pageSize = 10
         grid1.pageSizes = [5, 10, 25, 50]  // Page size options
@@ -545,7 +545,7 @@ grid.summaryInline = false  // Each on its own row</pre>
         const loadingOverlay = document.getElementById('loadingOverlay')
 
         grid2.columns = columns
-        grid2.sortable = true
+        grid2.sortMode = 'multi'
         grid2.pageable = true
         grid2.pageSize = 10
         grid2.pageSizes = [10, 25, 50, 100]  // Page size options

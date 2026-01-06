@@ -348,8 +348,6 @@ export type ParsedKeyCombo = {
 export type QuickGridProps<T> = {
 	items: T[]
 	columns: Column<T>[]
-	/** @deprecated Use sortMode instead */
-	sortable?: boolean
 	filterable?: boolean
 	pageable?: boolean
 	pageSize?: number

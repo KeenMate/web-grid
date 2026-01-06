@@ -92,7 +92,6 @@ grid.onrowchange = (detail) => {
 |-----------|------|---------|-------------|
 | `striped` | boolean | `false` | Alternating row colors |
 | `hoverable` | boolean | `false` | Highlight row on hover |
-| `sortable` | boolean | `false` | Enable sorting (deprecated, use `sort-mode`) |
 | `sort-mode` | `'none' \| 'single' \| 'multi'` | `'none'` | Sorting mode |
 | `filterable` | boolean | `false` | Show column filters |
 | `pageable` | boolean | `false` | Enable pagination |
