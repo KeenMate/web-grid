@@ -125,6 +125,8 @@ import {
 	shouldTriggerInfiniteScroll
 } from './modules/scroll/index.js'
 
+import { handleSortClick, handlePaginationClick, handlePageSizeChange } from './modules/events/index.js'
+
 import type { GridContext } from './modules/types.js'
 
 /**
@@ -1566,57 +1568,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const target = mouseEvent.target as HTMLElement
 			const header = target.closest('.wg__header--sortable') as HTMLElement
 			if (header) {
-				const field = header.dataset.field
-				if (!field) return
-
-				const currentSort = [...this.grid.sort]
-				const existingIndex = currentSort.findIndex(s => s.column === field)
-				const isCtrlClick = mouseEvent.ctrlKey || mouseEvent.metaKey
-
-				if (isCtrlClick && this.grid.sortMode === 'multi') {
-					// Multi-column sort: Ctrl+Click adds/toggles/removes column
-					if (existingIndex >= 0) {
-						const existing = currentSort[existingIndex]
-						if (existing.direction === 'asc') {
-							// Toggle to desc
-							currentSort[existingIndex] = { column: field, direction: 'desc' }
-						} else {
-							// Remove from sort
-							currentSort.splice(existingIndex, 1)
-						}
-					} else {
-						// Add new column to sort
-						currentSort.push({ column: field, direction: 'asc' })
-					}
-				} else {
-					// Single-column sort: regular click replaces all sorting
-					if (existingIndex >= 0 && currentSort.length === 1) {
-						// Same column, toggle direction
-						const existing = currentSort[0]
-						if (existing.direction === 'asc') {
-							currentSort[0] = { column: field, direction: 'desc' }
-						} else {
-							// Clear sorting
-							currentSort.length = 0
-						}
-					} else {
-						// New column or was multi-column, start fresh with asc
-						currentSort.length = 0
-						currentSort.push({ column: field, direction: 'asc' })
-					}
-				}
-
-				// Update sort state
-				this.grid.sort = currentSort
-
-				// Reset to page 1 on sort change
-				if (this.grid.pageable) {
-					this.grid.currentPage = 1
-				}
-
-				// Fire data request event if handler exists
-				this.grid.fireDataRequest('sort')
-
+				handleSortClick(this, mouseEvent)
 				this.render()
 			}
 		})
@@ -1960,30 +1912,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		paginations.forEach(pagination => {
 			// Page navigation buttons
 			pagination.addEventListener('click', (e: Event) => {
-				const target = e.target as HTMLElement
-				const btn = target.closest('.wg__pagination-btn') as HTMLElement
-				if (!btn || btn.hasAttribute('disabled')) return
-
-				const action = btn.dataset.action
-				let pageChanged = false
-
-				if (action === 'first' && this.grid.currentPage !== 1) {
-					this.grid.currentPage = 1
-					pageChanged = true
-				} else if (action === 'prev' && this.grid.currentPage > 1) {
-					this.grid.currentPage--
-					pageChanged = true
-				} else if (action === 'next' && this.grid.currentPage < this.grid.totalPages) {
-					this.grid.currentPage++
-					pageChanged = true
-				} else if (action === 'last' && this.grid.currentPage !== this.grid.totalPages) {
-					this.grid.currentPage = this.grid.totalPages
-					pageChanged = true
-				}
-
-				if (pageChanged) {
-					// Fire data request event if handler exists
-					this.grid.fireDataRequest('page')
+				if (handlePaginationClick(this, e)) {
 					this.render()
 				}
 			})
@@ -1992,13 +1921,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const pageSizeSelect = pagination.querySelector('.wg__pagination-select') as HTMLSelectElement
 			if (pageSizeSelect) {
 				pageSizeSelect.addEventListener('change', () => {
-					const newPageSize = parseInt(pageSizeSelect.value, 10)
-					if (newPageSize !== this.grid.pageSize) {
-						this.grid.pageSize = newPageSize
-						// Reset to page 1 when page size changes
-						this.grid.currentPage = 1
-						// Fire data request event
-						this.grid.fireDataRequest('pageSize')
+					if (handlePageSizeChange(this, pageSizeSelect)) {
 						this.render()
 					}
 				})

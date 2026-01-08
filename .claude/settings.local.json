@@ -26,7 +26,8 @@
       "Bash(make package:*)",
       "Bash(npm pack:*)",
       "Bash(npm view:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(find:*)"
     ]
   }
 }
