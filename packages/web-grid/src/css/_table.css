@@ -34,7 +34,7 @@ web-grid:not(:defined) {
    ============================================================================== */
 .wg__table {
   width: max-content;
-  min-width: 100%;
+  min-width: max-content;  /* Prevent columns from shrinking below their specified widths */
   border-collapse: collapse;
   table-layout: fixed;
   background: var(--wg-table-bg);
@@ -57,6 +57,7 @@ web-grid:not(:defined) {
   width: 40px;
   min-width: 40px;
   max-width: 40px;
+  box-sizing: border-box;  /* Include padding in width calculation */
   text-align: center;
   color: var(--wg-text-color-2);
   background: var(--wg-header-bg);
@@ -65,7 +66,8 @@ web-grid:not(:defined) {
 }
 
 .wg__row-number {
-  border-right: var(--wg-cell-border);
+  /* Use box-shadow instead of border to avoid flicker during sticky scroll */
+  box-shadow: inset -1px 0 0 var(--wg-border-color);
 }
 
 /* ==============================================================================

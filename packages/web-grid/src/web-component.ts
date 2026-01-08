@@ -395,6 +395,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get showRowNumbers(): boolean { return this.grid.showRowNumbers }
 	set showRowNumbers(value: boolean) { this.grid.showRowNumbers = value }
 
+	get stickyRowNumbers(): boolean { return this.grid.stickyRowNumbers }
+	set stickyRowNumbers(value: boolean) { this.grid.stickyRowNumbers = value }
+
+	get freezeColumns(): number { return this.grid.freezeColumns }
+	set freezeColumns(value: number) { this.grid.freezeColumns = value }
+
 	get invalidCells(): CellValidationState[] { return this.grid.invalidCells }
 	set invalidCells(value: CellValidationState[]) { this.grid.invalidCells = value }
 
@@ -1743,6 +1749,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		const container = this.shadow.querySelector('.wg') as HTMLElement
 		if (container) {
 			container.addEventListener('scroll', () => {
+				// Toggle horizontal scroll indicator for frozen column shadow
+				const isScrolledHorizontally = container.scrollLeft > 0
+				container.classList.toggle('wg--scrolled-horizontal', isScrolledHorizontally)
+
 				// Close dropdown on scroll
 				if (this.dropdownOpen && !this.isTransitioningCells && !this.isOpeningDropdown) {
 					// Save editing cell info BEFORE cancelEdit clears it

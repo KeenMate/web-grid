@@ -7,6 +7,7 @@
 .wg__cell {
   padding: var(--wg-cell-padding);
   color: var(--wg-cell-color);
+  box-sizing: border-box;  /* Include padding in width calculation */
   /* Account for sticky header when scrolling into view */
   scroll-margin-top: 3rem;
   scroll-margin-bottom: 0.5rem;

@@ -1,0 +1,88 @@
+/* ==============================================================================
+   FREEZE PANES (Sticky Columns)
+   ==============================================================================
+   Styles for frozen/sticky columns during horizontal scroll
+*/
+
+/* ==========================================================================
+   FROZEN HEADER CELLS
+   ========================================================================== */
+
+.wg__header--frozen {
+  background: var(--wg-frozen-header-bg, var(--wg-header-bg));
+  /* Shadow on right edge to indicate frozen state */
+  box-shadow: var(--wg-frozen-column-shadow, 2px 0 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Corner cell (row number header when sticky) - highest z-index */
+.wg__row-number-header.wg__header--frozen {
+  z-index: 4 !important;
+}
+
+/* ==========================================================================
+   FROZEN BODY CELLS
+   ========================================================================== */
+
+.wg__cell--frozen {
+  background: var(--wg-frozen-column-bg, var(--wg-surface-1));
+  /* Shadow on right edge */
+  box-shadow: var(--wg-frozen-column-shadow, 2px 0 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Row number cells when sticky */
+.wg__row-number.wg__cell--frozen {
+  background: var(--wg-header-bg);
+  z-index: 2 !important;
+  /* Combine border shadow with frozen shadow */
+  box-shadow: inset -1px 0 0 var(--wg-border-color), var(--wg-frozen-column-shadow, 2px 0 4px rgba(0, 0, 0, 0.1));
+}
+
+/* ==========================================================================
+   STRIPED ROWS WITH FROZEN COLUMNS
+   ========================================================================== */
+
+/* Ensure frozen cells maintain striped pattern */
+.wg--striped tbody tr:nth-child(even) .wg__cell--frozen {
+  background: var(--wg-row-bg-even);
+}
+
+/* ==========================================================================
+   HOVER STATES FOR FROZEN COLUMNS
+   ========================================================================== */
+
+.wg--hoverable tbody tr:hover .wg__cell--frozen {
+  background: var(--wg-row-bg-hover);
+}
+
+/* ==========================================================================
+   FOCUSED/SELECTED ROW WITH FROZEN COLUMNS
+   ========================================================================== */
+
+/* When a row is focused (navigate mode) */
+.wg__row--focused .wg__cell--frozen {
+  background: var(--wg-focus-bg);
+}
+
+/* ==========================================================================
+   SCROLL-AWARE FROZEN COLUMN INDICATOR
+   ========================================================================== */
+
+/* Last frozen column needs overflow:visible for ::after to show outside cell */
+/* Higher specificity to override .wg__cell { overflow: hidden } */
+.wg__header.wg__header--frozen-last,
+.wg__cell.wg__cell--frozen-last {
+  overflow: visible;
+}
+
+/* Shadow indicator on the last frozen column when scrolled */
+.wg--scrolled-horizontal .wg__header--frozen-last::after,
+.wg--scrolled-horizontal .wg__cell--frozen-last::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -8px;
+  bottom: 0;
+  width: 8px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.15), transparent);
+  pointer-events: none;
+}

@@ -8,6 +8,31 @@ import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
 import { renderTriggerButton, getActiveToolbarRowIndex, normalizeToolbarItems } from '../toolbar/index.js'
 
+// Default row number column width (must match CSS: 40px with box-sizing: border-box)
+const ROW_NUMBER_COLUMN_WIDTH = 40
+
+/**
+ * Parse column width string to pixels.
+ * Returns a default value for 'auto' or unparseable values.
+ */
+function parseColumnWidth(width: string | undefined): number {
+	if (!width || width === 'auto') return 150  // Default column width
+
+	const match = width.match(/^([\d.]+)(px|em|rem|%)?$/)
+	if (!match) return 150
+
+	const value = parseFloat(match[1])
+	const unit = match[2] || 'px'
+
+	switch (unit) {
+		case 'px': return value
+		case 'em': return value * 16
+		case 'rem': return value * 10  // Based on --wg-rem default
+		case '%': return 150  // Can't calculate without container width
+		default: return value
+	}
+}
+
 /**
  * Get container CSS classes
  */
@@ -24,13 +49,24 @@ export function getContainerClasses<T>(ctx: GridContext<T>): string {
  * Render header row
  */
 export function renderHeaderRow<T>(ctx: GridContext<T>): string {
-	const columns = ctx.grid.columns
-	if (columns.length === 0) return ''
+	const visualColumns = ctx.grid.visualColumns
+	if (visualColumns.length === 0) return ''
 
-	// Row number column
-	const rowNumberColumnHtml = ctx.grid.showRowNumbers
-		? '<th class="wg__header wg__row-number-header">#</th>'
-		: ''
+	// Track cumulative offset for sticky positioning
+	let cumulativeOffset = 0
+
+	// Row number column (may be sticky)
+	let rowNumberColumnHtml = ''
+	if (ctx.grid.showRowNumbers) {
+		const isSticky = ctx.grid.stickyRowNumbers
+		const stickyStyle = isSticky
+			? `position: sticky; left: 0; z-index: 4;`
+			: ''
+		const frozenClass = isSticky ? ' wg__header--frozen' : ''
+		rowNumberColumnHtml = `<th class="wg__header wg__row-number-header${frozenClass}" style="${stickyStyle}">#</th>`
+		// Always include row number offset when visible (prevents frozen columns from overlapping)
+		cumulativeOffset += ROW_NUMBER_COLUMN_WIDTH
+	}
 
 	// Inline actions column (toolbarPosition="inline")
 	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
@@ -44,25 +80,42 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 		? '<th class="wg__header wg__actions-column"></th>'
 		: ''
 
-	const headerCells = columns.map(column => {
+	const headerCells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 		const field = String(column.field)
 		const isSortable = column.sortable !== false && ctx.grid.sortMode !== 'none'
 		const sortState = ctx.grid.getColumnSortState(field)
 		const sortPriority = ctx.grid.getColumnSortPriority(field)
 		const isSorted = sortState !== undefined
+		const isFrozen = ctx.grid.isColumnFrozen(visualIndex)
+		const isLastFrozen = isFrozen && visualIndex === ctx.grid.totalFrozenColumns - 1
 
 		const classes = ['wg__header']
 		if (isSortable) classes.push('wg__header--sortable')
 		if (isSorted) classes.push('wg__header--sorted')
+		if (isFrozen) classes.push('wg__header--frozen')
+		if (isLastFrozen) classes.push('wg__header--frozen-last')
 
-		// Build style with width, minWidth, maxWidth
+		// Calculate column width for offset tracking
 		const colWidth = column.width || column.maxWidth
+		const parsedWidth = parseColumnWidth(colWidth)
+
+		// Build style with width, minWidth, maxWidth, and sticky positioning
+		// Apply min-width equal to width to prevent column shrinking
+		const effectiveMinWidth = column.minWidth || column.width
 		const styleProps = [
+			isFrozen ? `position: sticky` : '',
+			isFrozen ? `left: ${cumulativeOffset}px` : '',
+			isFrozen ? `z-index: 2` : '',
 			colWidth ? `width: ${colWidth}` : '',
-			column.minWidth ? `min-width: ${column.minWidth}` : '',
+			effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
 			`text-align: ${column.align || 'left'}`
 		].filter(Boolean).join('; ')
 		const styleAttr = `style="${styleProps}"`
+
+		// Increment offset for next frozen column
+		if (isFrozen) {
+			cumulativeOffset += parsedWidth
+		}
 
 		let sortIndicator = ''
 		if (isSortable) {
@@ -100,17 +153,18 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
  */
 export function renderDataRows<T>(ctx: GridContext<T>): string {
 	const items = ctx.grid.displayItems
-	const columns = ctx.grid.columns
+	const visualColumns = ctx.grid.visualColumns
 
 	// Row number column
 	const showRowNumbers = ctx.grid.showRowNumbers
+	const stickyRowNumbers = ctx.grid.stickyRowNumbers
 
 	// Inline actions column (toolbarPosition="inline")
 	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
 
 	// Actions column for button trigger mode (floating toolbar trigger)
 	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
-	const colspanWithExtras = columns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
+	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
 	if (items.length === 0) {
 		return `
@@ -124,22 +178,38 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 
 	const activeToolbarRow = getActiveToolbarRowIndex()
 
+	// Pre-calculate column widths for offset computation
+	const columnWidths = visualColumns.map(({ column }) =>
+		parseColumnWidth(column.width || column.maxWidth)
+	)
+
 	return items.map((item, rowIndex) => {
 		// Check lock state
 		const lockInfo = ctx.grid.getRowLockInfo(item)
 		const isLocked = lockInfo?.isLocked === true
 
-		// Row number cell (shows lock icon when locked)
+		// Track cumulative offset for sticky positioning
+		let cumulativeOffset = 0
+
+		// Row number cell (shows lock icon when locked, may be sticky)
 		let rowNumberCell = ''
 		if (showRowNumbers) {
+			const stickyStyle = stickyRowNumbers
+				? `position: sticky; left: 0; z-index: 2;`
+				: ''
+			const frozenClass = stickyRowNumbers ? ' wg__cell--frozen' : ''
+
 			if (isLocked) {
 				const lockTooltip = lockInfo?.lockedBy
 					? `Locked by ${lockInfo.lockedBy}`
 					: 'This row is locked'
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked" data-tooltip="${ctx.escapeHtml(lockTooltip)}">🔒</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}">🔒</td>`
 			} else {
-				rowNumberCell = `<td class="wg__cell wg__row-number">${rowIndex + 1}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}">${rowIndex + 1}</td>`
 			}
+
+			// Always include row number offset when visible (prevents frozen columns from overlapping)
+			cumulativeOffset += ROW_NUMBER_COLUMN_WIDTH
 		}
 
 		// Inline actions cell (toolbarPosition="inline")
@@ -158,12 +228,15 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			`
 		}
 
-		const cells = columns.map((column, colIndex) => {
+		const cells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 			const field = String(column.field)
 			const value = ctx.grid.getCellValue(item, column, rowIndex)
 			const align = column.align || 'left'
 			const isEditable = ctx.grid.isCellEditable(column)
-			const isFocused = ctx.grid.isCellFocused(rowIndex, colIndex)
+			// Use originalIndex for focus check (navigation uses original indices)
+			const isFocused = ctx.grid.isCellFocused(rowIndex, originalIndex)
+			const isFrozen = ctx.grid.isColumnFrozen(visualIndex)
+			const isLastFrozen = isFrozen && visualIndex === ctx.grid.totalFrozenColumns - 1
 
 			const classes = ['wg__cell']
 			const isEditingThisCell = ctx.grid.isEditing(rowIndex, field)
@@ -172,6 +245,8 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			if (column.textOverflow === 'ellipsis') classes.push('wg__cell--ellipsis')
 			if (isEditingThisCell) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
+			if (isFrozen) classes.push('wg__cell--frozen')
+			if (isLastFrozen) classes.push('wg__cell--frozen-last')
 			if (column.cellClass) classes.push(column.cellClass)
 			if (column.cellClassCallback) {
 				// Pass raw value (not formatted) to callback
@@ -180,13 +255,23 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 				if (dynamicClass) classes.push(dynamicClass)
 			}
 
-			// Build cell style with width properties
+			// Build cell style with width properties and sticky positioning
+			// Apply min-width equal to width to prevent column shrinking
+			const effectiveMinWidth = column.minWidth || column.width
 			const cellStyleProps = [
+				isFrozen ? `position: sticky` : '',
+				isFrozen ? `left: ${cumulativeOffset}px` : '',
+				isFrozen ? `z-index: 1` : '',
 				`text-align: ${align}`,
 				column.width ? `width: ${column.width}` : '',
-				column.minWidth ? `min-width: ${column.minWidth}` : '',
+				effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
 				column.maxWidth ? `max-width: ${column.maxWidth}` : ''
 			].filter(Boolean).join('; ')
+
+			// Increment offset for next frozen column
+			if (isFrozen) {
+				cumulativeOffset += columnWidths[visualIndex]
+			}
 
 			// In navigate mode, ALL cells are focusable (not just editable)
 			const tabindexAttr = ctx.grid.isNavigateMode ? 'tabindex="0"' : ''
@@ -238,14 +323,14 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 					class="${classes.join(' ')}"
 					style="${cellStyleProps}"
 					data-row="${rowIndex}"
-					data-col="${colIndex}"
+					data-col="${originalIndex}"
 					data-field="${field}"
 					${tabindexAttr}
 					${tooltipAttr}
 				>
 					${ctx.grid.isEditing(rowIndex, field)
-						? renderCellEditor(ctx, rowIndex, colIndex, column)
-						: renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused)}
+						? renderCellEditor(ctx, rowIndex, originalIndex, column)
+						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused)}
 				</td>
 			`
 		}).join('')
@@ -334,18 +419,19 @@ export type VirtualScrollParams = {
  */
 export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScrollParams): string {
 	const items = ctx.grid.displayItems
-	const columns = ctx.grid.columns
+	const visualColumns = ctx.grid.visualColumns
 	const { startIndex, endIndex, rowHeight, totalItems } = params
 
 	// Row number column
 	const showRowNumbers = ctx.grid.showRowNumbers
+	const stickyRowNumbers = ctx.grid.stickyRowNumbers
 
 	// Inline actions column (toolbarPosition="inline")
 	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
 
 	// Actions column for button trigger mode (floating toolbar trigger)
 	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
-	const colspanWithExtras = columns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
+	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
 	if (items.length === 0) {
 		return `
@@ -358,6 +444,11 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 	}
 
 	const activeToolbarRow = getActiveToolbarRowIndex()
+
+	// Pre-calculate column widths for offset computation
+	const columnWidths = visualColumns.map(({ column }) =>
+		parseColumnWidth(column.width || column.maxWidth)
+	)
 
 	// Calculate spacer heights
 	const topSpacerHeight = startIndex * rowHeight
@@ -378,17 +469,28 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 		const lockInfo = ctx.grid.getRowLockInfo(item)
 		const isLocked = lockInfo?.isLocked === true
 
-		// Row number cell (shows lock icon when locked)
+		// Track cumulative offset for sticky positioning
+		let cumulativeOffset = 0
+
+		// Row number cell (shows lock icon when locked, may be sticky)
 		let rowNumberCell = ''
 		if (showRowNumbers) {
+			const stickyStyle = stickyRowNumbers
+				? `position: sticky; left: 0; z-index: 2;`
+				: ''
+			const frozenClass = stickyRowNumbers ? ' wg__cell--frozen' : ''
+
 			if (isLocked) {
 				const lockTooltip = lockInfo?.lockedBy
 					? `Locked by ${lockInfo.lockedBy}`
 					: 'This row is locked'
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked" data-tooltip="${ctx.escapeHtml(lockTooltip)}">🔒</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}">🔒</td>`
 			} else {
-				rowNumberCell = `<td class="wg__cell wg__row-number">${rowIndex + 1}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}">${rowIndex + 1}</td>`
 			}
+
+			// Always include row number offset when visible (prevents frozen columns from overlapping)
+			cumulativeOffset += ROW_NUMBER_COLUMN_WIDTH
 		}
 
 		// Inline actions cell (toolbarPosition="inline")
@@ -407,12 +509,15 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			`
 		}
 
-		const cells = columns.map((column, colIndex) => {
+		const cells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 			const field = String(column.field)
 			const value = ctx.grid.getCellValue(item, column, rowIndex)
 			const align = column.align || 'left'
 			const isEditable = ctx.grid.isCellEditable(column)
-			const isFocused = ctx.grid.isCellFocused(rowIndex, colIndex)
+			// Use originalIndex for focus check (navigation uses original indices)
+			const isFocused = ctx.grid.isCellFocused(rowIndex, originalIndex)
+			const isFrozen = ctx.grid.isColumnFrozen(visualIndex)
+			const isLastFrozen = isFrozen && visualIndex === ctx.grid.totalFrozenColumns - 1
 
 			const classes = ['wg__cell']
 			const isEditingThisCell = ctx.grid.isEditing(rowIndex, field)
@@ -421,6 +526,8 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			if (column.textOverflow === 'ellipsis') classes.push('wg__cell--ellipsis')
 			if (isEditingThisCell) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
+			if (isFrozen) classes.push('wg__cell--frozen')
+			if (isLastFrozen) classes.push('wg__cell--frozen-last')
 			if (column.cellClass) classes.push(column.cellClass)
 			if (column.cellClassCallback) {
 				// Pass raw value (not formatted) to callback
@@ -429,13 +536,23 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 				if (dynamicClass) classes.push(dynamicClass)
 			}
 
-			// Build cell style with width properties
+			// Build cell style with width properties and sticky positioning
+			// Apply min-width equal to width to prevent column shrinking
+			const effectiveMinWidth = column.minWidth || column.width
 			const cellStyleProps = [
+				isFrozen ? `position: sticky` : '',
+				isFrozen ? `left: ${cumulativeOffset}px` : '',
+				isFrozen ? `z-index: 1` : '',
 				`text-align: ${align}`,
 				column.width ? `width: ${column.width}` : '',
-				column.minWidth ? `min-width: ${column.minWidth}` : '',
+				effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
 				column.maxWidth ? `max-width: ${column.maxWidth}` : ''
 			].filter(Boolean).join('; ')
+
+			// Increment offset for next frozen column
+			if (isFrozen) {
+				cumulativeOffset += columnWidths[visualIndex]
+			}
 
 			// In navigate mode, ALL cells are focusable (not just editable)
 			const tabindexAttr = ctx.grid.isNavigateMode ? 'tabindex="0"' : ''
@@ -486,14 +603,14 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 					class="${classes.join(' ')}"
 					style="${cellStyleProps}"
 					data-row="${rowIndex}"
-					data-col="${colIndex}"
+					data-col="${originalIndex}"
 					data-field="${field}"
 					${tabindexAttr}
 					${tooltipAttr}
 				>
 					${ctx.grid.isEditing(rowIndex, field)
-						? renderCellEditor(ctx, rowIndex, colIndex, column)
-						: renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused)}
+						? renderCellEditor(ctx, rowIndex, originalIndex, column)
+						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused)}
 				</td>
 			`
 		}).join('')

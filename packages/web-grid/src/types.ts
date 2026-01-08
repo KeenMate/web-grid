@@ -192,6 +192,8 @@ export type Column<T> = {
 	beforePasteCallback?: (value: string, row: T) => unknown  // Process pasted value before applying
 	// Validation tooltip - return HTML string for rich error display
 	validationTooltipCallback?: (context: ValidationTooltipContext<T>) => string | null
+	// Freeze panes - column sticks to left side during horizontal scroll
+	frozen?: boolean
 }
 
 // Context for validation tooltip callback
@@ -354,6 +356,8 @@ export type QuickGridProps<T> = {
 	striped?: boolean
 	hoverable?: boolean
 	showRowNumbers?: boolean  // Show row number column on the left (default: false)
+	stickyRowNumbers?: boolean  // Make row number column sticky (freeze panes)
+	freezeColumns?: number  // Freeze first N columns (after visual reorder from frozen: true)
 	class?: string
 	style?: string
 	customStylesCallback?: () => string  // Callback returning custom CSS to inject into shadow DOM

@@ -13,6 +13,7 @@
   font-weight: var(--wg-header-font-weight);
   padding: var(--wg-header-padding);
   border-bottom: var(--wg-header-border);
+  box-sizing: border-box;  /* Include padding in width calculation */
   text-align: left;
   user-select: none;
 }

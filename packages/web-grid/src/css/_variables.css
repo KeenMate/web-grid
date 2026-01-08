@@ -272,4 +272,13 @@
   --wg-z-toolbar: 1000;
   --wg-z-context-menu: 1001;
   --wg-z-tooltip: 10000;
+
+  /* ==========================================================================
+     FREEZE PANES (Sticky Columns)
+     ========================================================================== */
+  --wg-frozen-column-bg: var(--wg-surface-1);
+  --wg-frozen-header-bg: var(--wg-header-bg);
+  --wg-frozen-column-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  --wg-frozen-column-shadow-active: 6px 0 12px rgba(0, 0, 0, 0.25);  /* Enhanced shadow when scrolled */
+  --wg-frozen-column-border: 2px solid var(--wg-border-color);
 }

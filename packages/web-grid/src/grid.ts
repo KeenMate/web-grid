@@ -87,6 +87,8 @@ export class WebGrid<T = unknown> {
 	protected _openDropdownOnEnter: boolean = false
 	protected _checkboxAlwaysEditable: boolean = false
 	protected _showRowNumbers: boolean = false
+	protected _stickyRowNumbers: boolean = false
+	protected _freezeColumns: number = 0
 	protected _invalidCells: CellValidationState[] = []
 	protected _showRowToolbar: boolean = false
 	protected _rowToolbar: RowToolbarConfig<T>[] = ['add', 'delete', 'duplicate']
@@ -307,6 +309,54 @@ export class WebGrid<T = unknown> {
 	set showRowNumbers(value: boolean) {
 		this._showRowNumbers = value
 		this.requestUpdate()
+	}
+
+	get stickyRowNumbers(): boolean { return this._stickyRowNumbers }
+	set stickyRowNumbers(value: boolean) {
+		this._stickyRowNumbers = value
+		this.requestUpdate()
+	}
+
+	get freezeColumns(): number { return this._freezeColumns }
+	set freezeColumns(value: number) {
+		this._freezeColumns = Math.max(0, Math.floor(value))
+		this.requestUpdate()
+	}
+
+	/**
+	 * Get columns in visual display order.
+	 * Columns with frozen: true appear first, followed by non-frozen columns.
+	 * Original column indices are preserved for data access.
+	 */
+	get visualColumns(): Array<{ column: Column<T>; originalIndex: number }> {
+		const frozenCols: Array<{ column: Column<T>; originalIndex: number }> = []
+		const normalCols: Array<{ column: Column<T>; originalIndex: number }> = []
+
+		this._columns.forEach((column, index) => {
+			const entry = { column, originalIndex: index }
+			if (column.frozen) {
+				frozenCols.push(entry)
+			} else {
+				normalCols.push(entry)
+			}
+		})
+
+		return [...frozenCols, ...normalCols]
+	}
+
+	/**
+	 * Get the total number of frozen columns (from frozen: true + freezeColumns prop).
+	 */
+	get totalFrozenColumns(): number {
+		const explicitlyFrozen = this._columns.filter(c => c.frozen).length
+		return explicitlyFrozen + this._freezeColumns
+	}
+
+	/**
+	 * Check if a column at visual index should be frozen.
+	 */
+	isColumnFrozen(visualIndex: number): boolean {
+		return visualIndex < this.totalFrozenColumns
 	}
 
 	get invalidCells(): CellValidationState[] { return this._invalidCells }
