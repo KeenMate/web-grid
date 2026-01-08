@@ -113,77 +113,19 @@ import {
 	type ConnectorState
 } from './modules/toolbar/index.js'
 
+import {
+	parseKeyCombo,
+	matchesKeyCombo,
+	formatKeyCombo
+} from './modules/keyboard/index.js'
+
+import {
+	calculateVisibleRange,
+	calculateScrollToRow,
+	shouldTriggerInfiniteScroll
+} from './modules/scroll/index.js'
+
 import type { GridContext } from './modules/types.js'
-
-// =============================================================================
-// Key Combo Parsing Utilities
-// =============================================================================
-
-/**
- * Parse a key combination string like "Ctrl+D", "Shift+F3", "Alt+Delete"
- * into a structured object for matching against KeyboardEvents.
- */
-function parseKeyCombo(keyStr: string): ParsedKeyCombo {
-	const parts = keyStr.split('+').map(p => p.trim())
-	const result: ParsedKeyCombo = {
-		key: '',
-		ctrl: false,
-		shift: false,
-		alt: false,
-		meta: false
-	}
-
-	for (const part of parts) {
-		const lower = part.toLowerCase()
-		if (lower === 'ctrl' || lower === 'control') {
-			result.ctrl = true
-		} else if (lower === 'shift') {
-			result.shift = true
-		} else if (lower === 'alt') {
-			result.alt = true
-		} else if (lower === 'meta' || lower === 'cmd' || lower === 'command') {
-			result.meta = true
-		} else {
-			// This is the actual key
-			result.key = part
-		}
-	}
-
-	return result
-}
-
-/**
- * Check if a KeyboardEvent matches a parsed key combination.
- */
-function matchesKeyCombo(e: KeyboardEvent, combo: ParsedKeyCombo): boolean {
-	// Check modifier keys
-	if (combo.ctrl !== e.ctrlKey) return false
-	if (combo.shift !== e.shiftKey) return false
-	if (combo.alt !== e.altKey) return false
-	if (combo.meta !== e.metaKey) return false
-
-	// Check the main key (case-insensitive for letters)
-	const eventKey = e.key.toLowerCase()
-	const comboKey = combo.key.toLowerCase()
-
-	return eventKey === comboKey
-}
-
-/**
- * Format a key combination for display (e.g., "Ctrl+D" → "Ctrl+D")
- */
-function formatKeyCombo(keyStr: string): string {
-	// Normalize formatting
-	return keyStr.split('+').map(p => {
-		const trimmed = p.trim()
-		// Capitalize first letter of modifiers
-		if (['ctrl', 'control', 'shift', 'alt', 'meta', 'cmd', 'command'].includes(trimmed.toLowerCase())) {
-			return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
-		}
-		// Keep key as-is (could be F1, Delete, etc.)
-		return trimmed
-	}).join('+')
-}
 
 /**
  * GridElement - Custom HTML Element for WebGrid
@@ -2077,35 +2019,26 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		const container = this.shadow.querySelector('.wg') as HTMLElement
 		if (!container) return
 
-		const items = this.grid.displayItems
-		const rowHeight = this.grid.virtualScrollRowHeight
-		const buffer = this.grid.virtualScrollBuffer
-		const viewportHeight = container.clientHeight
-
-		// Calculate scroll position (target row as second visible row)
-		const targetScrollTop = Math.max(0, (targetRow - 1) * rowHeight)
-		const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight)
-		const clampedScrollTop = Math.min(targetScrollTop, maxScroll)
-
-		// Calculate the virtual range for this scroll position
-		let newStartIndex = Math.max(0, Math.floor(clampedScrollTop / rowHeight) - buffer)
-		const visibleCount = Math.ceil(viewportHeight / rowHeight) + buffer * 2
-		let newEndIndex = Math.min(items.length, newStartIndex + visibleCount)
-
-		// Ensure target row is in range
-		if (targetRow < newStartIndex) newStartIndex = targetRow
-		if (targetRow >= newEndIndex) newEndIndex = targetRow + 1
+		const { scrollTop, startIndex, endIndex } = calculateScrollToRow({
+			targetRow,
+			rowHeight: this.grid.virtualScrollRowHeight,
+			buffer: this.grid.virtualScrollBuffer,
+			totalItems: this.grid.displayItems.length,
+			viewportHeight: container.clientHeight,
+			scrollHeight: container.scrollHeight,
+			clientHeight: container.clientHeight
+		})
 
 		// Update range and render ONCE (before scroll)
-		if (newStartIndex !== this.virtualScrollStart || newEndIndex !== this.virtualScrollEnd) {
-			this.virtualScrollStart = newStartIndex
-			this.virtualScrollEnd = newEndIndex
+		if (startIndex !== this.virtualScrollStart || endIndex !== this.virtualScrollEnd) {
+			this.virtualScrollStart = startIndex
+			this.virtualScrollEnd = endIndex
 			this.renderVirtualRows(container)
 		}
 
 		// Now scroll - flag prevents handleVirtualScroll from re-rendering
 		this.isProgrammaticScroll = true
-		container.scrollTop = clampedScrollTop
+		container.scrollTop = scrollTop
 		queueMicrotask(() => { this.isProgrammaticScroll = false })
 	}
 
@@ -2116,34 +2049,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Skip during programmatic scroll (keyboard nav already handles row visibility)
 		if (this.isProgrammaticScroll) return
 
-		const items = this.grid.displayItems
-		const rowHeight = this.grid.virtualScrollRowHeight
-		const buffer = this.grid.virtualScrollBuffer
-
-		const scrollTop = container.scrollTop
-		const viewportHeight = container.clientHeight
-
-		// Calculate new visible range
-		let newStartIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - buffer)
-		const visibleCount = Math.ceil(viewportHeight / rowHeight) + buffer * 2
-		let newEndIndex = Math.min(items.length, newStartIndex + visibleCount)
-
-		// If editing, expand range to include the editing row
-		const editingCell = this.grid.editingCell
-		if (editingCell) {
-			const editingRowIndex = editingCell.rowIndex
-			if (editingRowIndex < newStartIndex) {
-				newStartIndex = editingRowIndex
-			}
-			if (editingRowIndex >= newEndIndex) {
-				newEndIndex = editingRowIndex + 1
-			}
-		}
+		const { startIndex, endIndex } = calculateVisibleRange({
+			scrollTop: container.scrollTop,
+			viewportHeight: container.clientHeight,
+			rowHeight: this.grid.virtualScrollRowHeight,
+			buffer: this.grid.virtualScrollBuffer,
+			totalItems: this.grid.displayItems.length,
+			editingRowIndex: this.grid.editingCell?.rowIndex
+		})
 
 		// Only re-render if range changed
-		if (newStartIndex !== this.virtualScrollStart || newEndIndex !== this.virtualScrollEnd) {
-			this.virtualScrollStart = newStartIndex
-			this.virtualScrollEnd = newEndIndex
+		if (startIndex !== this.virtualScrollStart || endIndex !== this.virtualScrollEnd) {
+			this.virtualScrollStart = startIndex
+			this.virtualScrollEnd = endIndex
 			this.renderVirtualRows(container)
 		}
 	}
@@ -2189,14 +2107,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Handle infinite scroll - trigger load more when near bottom
 	 */
 	private handleInfiniteScroll(container: HTMLElement): void {
-		const scrollTop = container.scrollTop
-		const scrollHeight = container.scrollHeight
-		const clientHeight = container.clientHeight
-		const threshold = this.grid.infiniteScrollThreshold
+		const shouldLoad = shouldTriggerInfiniteScroll(
+			container.scrollTop,
+			container.scrollHeight,
+			container.clientHeight,
+			this.grid.infiniteScrollThreshold
+		)
 
-		const distanceToBottom = scrollHeight - (scrollTop + clientHeight)
-
-		if (distanceToBottom <= threshold) {
+		if (shouldLoad) {
 			this.isLoadingMoreItems = true
 
 			// Fire data request with loadMore trigger
