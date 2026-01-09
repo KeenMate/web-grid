@@ -38,7 +38,9 @@ import type {
 	ColumnWidthState,
 	ColumnReorderDetail,
 	ColumnOrderState,
-	FillDragDetail
+	FillDragDetail,
+	RangeShortcut,
+	RangeShortcutContext
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -134,6 +136,12 @@ import { handleSortClick, handlePaginationClick, handlePageSizeChange } from './
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
 import { updateFillHandle, removeFillHandle } from './modules/fill-handle/index.js'
+
+import {
+	handleRowNumberMouseDown,
+	handleContainerClick,
+	handleEscapeKey as handleSelectionEscape
+} from './modules/selection/index.js'
 
 import type { GridContext } from './modules/types.js'
 
@@ -400,6 +408,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Row keyboard shortcuts
 	get rowShortcuts(): RowShortcut<T>[] | undefined { return this.grid.rowShortcuts }
 	set rowShortcuts(value: RowShortcut<T>[] | undefined) { this.grid.rowShortcuts = value }
+
+	// Range shortcuts (for multi-row selection)
+	get rangeShortcuts(): RangeShortcut<T>[] { return this.grid.rangeShortcuts }
+	set rangeShortcuts(value: RangeShortcut<T>[]) { this.grid.rangeShortcuts = value }
+
+	// Row selection
+	get selectedRows(): number[] { return this.grid.selectedRows }
+	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void { this.grid.selectRow(rowIndex, mode) }
+	selectRowRange(fromIndex: number, toIndex: number): void { this.grid.selectRowRange(fromIndex, toIndex) }
+	clearSelection(): void { this.grid.clearSelection() }
+	isRowSelected(rowIndex: number): boolean { return this.grid.isRowSelected(rowIndex) }
+	getSelectedRowsData(): T[] { return this.grid.getSelectedRowsData() }
 
 	get showShortcutsHelp(): boolean { return this.grid.showShortcutsHelp }
 	set showShortcutsHelp(value: boolean) { this.grid.showShortcutsHelp = value }
@@ -786,6 +806,35 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			return // Let browser also handle for visual feedback
 		}
 
+		// Check range shortcuts (when rows are selected)
+		const selectedRowIndices = this.grid.selectedRows
+		if (selectedRowIndices.length > 0) {
+			const rangeShortcuts = this.grid.rangeShortcuts
+			if (rangeShortcuts && rangeShortcuts.length > 0) {
+				for (const shortcut of rangeShortcuts) {
+					const combo = parseKeyCombo(shortcut.key)
+					if (matchesKeyCombo(e, combo)) {
+						// Build range context
+						const ctx: RangeShortcutContext<T> = {
+							rows: this.grid.getSelectedRowsData(),
+							rowIndices: selectedRowIndices
+						}
+
+						// Check if disabled
+						const isDisabled = typeof shortcut.disabled === 'function'
+							? shortcut.disabled(ctx)
+							: shortcut.disabled === true
+
+						if (!isDisabled) {
+							e.preventDefault()
+							shortcut.action(ctx)
+							return
+						}
+					}
+				}
+			}
+		}
+
 		// Check row shortcuts (user-defined keyboard shortcuts)
 		const shortcuts = this.grid.rowShortcuts
 		if (shortcuts && shortcuts.length > 0) {
@@ -1070,6 +1119,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (this.grid.editingCell) {
 					clearEditingVisual(this)
 					this.grid.cancelEdit()
+				} else if (this.grid.selectedRows.length > 0) {
+					// Clear row selection first
+					this.grid.clearSelection()
 				} else {
 					const oldFocus = this.grid.focusedCell
 					this.grid.clearFocusedCell()
@@ -1661,6 +1713,15 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					}
 				}
 			}
+
+			// Row selection: handle mousedown on row number cells
+			const rowNumberCell = target.closest('.wg__row-number[data-row-number]') as HTMLElement
+			if (rowNumberCell) {
+				const rowIndex = parseInt(rowNumberCell.dataset.rowNumber || '-1', 10)
+				if (rowIndex >= 0) {
+					handleRowNumberMouseDown(this, rowIndex, e as MouseEvent)
+				}
+			}
 		})
 
 		// Header click for sorting
@@ -1747,6 +1808,52 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Scroll events - close dropdown + virtual scroll + infinite scroll + connector update
 		const container = this.shadow.querySelector('.wg') as HTMLElement
 		if (container) {
+			// Make container focusable for keyboard events when rows are selected
+			container.setAttribute('tabindex', '-1')
+
+			// Range shortcuts - handle keyboard shortcuts for selected rows
+			container.addEventListener('keydown', (e: KeyboardEvent) => {
+				const selectedRowIndices = this.grid.selectedRows
+				if (selectedRowIndices.length === 0) return
+
+				// Skip if focus is in an input
+				const target = e.target as HTMLElement
+				if (target.matches('input, textarea, select, [contenteditable="true"]')) {
+					return
+				}
+
+				// Handle Escape to clear selection
+				if (e.key === 'Escape') {
+					e.preventDefault()
+					this.grid.clearSelection()
+					return
+				}
+
+				// Check range shortcuts
+				const rangeShortcuts = this.grid.rangeShortcuts
+				if (!rangeShortcuts?.length) return
+
+				for (const shortcut of rangeShortcuts) {
+					const combo = parseKeyCombo(shortcut.key)
+					if (matchesKeyCombo(e, combo)) {
+						const ctx: RangeShortcutContext<T> = {
+							rows: this.grid.getSelectedRowsData(),
+							rowIndices: selectedRowIndices
+						}
+
+						const isDisabled = typeof shortcut.disabled === 'function'
+							? shortcut.disabled(ctx)
+							: shortcut.disabled === true
+
+						if (!isDisabled) {
+							e.preventDefault()
+							shortcut.action(ctx)
+							return
+						}
+					}
+				}
+			})
+
 			container.addEventListener('scroll', () => {
 				// Toggle horizontal scroll indicator for frozen column shadow
 				const isScrolledHorizontally = container.scrollLeft > 0

@@ -102,10 +102,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fires `onrowchange` for each modified cell after fill completes
   - Drag threshold (5px) prevents accidental fill on click
   - Correctly uses draft row values (recently edited cells)
+- **Row Selection** - Multi-row selection via row number cells
+  - Click row number to select row (clears other selections)
+  - Ctrl+Click to toggle row in selection
+  - Shift+Click to select range from last selected row
+  - Click+Drag on row numbers to select range while dragging
+  - `selectedRows` getter returns array of selected row indices (sorted ascending)
+  - `selectRow(index, mode)` method - mode: 'replace', 'toggle', 'range'
+  - `selectRowRange(from, to)` method for programmatic range selection
+  - `clearSelection()` method to clear all selections
+  - `isRowSelected(index)` method to check selection state
+  - `getSelectedRowsData()` method to get data objects for selected rows
+  - Escape key clears selection
+  - Visual highlighting with `--wg-selection-bg` and `--wg-selection-row-number-bg` CSS variables
+- **Range Shortcuts** - Keyboard shortcuts that operate on selected rows
+  - `rangeShortcuts` property accepts array of shortcut definitions
+  - Each shortcut has `key` (e.g., "Delete", "Ctrl+Alt+E"), `id`, `label`, and `action` callback
+  - `action` callback receives `{ rows, rowIndices }` context
+  - `disabled` property supports boolean or callback for conditional shortcuts
+  - Shortcuts work when rows are selected (no cell focus required)
+  - Example: Delete selected rows, export selected rows to CSV
 - **Showcase: Row Locking Feature Page** - New `/features/row-locking` page with live demos
   - Property-based locking (lockedMember, lockInfoMember)
   - Callback-based locking (getLockInfoCallback)
   - External API locking (lockRowById, unlockRowById) with interactive controls
+- **Showcase: Row Selection Example Page** - New `examples-row-selection.html` demo
+  - Basic selection demo with selection log
+  - Range shortcuts demo with Delete and Ctrl+Alt+E actions
 
 ### Changed
 - **Centralized Interaction State** - Refactored hover/focus/edit state tracking

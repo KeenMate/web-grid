@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGrid - Row Selection</title>
+    <link rel="stylesheet" href="examples-shared.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">← Back to Examples</a>
+            <h1>Row Selection</h1>
+            <p class="subtitle">Multi-row selection via row numbers with range shortcuts</p>
+        </header>
+
+        <div class="card">
+            <h2>Basic Selection Demo</h2>
+            <p>Click row numbers to select rows. Use Ctrl+Click to toggle, Shift+Click for range selection, or drag to select multiple rows.</p>
+
+            <web-grid id="grid" style="max-width: 100%; max-height: 400px;"></web-grid>
+
+            <div id="selectionLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                Click row numbers to select rows...
+            </div>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Selection Controls</div>
+                <ul>
+                    <li><strong>Click</strong> row number - Select single row (clears others)</li>
+                    <li><strong>Ctrl+Click</strong> - Toggle row in selection</li>
+                    <li><strong>Shift+Click</strong> - Select range from last selected</li>
+                    <li><strong>Click+Drag</strong> - Select range while dragging</li>
+                    <li><strong>Escape</strong> - Clear selection</li>
+                    <li><strong>Delete</strong> - Delete selected rows (when defined in rangeShortcuts)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>With Range Shortcuts</h2>
+            <p>Select rows and press Delete to remove them, or Ctrl+Alt+E to "export" (logs to console).</p>
+
+            <web-grid id="grid2" style="max-width: 100%; max-height: 300px;"></web-grid>
+
+            <div id="actionLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                Select rows and use shortcuts...
+            </div>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Range Shortcuts Example</div>
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>grid.rangeShortcuts = [
+    {
+        key: 'Delete',
+        id: 'delete-selected',
+        label: 'Delete selected rows',
+        action: ({ rows, rowIndices }) => {
+            // Delete from end to preserve indices
+            for (const idx of rowIndices.reverse()) {
+                grid.items.splice(idx, 1)
+            }
+            grid.items = [...grid.items]
+            grid.clearSelection()
+        }
+    },
+    {
+        key: 'Ctrl+Alt+E',
+        id: 'export-selected',
+        label: 'Export selected rows',
+        action: ({ rows }) => {
+            console.log('Exporting:', rows)
+        }
+    }
+]</code></pre>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>API Reference</h2>
+            <table class="props-table">
+                <tr>
+                    <td><code>selectedRows</code></td>
+                    <td>Array of selected row indices (read-only, sorted ascending)</td>
+                </tr>
+                <tr>
+                    <td><code>rangeShortcuts</code></td>
+                    <td>Array of shortcuts that operate on selected rows</td>
+                </tr>
+                <tr>
+                    <td><code>selectRow(idx, mode)</code></td>
+                    <td>Select a row. Mode: 'replace', 'toggle', or 'range'</td>
+                </tr>
+                <tr>
+                    <td><code>selectRowRange(from, to)</code></td>
+                    <td>Select a range of rows</td>
+                </tr>
+                <tr>
+                    <td><code>clearSelection()</code></td>
+                    <td>Clear all selected rows</td>
+                </tr>
+                <tr>
+                    <td><code>isRowSelected(idx)</code></td>
+                    <td>Check if a row is selected</td>
+                </tr>
+                <tr>
+                    <td><code>getSelectedRowsData()</code></td>
+                    <td>Get the data objects for selected rows</td>
+                </tr>
+            </table>
+        </div>
+
+        <footer>
+            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
+        </footer>
+    </div>
+
+    <style>
+        .props-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .props-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .props-table td:first-child {
+            width: 35%;
+            font-family: monospace;
+            color: #6366f1;
+        }
+    </style>
+
+    <script type="module">
+        import '@keenmate/web-grid'
+
+        // Sample data
+        const createSampleData = () => Array.from({ length: 15 }, (_, i) => ({
+            id: 1000 + i,
+            name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack', 'Kate', 'Leo', 'Mia', 'Noah', 'Olivia'][i],
+            department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+            salary: 50000 + (i * 5000),
+            status: i % 3 === 0 ? 'Active' : 'Pending'
+        }))
+
+        const columns = [
+            { field: 'id', title: 'ID', width: '70px' },
+            { field: 'name', title: 'Name', width: '120px' },
+            { field: 'department', title: 'Department', width: '120px' },
+            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'status', title: 'Status', width: '100px' }
+        ]
+
+        // Grid 1 - Basic selection
+        const grid = document.getElementById('grid')
+        grid.items = createSampleData()
+        grid.columns = columns
+        grid.showRowNumbers = true
+        grid.hoverable = true
+
+        // Add range shortcuts to first grid too
+        grid.rangeShortcuts = [
+            {
+                key: 'Delete',
+                id: 'delete-selected',
+                label: 'Delete selected rows',
+                action: ({ rows, rowIndices }) => {
+                    const log = document.getElementById('selectionLog')
+                    log.innerHTML = `<span style="color: #dc2626;"><strong>DELETED:</strong> ${rows.length} row(s) - ${rows.map(r => r.name).join(', ')}</span>`
+                    for (const idx of [...rowIndices].reverse()) {
+                        grid.items.splice(idx, 1)
+                    }
+                    grid.items = [...grid.items]
+                    grid.clearSelection()
+                }
+            },
+            {
+                key: 'Ctrl+Alt+E',
+                id: 'export-selected',
+                label: 'Export selected rows',
+                action: ({ rows }) => {
+                    const log = document.getElementById('selectionLog')
+                    log.innerHTML = `<span style="color: #16a34a;"><strong>EXPORTED:</strong> ${rows.length} row(s) - ${rows.map(r => r.name).join(', ')}</span>`
+                    console.log('Exporting rows:', rows)
+                }
+            }
+        ]
+
+        // Log selection changes (using MutationObserver to detect re-renders)
+        const updateSelectionLog = () => {
+            const log = document.getElementById('selectionLog')
+            const selected = grid.selectedRows
+            if (selected.length === 0) {
+                log.textContent = 'No rows selected'
+            } else {
+                const names = selected.map(idx => grid.items[idx]?.name).filter(Boolean)
+                log.innerHTML = `<strong>Selected ${selected.length} row(s):</strong> ${names.join(', ')}`
+            }
+        }
+
+        // Check selection periodically (or you could use requestAnimationFrame)
+        setInterval(updateSelectionLog, 100)
+
+        // Grid 2 - With range shortcuts
+        const grid2 = document.getElementById('grid2')
+        grid2.items = createSampleData()
+        grid2.columns = columns
+        grid2.showRowNumbers = true
+        grid2.hoverable = true
+
+        grid2.rangeShortcuts = [
+            {
+                key: 'Delete',
+                id: 'delete-selected',
+                label: 'Delete selected rows',
+                action: ({ rows, rowIndices }) => {
+                    const log = document.getElementById('actionLog')
+                    log.innerHTML = `<span style="color: #dc2626;"><strong>DELETED:</strong> ${rows.length} row(s) - ${rows.map(r => r.name).join(', ')}</span>`
+
+                    // Delete from end to preserve indices
+                    for (const idx of [...rowIndices].reverse()) {
+                        grid2.items.splice(idx, 1)
+                    }
+                    grid2.items = [...grid2.items]
+                    grid2.clearSelection()
+                }
+            },
+            {
+                key: 'Ctrl+Alt+E',
+                id: 'export-selected',
+                label: 'Export selected rows',
+                action: ({ rows }) => {
+                    const log = document.getElementById('actionLog')
+                    log.innerHTML = `<span style="color: #16a34a;"><strong>EXPORTED:</strong> ${rows.length} row(s) - ${rows.map(r => r.name).join(', ')}</span>`
+                    console.log('Exporting rows:', rows)
+                }
+            }
+        ]
+    </script>
+</body>
+</html>

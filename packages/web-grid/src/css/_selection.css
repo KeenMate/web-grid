@@ -1,0 +1,45 @@
+/* =============================================================================
+   ROW SELECTION STYLES
+   Multi-row selection via row number cells
+   ============================================================================= */
+
+/* Selected row highlighting */
+.wg__row--selected > .wg__cell {
+  background: var(--wg-selection-bg);
+}
+
+/* Selected row number cell - accent colored */
+.wg__row--selected > .wg__row-number {
+  background: var(--wg-selection-row-number-bg);
+  color: var(--wg-selection-row-number-color);
+}
+
+/* Row number cells are clickable for selection */
+.wg__row-number[data-row-number] {
+  cursor: pointer;
+  user-select: none;
+}
+
+.wg__row-number[data-row-number]:hover {
+  background: var(--wg-hover-bg);
+}
+
+/* When already selected, hover doesn't change background */
+.wg__row--selected > .wg__row-number:hover {
+  background: var(--wg-selection-row-number-bg);
+}
+
+/* Container state during drag selection */
+.wg--selecting {
+  cursor: default;
+  user-select: none;
+}
+
+.wg--selecting * {
+  user-select: none;
+}
+
+/* Hide focus outline on container (focused for keyboard shortcuts only) */
+.wg:focus {
+  outline: none;
+}

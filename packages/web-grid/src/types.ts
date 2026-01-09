@@ -331,13 +331,28 @@ export type ShortcutContext<T> = {
 	cellValue: unknown
 }
 
-// Single shortcut definition
+// Single shortcut definition (operates on one row)
 export type RowShortcut<T> = {
 	key: string                    // e.g., "Delete", "Ctrl+D", "F3", "Shift+Enter"
 	id: string                     // Unique identifier
 	label: string                  // Display label for help overlay
 	action: (ctx: ShortcutContext<T>) => void | Promise<void>
 	disabled?: boolean | ((ctx: ShortcutContext<T>) => boolean)
+}
+
+// Context for range shortcuts (multiple selected rows)
+export type RangeShortcutContext<T> = {
+	rows: T[]                      // Selected rows (in display order)
+	rowIndices: number[]           // Selected row indices (sorted ascending)
+}
+
+// Range shortcut definition (operates on multiple selected rows)
+export type RangeShortcut<T> = {
+	key: string                    // e.g., "Delete", "Ctrl+E"
+	id: string                     // Unique identifier
+	label: string                  // Display label for help overlay
+	action: (ctx: RangeShortcutContext<T>) => void | Promise<void>
+	disabled?: boolean | ((ctx: RangeShortcutContext<T>) => boolean)
 }
 
 // Parsed key combination (internal use)

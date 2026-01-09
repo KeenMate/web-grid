@@ -74,6 +74,10 @@ export type {
 	FillDragDetail,
 	FillDirection,
 
+	// Row selection types
+	RangeShortcut,
+	RangeShortcutContext,
+
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,

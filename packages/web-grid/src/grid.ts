@@ -39,7 +39,9 @@ import type {
 	ColumnReorderDetail,
 	FillDragDetail,
 	FillDirection,
-	GridPersistenceState
+	GridPersistenceState,
+	RangeShortcut,
+	RangeShortcutContext
 } from './types.js'
 
 // Default labels (English)
@@ -209,6 +211,11 @@ export class WebGrid<T = unknown> {
 	// Interaction state (centralized tracking for hover, focus, edit)
 	protected _hoveredRowIndex: number | null = null
 	protected _onInteractionChange: ((type: 'hoveredRow' | 'focusedCell' | 'editingCell', detail: { prev: any, current: any }) => void) | null = null
+
+	// Row selection state
+	protected _selectedRows: Set<number> = new Set()
+	protected _lastSelectedRowIndex: number | null = null  // For Shift+Click range selection
+	protected _rangeShortcuts: RangeShortcut<T>[] = []
 
 	// ==========================================================================
 	// Public API - Getters/Setters
@@ -774,6 +781,74 @@ export class WebGrid<T = unknown> {
 	get onfilldrag(): ((detail: FillDragDetail) => boolean | void) | undefined { return this._onfilldrag }
 	set onfilldrag(value: ((detail: FillDragDetail) => boolean | void) | undefined) {
 		this._onfilldrag = value
+	}
+
+	// Row selection
+	get selectedRows(): number[] {
+		return Array.from(this._selectedRows).sort((a, b) => a - b)
+	}
+
+	get rangeShortcuts(): RangeShortcut<T>[] { return this._rangeShortcuts }
+	set rangeShortcuts(value: RangeShortcut<T>[]) {
+		this._rangeShortcuts = value
+	}
+
+	isRowSelected(rowIndex: number): boolean {
+		return this._selectedRows.has(rowIndex)
+	}
+
+	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
+		switch (mode) {
+			case 'replace':
+				this._selectedRows.clear()
+				this._selectedRows.add(rowIndex)
+				this._lastSelectedRowIndex = rowIndex
+				break
+			case 'toggle':
+				if (this._selectedRows.has(rowIndex)) {
+					this._selectedRows.delete(rowIndex)
+				} else {
+					this._selectedRows.add(rowIndex)
+				}
+				this._lastSelectedRowIndex = rowIndex
+				break
+			case 'range':
+				if (this._lastSelectedRowIndex !== null) {
+					const start = Math.min(this._lastSelectedRowIndex, rowIndex)
+					const end = Math.max(this._lastSelectedRowIndex, rowIndex)
+					for (let i = start; i <= end; i++) {
+						this._selectedRows.add(i)
+					}
+				} else {
+					this._selectedRows.add(rowIndex)
+					this._lastSelectedRowIndex = rowIndex
+				}
+				break
+		}
+		this.requestUpdate()
+	}
+
+	selectRowRange(fromIndex: number, toIndex: number): void {
+		this._selectedRows.clear()
+		const start = Math.min(fromIndex, toIndex)
+		const end = Math.max(fromIndex, toIndex)
+		for (let i = start; i <= end; i++) {
+			this._selectedRows.add(i)
+		}
+		this._lastSelectedRowIndex = toIndex
+		this.requestUpdate()
+	}
+
+	clearSelection(): void {
+		if (this._selectedRows.size > 0) {
+			this._selectedRows.clear()
+			this._lastSelectedRowIndex = null
+			this.requestUpdate()
+		}
+	}
+
+	getSelectedRowsData(): T[] {
+		return this.selectedRows.map(idx => this.displayItems[idx]).filter(Boolean)
 	}
 
 	// ==========================================================================

@@ -213,9 +213,9 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 				const lockTooltip = lockInfo?.lockedBy
 					? `Locked by ${lockInfo.lockedBy}`
 					: 'This row is locked'
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}">🔒</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else {
-				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}">${rowIndex + 1}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
 			// Always include row number offset when visible (prevents frozen columns from overlapping)
@@ -350,6 +350,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 		// Build row classes
 		const rowClasses = ['wg__row']
 		if (isLocked) rowClasses.push('wg__row--locked')
+		if (ctx.grid.isRowSelected(rowIndex)) rowClasses.push('wg__row--selected')
 		if (ctx.grid.rowClassCallback) {
 			const dynamicClass = ctx.grid.rowClassCallback(item, rowIndex)
 			if (dynamicClass) rowClasses.push(dynamicClass)
@@ -496,9 +497,9 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 				const lockTooltip = lockInfo?.lockedBy
 					? `Locked by ${lockInfo.lockedBy}`
 					: 'This row is locked'
-				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}">🔒</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
 			} else {
-				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}">${rowIndex + 1}</td>`
+				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
 			// Always include row number offset when visible (prevents frozen columns from overlapping)
@@ -632,6 +633,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 		// Build row classes
 		const rowClasses = ['wg__row']
 		if (isLocked) rowClasses.push('wg__row--locked')
+		if (ctx.grid.isRowSelected(rowIndex)) rowClasses.push('wg__row--selected')
 		if (ctx.grid.rowClassCallback) {
 			const dynamicClass = ctx.grid.rowClassCallback(item, rowIndex)
 			if (dynamicClass) rowClasses.push(dynamicClass)
