@@ -66,6 +66,10 @@ export type {
 	ColumnWidthState,
 	ColumnResizeDetail,
 
+	// Column reorder types
+	ColumnOrderState,
+	ColumnReorderDetail,
+
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,

@@ -437,6 +437,11 @@ export type QuickGridProps<T> = {
 	gridName?: string                                    // Unique name for localStorage persistence
 	persistColumnWidths?: boolean                        // Persist column widths to localStorage (requires gridName)
 	oncolumnresize?: (detail: ColumnResizeDetail) => void  // Fired when column is resized
+
+	// Column reorder & persistence
+	allowColumnReorder?: boolean                         // Enable drag-to-reorder columns (default: false)
+	persistColumnOrder?: boolean                         // Persist column order to localStorage (requires gridName)
+	oncolumnreorder?: (detail: ColumnReorderDetail) => void  // Fired when column is reordered
 }
 
 // =============================================================================
@@ -617,8 +622,8 @@ export type ColumnWidthState = {
 
 // Persisted grid state (stored in localStorage)
 export type GridPersistenceState = {
-	columnWidths: ColumnWidthState[]
-	// Future: columnOrder, hidden columns, etc.
+	columnWidths?: ColumnWidthState[]
+	columnOrder?: ColumnOrderState[]
 }
 
 // Detail passed to oncolumnresize callback
@@ -627,4 +632,18 @@ export type ColumnResizeDetail = {
 	oldWidth: string
 	newWidth: string
 	allWidths: ColumnWidthState[]  // Same format as localStorage - can be sent to server
+}
+
+// Order state for a single column
+export type ColumnOrderState = {
+	field: string
+	order: number
+}
+
+// Detail passed to oncolumnreorder callback
+export type ColumnReorderDetail = {
+	field: string
+	fromIndex: number
+	toIndex: number
+	allOrder: ColumnOrderState[]  // Same format as localStorage - can be sent to server
 }

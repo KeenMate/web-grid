@@ -35,6 +35,8 @@ import type {
 	RowLockChangeDetail,
 	ColumnWidthState,
 	ColumnResizeDetail,
+	ColumnOrderState,
+	ColumnReorderDetail,
 	GridPersistenceState
 } from './types.js'
 
@@ -122,6 +124,12 @@ export class WebGrid<T = unknown> {
 	protected _persistColumnWidths: boolean = false
 	protected _columnWidths: Map<string, string> = new Map()  // Runtime width overrides
 	protected _oncolumnresize: ((detail: ColumnResizeDetail) => void) | undefined = undefined
+
+	// Column reorder & persistence
+	protected _allowColumnReorder: boolean = false
+	protected _persistColumnOrder: boolean = false
+	protected _columnOrder: Map<string, number> = new Map()  // Runtime order overrides
+	protected _oncolumnreorder: ((detail: ColumnReorderDetail) => void) | undefined = undefined
 
 	// ==========================================================================
 	// Callbacks
@@ -341,16 +349,45 @@ export class WebGrid<T = unknown> {
 		const frozenCols: Array<{ column: Column<T>; originalIndex: number }> = []
 		const normalCols: Array<{ column: Column<T>; originalIndex: number }> = []
 
+		// First, separate explicitly frozen columns (column.frozen = true)
+		const explicitlyFrozenCount = this._columns.filter(c => c.frozen).length
+
 		this._columns.forEach((column, index) => {
 			const entry = { column, originalIndex: index }
 			if (column.frozen) {
+				// Explicitly frozen columns go first
 				frozenCols.push(entry)
 			} else {
 				normalCols.push(entry)
 			}
 		})
 
-		return [...frozenCols, ...normalCols]
+		// Now handle freezeColumns - these freeze the first N non-explicitly-frozen columns
+		// They should stay at the front of normalCols and NOT be reorderable
+		const positionalFrozenCols: Array<{ column: Column<T>; originalIndex: number }> = []
+		const reorderableCols: Array<{ column: Column<T>; originalIndex: number }> = []
+
+		normalCols.forEach((entry, idx) => {
+			if (idx < this._freezeColumns) {
+				// This column is frozen by position (freezeColumns prop)
+				positionalFrozenCols.push(entry)
+			} else {
+				reorderableCols.push(entry)
+			}
+		})
+
+		// Apply custom order only to reorderable (non-frozen) columns
+		if (this._columnOrder.size > 0) {
+			reorderableCols.sort((a, b) => {
+				const fieldA = String(a.column.field)
+				const fieldB = String(b.column.field)
+				const orderA = this._columnOrder.get(fieldA) ?? a.originalIndex
+				const orderB = this._columnOrder.get(fieldB) ?? b.originalIndex
+				return orderA - orderB
+			})
+		}
+
+		return [...frozenCols, ...positionalFrozenCols, ...reorderableCols]
 	}
 
 	/**
@@ -704,6 +741,22 @@ export class WebGrid<T = unknown> {
 	get oncolumnresize(): ((detail: ColumnResizeDetail) => void) | undefined { return this._oncolumnresize }
 	set oncolumnresize(value: ((detail: ColumnResizeDetail) => void) | undefined) {
 		this._oncolumnresize = value
+	}
+
+	// Column reorder & persistence
+	get allowColumnReorder(): boolean { return this._allowColumnReorder }
+	set allowColumnReorder(value: boolean) {
+		this._allowColumnReorder = value
+	}
+
+	get persistColumnOrder(): boolean { return this._persistColumnOrder }
+	set persistColumnOrder(value: boolean) {
+		this._persistColumnOrder = value
+	}
+
+	get oncolumnreorder(): ((detail: ColumnReorderDetail) => void) | undefined { return this._oncolumnreorder }
+	set oncolumnreorder(value: ((detail: ColumnReorderDetail) => void) | undefined) {
+		this._oncolumnreorder = value
 	}
 
 	// ==========================================================================
@@ -1478,6 +1531,20 @@ export class WebGrid<T = unknown> {
 	 * Load column widths from localStorage
 	 */
 	loadPersistedWidths(): void {
+		this.loadPersistedState()
+	}
+
+	/**
+	 * Save column widths to localStorage
+	 */
+	savePersistedWidths(): void {
+		this.savePersistedState()
+	}
+
+	/**
+	 * Load persisted state (widths, order) from localStorage
+	 */
+	loadPersistedState(): void {
 		if (!this._gridName || typeof localStorage === 'undefined') return
 
 		try {
@@ -1492,26 +1559,102 @@ export class WebGrid<T = unknown> {
 					this._columnWidths.set(cw.field, cw.width)
 				}
 			}
+			if (state.columnOrder) {
+				this._columnOrder.clear()
+				for (const co of state.columnOrder) {
+					this._columnOrder.set(co.field, co.order)
+				}
+			}
 		} catch (e) {
-			console.warn('WebGrid: Failed to load persisted column widths', e)
+			console.warn('WebGrid: Failed to load persisted state', e)
 		}
 	}
 
 	/**
-	 * Save column widths to localStorage
+	 * Save persisted state (widths, order) to localStorage
 	 */
-	savePersistedWidths(): void {
+	savePersistedState(): void {
 		if (!this._gridName || typeof localStorage === 'undefined') return
 
 		try {
 			const key = `wg-${this._gridName}-state`
-			const state: GridPersistenceState = {
-				columnWidths: this.getColumnWidthsState()
+			const state: GridPersistenceState = {}
+			if (this._persistColumnWidths) {
+				state.columnWidths = this.getColumnWidthsState()
+			}
+			if (this._persistColumnOrder) {
+				state.columnOrder = this.getColumnOrderState()
 			}
 			localStorage.setItem(key, JSON.stringify(state))
 		} catch (e) {
-			console.warn('WebGrid: Failed to save persisted column widths', e)
+			console.warn('WebGrid: Failed to save persisted state', e)
 		}
+	}
+
+	// ==========================================================================
+	// Column Order Management
+	// ==========================================================================
+
+	/**
+	 * Get runtime column order override (or undefined if using original order)
+	 */
+	getColumnOrder(field: string): number | undefined {
+		return this._columnOrder.get(field)
+	}
+
+	/**
+	 * Set multiple column orders at once (for restoring saved state)
+	 * Accepts the same format as oncolumnreorder.allOrder
+	 */
+	setColumnOrder(order: ColumnOrderState[]): void {
+		this._columnOrder.clear()
+		for (const { field, order: orderValue } of order) {
+			if (field !== undefined && orderValue !== undefined) {
+				this._columnOrder.set(field, orderValue)
+			}
+		}
+		this.requestUpdate()
+	}
+
+	/**
+	 * Get all column order state (for persistence/callback)
+	 * Returns only non-frozen columns in their visual order
+	 */
+	getColumnOrderState(): ColumnOrderState[] {
+		const visualCols = this.visualColumns
+		const frozenCount = this.totalFrozenColumns
+
+		// Only return order for non-frozen columns
+		return visualCols.slice(frozenCount).map((vc, index) => ({
+			field: String(vc.column.field),
+			order: index
+		}))
+	}
+
+	/**
+	 * Move a column to a new visual index (among non-frozen columns)
+	 * Used by the reorder drag handler
+	 */
+	moveColumn(field: string, toIndex: number): void {
+		const visualCols = this.visualColumns
+		const frozenCount = this.totalFrozenColumns
+		const nonFrozenCols = visualCols.slice(frozenCount)
+
+		// Find the current index of the column being moved
+		const fromIndex = nonFrozenCols.findIndex(vc => String(vc.column.field) === field)
+		if (fromIndex === -1 || fromIndex === toIndex) return
+
+		// Build new order: assign order numbers based on new positions
+		this._columnOrder.clear()
+		const reordered = [...nonFrozenCols]
+		const [moved] = reordered.splice(fromIndex, 1)
+		reordered.splice(toIndex, 0, moved)
+
+		reordered.forEach((vc, index) => {
+			this._columnOrder.set(String(vc.column.field), index)
+		})
+
+		this.requestUpdate()
 	}
 }
 

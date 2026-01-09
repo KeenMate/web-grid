@@ -35,7 +35,9 @@ import type {
 	RowLockingOptions,
 	RowLockChangeDetail,
 	ColumnResizeDetail,
-	ColumnWidthState
+	ColumnWidthState,
+	ColumnReorderDetail,
+	ColumnOrderState
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -129,6 +131,7 @@ import {
 
 import { handleSortClick, handlePaginationClick, handlePageSizeChange } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
+import { handleReorderStart, isReordering } from './modules/reorder/index.js'
 
 import type { GridContext } from './modules/types.js'
 
@@ -536,16 +539,24 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get persistColumnWidths(): boolean { return this.grid.persistColumnWidths }
 	set persistColumnWidths(value: boolean) {
 		this.grid.persistColumnWidths = value
-		// Load persisted widths if both gridName and persistColumnWidths are set
-		this.tryLoadPersistedWidths()
+		this.tryLoadPersistedState()
+	}
+
+	get allowColumnReorder(): boolean { return this.grid.allowColumnReorder }
+	set allowColumnReorder(value: boolean) { this.grid.allowColumnReorder = value }
+
+	get persistColumnOrder(): boolean { return this.grid.persistColumnOrder }
+	set persistColumnOrder(value: boolean) {
+		this.grid.persistColumnOrder = value
+		this.tryLoadPersistedState()
 	}
 
 	/**
-	 * Try to load persisted column widths if conditions are met
+	 * Try to load persisted state (widths/order) if conditions are met
 	 */
-	private tryLoadPersistedWidths(): void {
-		if (this.grid.gridName && this.grid.persistColumnWidths) {
-			this.grid.loadPersistedWidths()
+	private tryLoadPersistedState(): void {
+		if (this.grid.gridName && (this.grid.persistColumnWidths || this.grid.persistColumnOrder)) {
+			this.grid.loadPersistedState()
 			// Re-render if we're connected to DOM
 			if (this.isConnected) {
 				this.render()
@@ -553,8 +564,16 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		}
 	}
 
+	// Keep old method for backwards compatibility
+	private tryLoadPersistedWidths(): void {
+		this.tryLoadPersistedState()
+	}
+
 	get oncolumnresize(): ((detail: ColumnResizeDetail) => void) | undefined { return this.grid.oncolumnresize }
 	set oncolumnresize(value: ((detail: ColumnResizeDetail) => void) | undefined) { this.grid.oncolumnresize = value }
+
+	get oncolumnreorder(): ((detail: ColumnReorderDetail) => void) | undefined { return this.grid.oncolumnreorder }
+	set oncolumnreorder(value: ((detail: ColumnReorderDetail) => void) | undefined) { this.grid.oncolumnreorder = value }
 
 	// Virtual scroll
 	get virtualScroll(): boolean { return this.grid.virtualScroll }
@@ -618,6 +637,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	setColumnWidth(field: string, width: string): void { this.grid.setColumnWidth(field, width) }
 	setColumnWidths(widths: ColumnWidthState[]): void { this.grid.setColumnWidths(widths) }
 	getColumnWidthsState(): ColumnWidthState[] { return this.grid.getColumnWidthsState() }
+
+	// Column order methods
+	setColumnOrder(order: ColumnOrderState[]): void { this.grid.setColumnOrder(order) }
+	getColumnOrderState(): ColumnOrderState[] { return this.grid.getColumnOrderState() }
 
 	// Public methods for focus and editing
 	/**
@@ -1608,6 +1631,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Column resize handle mousedown
 		table.addEventListener('mousedown', (e: Event) => {
 			const target = e.target as HTMLElement
+
+			// Resize handle takes priority
 			const resizeHandle = target.closest('.wg__resize-handle') as HTMLElement
 			if (resizeHandle) {
 				e.preventDefault()
@@ -1616,6 +1641,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (field) {
 					handleResizeStart(this, e as MouseEvent, field)
 				}
+				return
+			}
+
+			// Column reorder: start drag when clicking on a non-frozen header (if enabled)
+			if (this.grid.allowColumnReorder) {
+				const header = target.closest('.wg__header') as HTMLElement
+				if (header && !header.classList.contains('wg__header--frozen') && !header.classList.contains('wg__row-number-header')) {
+					const field = header.dataset.field
+					if (field) {
+						handleReorderStart(this, e as MouseEvent, field)
+					}
+				}
 			}
 		})
 
@@ -1623,8 +1660,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		table.addEventListener('click', (e: Event) => {
 			const mouseEvent = e as MouseEvent
 			const target = mouseEvent.target as HTMLElement
-			// Skip if clicking on resize handle (resize handles sorting via mousedown)
+			// Skip if clicking on resize handle
 			if (target.closest('.wg__resize-handle')) return
+			// Skip if reordering was just performed (prevents sort on drop)
+			if (isReordering()) return
 			const header = target.closest('.wg__header--sortable') as HTMLElement
 			if (header) {
 				handleSortClick(this, mouseEvent)

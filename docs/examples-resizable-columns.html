@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid - Resizable Columns</title>
+    <title>WebGrid - Resizable & Reorderable Columns</title>
     <link rel="stylesheet" href="examples-shared.css">
 </head>
 <body>
     <div class="container">
         <header>
             <a href="index.html" class="back-link">← Back to Examples</a>
-            <h1>↔️ Resizable Columns</h1>
-            <p class="subtitle">Excel-like column resizing by dragging the edge between column headers</p>
+            <h1>↔️ Resizable & Reorderable Columns</h1>
+            <p class="subtitle">Excel-like column resizing and drag-to-reorder column headers</p>
         </header>
 
         <div class="card">
@@ -97,6 +97,35 @@
         </div>
 
         <div class="card">
+            <h2>🔀 Column Reorder by Dragging</h2>
+            <p>Drag column headers to rearrange columns. Frozen columns cannot be reordered.</p>
+
+            <div class="controls">
+                <label>
+                    <input type="checkbox" id="persistOrder" checked> Persist Column Order
+                </label>
+                <button id="clearOrderStorage" class="btn">Clear Saved Order</button>
+                <button id="resetOrder" class="btn" style="background: #64748b;">Reset to Default</button>
+            </div>
+
+            <web-grid id="gridReorder" style="max-width: 100%; max-height: 400px;"></web-grid>
+
+            <div id="reorderLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                Drag a column header to reorder...
+            </div>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">How it works</div>
+                <ul>
+                    <li>Hover over a non-frozen column header to see the grab cursor</li>
+                    <li>Click and drag to move the column</li>
+                    <li>A ghost element follows your cursor, and a drop indicator shows where the column will be placed</li>
+                    <li>Frozen columns (highlighted) cannot be dragged or used as drop targets</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
             <h2>Configuration Options</h2>
 
             <div class="grid-2">
@@ -109,11 +138,23 @@
                         </tr>
                         <tr>
                             <td><code>persistColumnWidths</code></td>
-                            <td>Enable automatic localStorage persistence</td>
+                            <td>Enable automatic width persistence</td>
+                        </tr>
+                        <tr>
+                            <td><code>allowColumnReorder</code></td>
+                            <td>Enable drag-to-reorder columns</td>
+                        </tr>
+                        <tr>
+                            <td><code>persistColumnOrder</code></td>
+                            <td>Enable automatic order persistence</td>
                         </tr>
                         <tr>
                             <td><code>oncolumnresize</code></td>
                             <td>Callback fired after column resize</td>
+                        </tr>
+                        <tr>
+                            <td><code>oncolumnreorder</code></td>
+                            <td>Callback fired after column reorder</td>
                         </tr>
                     </table>
                 </div>
@@ -138,22 +179,38 @@
         </div>
 
         <div class="card">
-            <h2>Callback Data Structure</h2>
+            <h2>Callback Data Structures</h2>
+
+            <h3>oncolumnresize</h3>
             <p>The <code>oncolumnresize</code> callback receives a detail object with:</p>
 
             <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>{
     field: "name",           // Which column was resized
     oldWidth: "150px",       // Previous width
     newWidth: "200px",       // New width
-    allWidths: [             // All column widths (same format as localStorage)
+    allWidths: [             // All column widths
         { field: "id", width: "80px" },
         { field: "name", width: "200px" },
-        { field: "email", width: "180px" },
         ...
     ]
 }</code></pre>
 
-            <p style="margin-top: 1rem;">Use <code>allWidths</code> to save column widths to a database for per-user persistence.</p>
+            <h3 style="margin-top: 1.5rem;">oncolumnreorder</h3>
+            <p>The <code>oncolumnreorder</code> callback receives a detail object with:</p>
+
+            <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>{
+    field: "email",          // Which column was moved
+    fromIndex: 2,            // Original position (among non-frozen columns)
+    toIndex: 0,              // New position (among non-frozen columns)
+    allOrder: [              // All column orders
+        { field: "email", order: 0 },
+        { field: "department", order: 1 },
+        { field: "name", order: 2 },
+        ...
+    ]
+}</code></pre>
+
+            <p style="margin-top: 1rem;">Use <code>allWidths</code> and <code>allOrder</code> to save column state to a database for per-user persistence.</p>
         </div>
 
         <footer>
@@ -312,6 +369,54 @@
 
         document.getElementById('stickyRowNumbers').addEventListener('change', e => {
             gridFrozen.stickyRowNumbers = e.target.checked
+        })
+
+        // Grid 5 - Column reorder
+        const reorderColumns = [
+            { field: 'id', title: 'ID (Frozen)', width: '80px' },
+            { field: 'name', title: 'Name (Frozen)', width: '150px' },
+            { field: 'email', title: 'Email', width: '200px' },
+            { field: 'department', title: 'Department', width: '120px' },
+            { field: 'role', title: 'Role', width: '100px' },
+            { field: 'location', title: 'Location', width: '120px' },
+            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'status', title: 'Status', width: '100px' }
+        ]
+
+        const gridReorder = document.getElementById('gridReorder')
+        gridReorder.items = wideData.slice(0, 20)
+        gridReorder.columns = reorderColumns
+        gridReorder.showRowNumbers = true
+        gridReorder.stickyRowNumbers = true
+        gridReorder.freezeColumns = 2  // First 2 columns are frozen
+        gridReorder.striped = true
+        gridReorder.hoverable = true
+        gridReorder.gridName = 'reorder-demo-grid'
+        gridReorder.allowColumnReorder = true
+        gridReorder.persistColumnOrder = true
+
+        // Callback to show reorder data
+        gridReorder.oncolumnreorder = (detail) => {
+            const log = document.getElementById('reorderLog')
+            log.innerHTML = `<strong>Last reorder:</strong> "${detail.field}" moved from index ${detail.fromIndex} to ${detail.toIndex}<br>
+            <strong>All order:</strong> ${JSON.stringify(detail.allOrder)}`
+        }
+
+        // Toggle persistence
+        document.getElementById('persistOrder').addEventListener('change', e => {
+            gridReorder.persistColumnOrder = e.target.checked
+        })
+
+        // Clear storage button
+        document.getElementById('clearOrderStorage').addEventListener('click', () => {
+            localStorage.removeItem('wg-reorder-demo-grid-state')
+            alert('Saved order cleared! Refresh to see default order.')
+        })
+
+        // Reset to default order
+        document.getElementById('resetOrder').addEventListener('click', () => {
+            gridReorder.setColumnOrder([])
+            document.getElementById('reorderLog').innerHTML = 'Column order reset to default.'
         })
     </script>
 </body>

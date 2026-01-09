@@ -1,0 +1,73 @@
+/* ==============================================================================
+   COLUMN REORDER
+   ==============================================================================
+   Drag-and-drop column reordering styles
+*/
+
+/* Dragging header - reduced opacity */
+.wg__header--dragging {
+  opacity: 0.5;
+}
+
+/* Ghost element that follows cursor */
+.wg__reorder-ghost {
+  position: absolute;
+  z-index: 1000;
+  background: var(--wg-header-bg);
+  border: 2px solid var(--wg-accent-color);
+  border-radius: var(--wg-border-radius-sm);
+  padding: 0.4em 0.8em;
+  font-size: var(--wg-font-size-sm);
+  font-weight: var(--wg-header-font-weight);
+  color: var(--wg-header-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0.95;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Drop indicator line */
+.wg__drop-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--wg-accent-color);
+  z-index: 999;
+  pointer-events: none;
+  display: none;
+}
+
+/* Add arrow indicator at top */
+.wg__drop-indicator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid var(--wg-accent-color);
+}
+
+/* Container during reorder */
+.wg--reordering {
+  cursor: grabbing;
+  user-select: none;
+}
+
+/* Override all cell cursors during reorder */
+.wg--reordering .wg__cell,
+.wg--reordering .wg__header {
+  cursor: grabbing;
+}
+
+/* Make non-frozen headers show grab cursor on hover (when not reordering) */
+.wg__header:not(.wg__header--frozen):hover {
+  cursor: grab;
+}
+
+/* Frozen headers don't get grab cursor */
+.wg__header--frozen {
+  cursor: default;
+}
