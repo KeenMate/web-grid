@@ -42,6 +42,7 @@ export function getContainerClasses<T>(ctx: GridContext<T>): string {
 	if (ctx.grid.hoverable) classes.push('wg--hoverable')
 	if (ctx.grid.editable) classes.push('wg--editable')
 	if (ctx.grid.isNavigateMode) classes.push('wg--navigate-mode')
+	if (ctx.grid.allowColumnReorder) classes.push('wg--reorderable')
 	return classes.join(' ')
 }
 

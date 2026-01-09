@@ -77,6 +77,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optional localStorage persistence via `gridName` + `persistColumnWidths` properties
   - Programmatic API: `setColumnWidth(field, width)`, `setColumnWidths(widths)`, `getColumnWidthsState()`
   - Visual column separators between headers (`--wg-header-separator` CSS variable)
+- **Reorderable Columns** - Drag column headers to rearrange columns
+  - `allowColumnReorder` property enables drag-to-reorder (default: false)
+  - Drag threshold (5px) prevents accidental reorder when clicking to sort
+  - Frozen columns cannot be reordered
+  - `oncolumnreorder` callback fired after reorder with `{ field, fromIndex, toIndex, allOrder }`
+  - Optional localStorage persistence via `gridName` + `persistColumnOrder` properties
+  - Programmatic API: `setColumnOrder(order)`, `getColumnOrderState()`, `moveColumn(field, toIndex)`
+  - Grab cursor only shown when `allowColumnReorder` is enabled
 - **Showcase: Row Locking Feature Page** - New `/features/row-locking` page with live demos
   - Property-based locking (lockedMember, lockInfoMember)
   - Callback-based locking (getLockInfoCallback)

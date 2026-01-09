@@ -4,13 +4,18 @@
 
 import type { GridContext } from '../types.js'
 
+/** Minimum distance (px) mouse must move before drag starts */
+const DRAG_THRESHOLD = 5
+
 /**
  * State for tracking an active reorder operation
  */
 export interface ReorderState {
-	isReordering: boolean
+	isPending: boolean      // Mouse is down but threshold not yet exceeded
+	isReordering: boolean   // Actually dragging (threshold exceeded)
 	field: string
 	startX: number
+	startY: number
 	headerCell: HTMLElement | null
 	ghost: HTMLElement | null
 	dropIndicator: HTMLElement | null
@@ -20,9 +25,11 @@ export interface ReorderState {
 
 // Module-level state
 let reorderState: ReorderState = {
+	isPending: false,
 	isReordering: false,
 	field: '',
 	startX: 0,
+	startY: 0,
 	headerCell: null,
 	ghost: null,
 	dropIndicator: null,
@@ -33,6 +40,9 @@ let reorderState: ReorderState = {
 // Store the current context for document-level handlers
 let activeContext: GridContext | null = null
 
+// Flag to track if a drag was just completed (to block click-to-sort)
+let dragJustCompleted = false
+
 /**
  * Get the current reorder state
  */
@@ -41,14 +51,27 @@ export function getReorderState(): ReorderState {
 }
 
 /**
- * Check if reorder is currently active
+ * Check if reorder is currently active or was just completed.
+ * This is used to block click-to-sort after a drag operation.
+ * The dragJustCompleted flag is reset after being checked.
  */
 export function isReordering(): boolean {
+	if (dragJustCompleted) {
+		dragJustCompleted = false
+		return true
+	}
 	return reorderState.isReordering
 }
 
 /**
- * Start a column reorder operation
+ * Check if a reorder operation is pending (mouse down but threshold not exceeded)
+ */
+export function isReorderPending(): boolean {
+	return reorderState.isPending
+}
+
+/**
+ * Start a column reorder operation (pending state until threshold exceeded)
  */
 export function handleReorderStart<T>(ctx: GridContext<T>, e: MouseEvent, field: string): void {
 	const target = e.target as HTMLElement
@@ -67,11 +90,13 @@ export function handleReorderStart<T>(ctx: GridContext<T>, e: MouseEvent, field:
 	// Get non-frozen column index
 	const nonFrozenIndex = visualIndex - frozenCount
 
-	// Set up reorder state
+	// Set up pending reorder state (actual drag starts after threshold exceeded)
 	reorderState = {
-		isReordering: true,
+		isPending: true,
+		isReordering: false,
 		field,
 		startX: e.clientX,
+		startY: e.clientY,
 		headerCell,
 		ghost: null,
 		dropIndicator: null,
@@ -81,24 +106,11 @@ export function handleReorderStart<T>(ctx: GridContext<T>, e: MouseEvent, field:
 
 	activeContext = ctx as GridContext
 
-	// Add reordering class to grid container
-	const container = ctx.shadow.querySelector('.wg')
-	container?.classList.add('wg--reordering')
-
-	// Add dragging class to header
-	headerCell.classList.add('wg__header--dragging')
-
-	// Create ghost element
-	createGhost(ctx, headerCell, e)
-
-	// Create drop indicator
-	createDropIndicator(ctx)
-
-	// Attach document-level listeners
+	// Attach document-level listeners to track mouse movement
 	document.addEventListener('mousemove', handleDocumentMouseMove)
 	document.addEventListener('mouseup', handleDocumentMouseUp)
 
-	// Prevent text selection during reorder
+	// Prevent text selection during potential reorder
 	e.preventDefault()
 }
 
@@ -132,10 +144,50 @@ function createDropIndicator<T>(ctx: GridContext<T>): void {
 }
 
 /**
+ * Actually start the drag operation (called after threshold exceeded)
+ */
+function startActualDrag<T>(ctx: GridContext<T>, e: MouseEvent): void {
+	reorderState.isPending = false
+	reorderState.isReordering = true
+
+	// Add reordering class to grid container
+	const container = ctx.shadow.querySelector('.wg')
+	container?.classList.add('wg--reordering')
+
+	// Add dragging class to header
+	if (reorderState.headerCell) {
+		reorderState.headerCell.classList.add('wg__header--dragging')
+	}
+
+	// Create ghost element
+	if (reorderState.headerCell) {
+		createGhost(ctx, reorderState.headerCell, e)
+	}
+
+	// Create drop indicator
+	createDropIndicator(ctx)
+}
+
+/**
  * Handle mouse move during reorder (document-level)
  */
 function handleDocumentMouseMove(e: MouseEvent): void {
-	if (!reorderState.isReordering || !activeContext) return
+	if (!activeContext) return
+
+	// If pending, check if threshold exceeded to start actual drag
+	if (reorderState.isPending) {
+		const dx = e.clientX - reorderState.startX
+		const dy = e.clientY - reorderState.startY
+		const distance = Math.sqrt(dx * dx + dy * dy)
+
+		if (distance >= DRAG_THRESHOLD) {
+			startActualDrag(activeContext, e)
+		}
+		return
+	}
+
+	// If not actually reordering, nothing to do
+	if (!reorderState.isReordering) return
 
 	const container = activeContext.shadow.querySelector('.wg')
 	if (!container) return
@@ -241,9 +293,19 @@ function updateDropIndicator<T>(ctx: GridContext<T>, dropIndex: number): void {
  * End reorder operation (document-level)
  */
 function handleDocumentMouseUp(e: MouseEvent): void {
-	if (!reorderState.isReordering || !activeContext) return
+	if (!activeContext) return
 
 	const ctx = activeContext
+
+	// If still pending (threshold never exceeded), just cleanup - this was a click, not a drag
+	if (reorderState.isPending) {
+		cleanup(ctx)
+		return
+	}
+
+	// If not actually reordering, nothing to do
+	if (!reorderState.isReordering) return
+
 	const field = reorderState.field
 	const fromIndex = reorderState.fromIndex
 	const toIndex = reorderState.currentDropIndex
@@ -269,6 +331,9 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 			ctx.grid.savePersistedState()
 		}
 	}
+
+	// Set flag to block the subsequent click event from triggering sort
+	dragJustCompleted = true
 
 	// Clean up
 	cleanup(ctx)
@@ -302,9 +367,11 @@ function cleanup<T>(ctx: GridContext<T>): void {
 
 	// Reset state
 	reorderState = {
+		isPending: false,
 		isReordering: false,
 		field: '',
 		startX: 0,
+		startY: 0,
 		headerCell: null,
 		ghost: null,
 		dropIndicator: null,

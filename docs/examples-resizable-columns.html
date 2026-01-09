@@ -279,6 +279,8 @@
         grid.showRowNumbers = true
         grid.striped = true
         grid.hoverable = true
+        grid.allowColumnReorder = true
+        grid.sortMode = 'multi'
 
         // Grid 2 - With persistence
         const grid2 = document.getElementById('grid2')
@@ -289,6 +291,7 @@
         grid2.hoverable = true
         grid2.gridName = 'resize-demo-grid'
         grid2.persistColumnWidths = true
+        grid2.allowColumnReorder = true
 
         // Callback to show resize data
         grid2.oncolumnresize = (detail) => {
@@ -321,6 +324,7 @@
         grid3.showRowNumbers = true
         grid3.striped = true
         grid3.hoverable = true
+        grid3.allowColumnReorder = true
 
         // Grid 4 - Frozen panes + resizable columns
         const wideData = Array.from({ length: 50 }, (_, i) => ({
@@ -361,6 +365,7 @@
         gridFrozen.freezeColumns = 2
         gridFrozen.striped = true
         gridFrozen.hoverable = true
+        gridFrozen.allowColumnReorder = true
 
         // Controls for frozen grid
         document.getElementById('freezeColumns').addEventListener('change', e => {

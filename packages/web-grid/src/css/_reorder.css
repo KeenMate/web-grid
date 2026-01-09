@@ -62,8 +62,8 @@
   cursor: grabbing;
 }
 
-/* Make non-frozen headers show grab cursor on hover (when not reordering) */
-.wg__header:not(.wg__header--frozen):hover {
+/* Make non-frozen headers show grab cursor on hover (only when reorder is enabled) */
+.wg--reorderable .wg__header:not(.wg__header--frozen):hover {
   cursor: grab;
 }
 

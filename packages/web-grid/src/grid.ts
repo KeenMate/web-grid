@@ -1543,6 +1543,7 @@ export class WebGrid<T = unknown> {
 
 	/**
 	 * Load persisted state (widths, order) from localStorage
+	 * Automatically cleans up orphaned entries for columns that no longer exist
 	 */
 	loadPersistedState(): void {
 		if (!this._gridName || typeof localStorage === 'undefined') return
@@ -1553,17 +1554,35 @@ export class WebGrid<T = unknown> {
 			if (!stored) return
 
 			const state: GridPersistenceState = JSON.parse(stored)
+
+			// Get set of valid field names from current columns
+			const validFields = new Set(this._columns.map(c => String(c.field)))
+			let needsCleanup = false
+
 			if (state.columnWidths) {
 				this._columnWidths.clear()
 				for (const cw of state.columnWidths) {
-					this._columnWidths.set(cw.field, cw.width)
+					if (validFields.has(cw.field)) {
+						this._columnWidths.set(cw.field, cw.width)
+					} else {
+						needsCleanup = true
+					}
 				}
 			}
 			if (state.columnOrder) {
 				this._columnOrder.clear()
 				for (const co of state.columnOrder) {
-					this._columnOrder.set(co.field, co.order)
+					if (validFields.has(co.field)) {
+						this._columnOrder.set(co.field, co.order)
+					} else {
+						needsCleanup = true
+					}
 				}
+			}
+
+			// Re-save cleaned state if orphaned entries were removed
+			if (needsCleanup) {
+				this.savePersistedState()
 			}
 		} catch (e) {
 			console.warn('WebGrid: Failed to load persisted state', e)
