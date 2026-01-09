@@ -85,6 +85,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optional localStorage persistence via `gridName` + `persistColumnOrder` properties
   - Programmatic API: `setColumnOrder(order)`, `getColumnOrderState()`, `moveColumn(field, toIndex)`
   - Grab cursor only shown when `allowColumnReorder` is enabled
+- **Fill Handle (Autofill)** - Excel-like drag-to-fill for copying values
+  - Small handle appears at bottom-right corner of focused cell
+  - Drag to fill cells with source cell value
+  - `fillDirection` property controls allowed directions:
+    - `'vertical'` (default) - fill only within same column
+    - `'all'` - fill in any direction (up, down, left, right)
+  - Per-column override via `column.fillDirection`
+  - **Type-based validation** - incompatible values are automatically skipped:
+    - Number columns: only accept numeric values
+    - Select/Combobox columns: only accept values that exist in options
+    - Date columns: only accept valid date strings/objects/timestamps
+    - Text/Autocomplete columns: accept any value (use `onfilldrag` callback for custom validation)
+  - `onfilldrag` callback with `{ sourceCell, targetCells, direction }` - return `false` to cancel
+  - Non-editable cells are automatically skipped
+  - Fires `onrowchange` for each modified cell after fill completes
+  - Drag threshold (5px) prevents accidental fill on click
+  - Correctly uses draft row values (recently edited cells)
 - **Showcase: Row Locking Feature Page** - New `/features/row-locking` page with live demos
   - Property-based locking (lockedMember, lockInfoMember)
   - Callback-based locking (getLockInfoCallback)

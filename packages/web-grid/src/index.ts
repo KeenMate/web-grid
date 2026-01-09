@@ -70,6 +70,10 @@ export type {
 	ColumnOrderState,
 	ColumnReorderDetail,
 
+	// Fill handle types
+	FillDragDetail,
+	FillDirection,
+
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,

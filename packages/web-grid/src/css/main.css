@@ -9,6 +9,7 @@
    - _header.css       : Header, sort indicators, filter row
    - _resize.css       : Column resize handles
    - _reorder.css      : Column reorder drag-and-drop
+   - _fill-handle.css  : Fill handle (Excel-like autofill)
    - _freeze.css       : Freeze panes (sticky columns)
    - _cells.css        : Cells, editable states, editing, validation
    - _editors.css      : All editor types (text, number, date, combobox, etc)
@@ -29,6 +30,7 @@
 @import '_header.css';
 @import '_resize.css';
 @import '_reorder.css';
+@import '_fill-handle.css';
 @import '_freeze.css';
 @import '_cells.css';
 @import '_row-locking.css';

@@ -37,6 +37,8 @@ import type {
 	ColumnResizeDetail,
 	ColumnOrderState,
 	ColumnReorderDetail,
+	FillDragDetail,
+	FillDirection,
 	GridPersistenceState
 } from './types.js'
 
@@ -130,6 +132,10 @@ export class WebGrid<T = unknown> {
 	protected _persistColumnOrder: boolean = false
 	protected _columnOrder: Map<string, number> = new Map()  // Runtime order overrides
 	protected _oncolumnreorder: ((detail: ColumnReorderDetail) => void) | undefined = undefined
+
+	// Fill handle
+	protected _fillDirection: FillDirection = 'vertical'
+	protected _onfilldrag: ((detail: FillDragDetail) => boolean | void) | undefined = undefined
 
 	// ==========================================================================
 	// Callbacks
@@ -757,6 +763,17 @@ export class WebGrid<T = unknown> {
 	get oncolumnreorder(): ((detail: ColumnReorderDetail) => void) | undefined { return this._oncolumnreorder }
 	set oncolumnreorder(value: ((detail: ColumnReorderDetail) => void) | undefined) {
 		this._oncolumnreorder = value
+	}
+
+	// Fill handle
+	get fillDirection(): FillDirection { return this._fillDirection }
+	set fillDirection(value: FillDirection) {
+		this._fillDirection = value
+	}
+
+	get onfilldrag(): ((detail: FillDragDetail) => boolean | void) | undefined { return this._onfilldrag }
+	set onfilldrag(value: ((detail: FillDragDetail) => boolean | void) | undefined) {
+		this._onfilldrag = value
 	}
 
 	// ==========================================================================

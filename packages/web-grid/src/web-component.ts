@@ -37,7 +37,8 @@ import type {
 	ColumnResizeDetail,
 	ColumnWidthState,
 	ColumnReorderDetail,
-	ColumnOrderState
+	ColumnOrderState,
+	FillDragDetail
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -132,6 +133,7 @@ import {
 import { handleSortClick, handlePaginationClick, handlePageSizeChange } from './modules/events/index.js'
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
+import { updateFillHandle, removeFillHandle } from './modules/fill-handle/index.js'
 
 import type { GridContext } from './modules/types.js'
 
@@ -574,6 +576,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	get oncolumnreorder(): ((detail: ColumnReorderDetail) => void) | undefined { return this.grid.oncolumnreorder }
 	set oncolumnreorder(value: ((detail: ColumnReorderDetail) => void) | undefined) { this.grid.oncolumnreorder = value }
+
+	// Fill handle callback
+	get onfilldrag(): ((detail: FillDragDetail) => boolean | void) | undefined { return this.grid.onfilldrag }
+	set onfilldrag(value: ((detail: FillDragDetail) => boolean | void) | undefined) { this.grid.onfilldrag = value }
 
 	// Virtual scroll
 	get virtualScroll(): boolean { return this.grid.virtualScroll }
@@ -1342,6 +1348,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const rowIndex = parseInt(target.dataset.row || '0', 10)
 				const colIndex = parseInt(target.dataset.col || '0', 10)
 				handleCellFocus(this, rowIndex, colIndex)
+				updateFillHandle(this)
 			}
 			if (target.matches('.wg__select-trigger, .wg__combobox-input, .wg__autocomplete-input')) {
 				if (!this.justSelected && !this.dropdownOpen) {
@@ -1778,6 +1785,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					updateConnector(this, this.grid.displayItems)
 					this.renderConnector()
 				}
+
+				// Update fill handle position on scroll
+				updateFillHandle(this)
 			})
 		}
 
@@ -2421,6 +2431,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Render connector arrow if active
 		this.renderConnector()
+
+		// Update fill handle after render
+		updateFillHandle(this)
 	}
 
 	/**

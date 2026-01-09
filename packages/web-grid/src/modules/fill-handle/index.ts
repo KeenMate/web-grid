@@ -1,0 +1,529 @@
+// =============================================================================
+// Fill Handle Module (Excel-like autofill)
+// =============================================================================
+
+import type { GridContext } from '../types.js'
+import type { FillDragDetail, Column, EditorOption } from '../../types.js'
+import { renderCell } from '../rendering/cell.js'
+
+/** Minimum distance (px) mouse must move before drag starts */
+const DRAG_THRESHOLD = 5
+
+/**
+ * Check if a value is compatible with a target column's editor type
+ * Returns true if the value can be filled into the target column
+ */
+function isValueCompatible<T>(sourceValue: unknown, targetColumn: Column<T>): boolean {
+	const editor = targetColumn.editor || 'text'
+
+	switch (editor) {
+		case 'number': {
+			// Number columns only accept numeric values
+			return typeof sourceValue === 'number' && !isNaN(sourceValue)
+		}
+
+		case 'select':
+		case 'combobox': {
+			// Select/combobox columns only accept values that exist in their options
+			const options = targetColumn.editorOptions?.options
+			if (!options || options.length === 0) {
+				// No options defined - allow the fill (dynamic options loaded later)
+				return true
+			}
+			// Check if the value exists in the options
+			const valueMember = targetColumn.editorOptions?.valueMember || 'value'
+			return options.some((opt: EditorOption) => {
+				const optValue = (opt as Record<string, unknown>)[valueMember]
+				return optValue === sourceValue
+			})
+		}
+
+		case 'date': {
+			// Date columns accept: Date objects, valid ISO date strings, or timestamps
+			if (sourceValue === null || sourceValue === undefined || sourceValue === '') {
+				return true // Empty values are allowed
+			}
+			if (sourceValue instanceof Date) {
+				return !isNaN(sourceValue.getTime())
+			}
+			if (typeof sourceValue === 'string') {
+				// Must look like a date string (contains - or / for date parts)
+				if (!/\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(sourceValue) &&
+				    !/\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/.test(sourceValue)) {
+					return false
+				}
+				const parsed = new Date(sourceValue)
+				return !isNaN(parsed.getTime())
+			}
+			if (typeof sourceValue === 'number') {
+				// Only accept reasonable timestamps (after year 2000, before year 2100)
+				const minTimestamp = new Date('2000-01-01').getTime()
+				const maxTimestamp = new Date('2100-01-01').getTime()
+				if (sourceValue < minTimestamp || sourceValue > maxTimestamp) {
+					return false
+				}
+				const parsed = new Date(sourceValue)
+				return !isNaN(parsed.getTime())
+			}
+			return false
+		}
+
+		case 'text':
+		case 'autocomplete':
+		case 'checkbox':
+		case 'custom':
+		default:
+			// Text, autocomplete, checkbox, and custom editors allow any value
+			// Programmer can validate via onfilldrag callback
+			return true
+	}
+}
+
+/**
+ * State for tracking fill handle drag operation
+ */
+interface FillState {
+	isPending: boolean      // Mouse is down but threshold not yet exceeded
+	isDragging: boolean     // Actually dragging (threshold exceeded)
+	startRowIndex: number
+	startColIndex: number
+	startField: string
+	startX: number
+	startY: number
+	currentRowIndex: number
+	currentColIndex: number
+	handleElement: HTMLElement | null
+	rangeElement: HTMLElement | null
+}
+
+// Module-level state
+let fillState: FillState = {
+	isPending: false,
+	isDragging: false,
+	startRowIndex: -1,
+	startColIndex: -1,
+	startField: '',
+	startX: 0,
+	startY: 0,
+	currentRowIndex: -1,
+	currentColIndex: -1,
+	handleElement: null,
+	rangeElement: null
+}
+
+// Store the current context for document-level handlers
+let activeContext: GridContext | null = null
+
+/**
+ * Check if fill drag is in progress
+ */
+export function isFilling(): boolean {
+	return fillState.isDragging
+}
+
+/**
+ * Check if fill drag is pending (mouse down but not dragging yet)
+ */
+export function isFillPending(): boolean {
+	return fillState.isPending
+}
+
+/**
+ * Create and position the fill handle on the focused cell
+ */
+export function updateFillHandle<T>(ctx: GridContext<T>): void {
+	const focusedCell = ctx.grid.focusedCell
+
+	// Remove existing handle if no focused cell or in edit mode
+	if (!focusedCell || ctx.grid.editingCell) {
+		removeFillHandle()
+		return
+	}
+
+	const { rowIndex, colIndex } = focusedCell
+
+	// Find the focused cell element
+	const cellElement = ctx.shadow.querySelector(
+		`[data-row="${rowIndex}"][data-col="${colIndex}"]`
+	) as HTMLElement
+
+	if (!cellElement) {
+		removeFillHandle()
+		return
+	}
+
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!container) return
+
+	// Create handle if it doesn't exist
+	if (!fillState.handleElement) {
+		const handle = document.createElement('div')
+		handle.className = 'wg__fill-handle'
+		container.appendChild(handle)
+		fillState.handleElement = handle
+
+		// Attach mousedown listener
+		handle.addEventListener('mousedown', (e) => handleFillStart(ctx, e))
+	}
+
+	// Position the handle at bottom-right corner of the cell
+	const containerRect = container.getBoundingClientRect()
+	const cellRect = cellElement.getBoundingClientRect()
+
+	// Account for scroll position
+	const scrollLeft = container.scrollLeft
+	const scrollTop = container.scrollTop
+
+	const handleSize = 8 // --wg-fill-handle-size
+	const x = cellRect.right - containerRect.left + scrollLeft - handleSize / 2
+	const y = cellRect.bottom - containerRect.top + scrollTop - handleSize / 2
+
+	fillState.handleElement.style.left = `${x}px`
+	fillState.handleElement.style.top = `${y}px`
+}
+
+/**
+ * Remove the fill handle from DOM
+ */
+export function removeFillHandle(): void {
+	if (fillState.handleElement) {
+		fillState.handleElement.remove()
+		fillState.handleElement = null
+	}
+}
+
+/**
+ * Handle mousedown on fill handle
+ */
+function handleFillStart<T>(ctx: GridContext<T>, e: MouseEvent): void {
+	e.preventDefault()
+	e.stopPropagation()
+
+	const focusedCell = ctx.grid.focusedCell
+	if (!focusedCell) return
+
+	const { rowIndex, colIndex } = focusedCell
+	const visualCols = ctx.grid.visualColumns
+	const column = visualCols[colIndex]?.column
+	if (!column) return
+
+	// Set up pending state
+	fillState = {
+		...fillState,
+		isPending: true,
+		isDragging: false,
+		startRowIndex: rowIndex,
+		startColIndex: colIndex,
+		startField: String(column.field),
+		startX: e.clientX,
+		startY: e.clientY,
+		currentRowIndex: rowIndex,
+		currentColIndex: colIndex
+	}
+
+	activeContext = ctx as GridContext
+
+	// Attach document-level listeners
+	document.addEventListener('mousemove', handleDocumentMouseMove)
+	document.addEventListener('mouseup', handleDocumentMouseUp)
+}
+
+/**
+ * Handle mouse move during fill drag
+ */
+function handleDocumentMouseMove(e: MouseEvent): void {
+	if (!activeContext) return
+
+	// If pending, check if threshold exceeded
+	if (fillState.isPending) {
+		const dx = e.clientX - fillState.startX
+		const dy = e.clientY - fillState.startY
+		const distance = Math.sqrt(dx * dx + dy * dy)
+
+		if (distance >= DRAG_THRESHOLD) {
+			startActualDrag(activeContext)
+		}
+		return
+	}
+
+	// If not actually dragging, nothing to do
+	if (!fillState.isDragging) return
+
+	// Find which cell the mouse is over
+	const cellInfo = findCellAtPoint(activeContext, e.clientX, e.clientY)
+	if (cellInfo && (cellInfo.rowIndex !== fillState.currentRowIndex || cellInfo.colIndex !== fillState.currentColIndex)) {
+		fillState.currentRowIndex = cellInfo.rowIndex
+		fillState.currentColIndex = cellInfo.colIndex
+		updateRangeOverlay(activeContext)
+	}
+}
+
+/**
+ * Start the actual drag operation (after threshold exceeded)
+ */
+function startActualDrag<T>(ctx: GridContext<T>): void {
+	fillState.isPending = false
+	fillState.isDragging = true
+
+	// Add filling class to container
+	const container = ctx.shadow.querySelector('.wg')
+	container?.classList.add('wg--filling')
+
+	// Create range overlay
+	createRangeOverlay(ctx)
+}
+
+/**
+ * Create the range overlay element
+ */
+function createRangeOverlay<T>(ctx: GridContext<T>): void {
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!container) return
+
+	const overlay = document.createElement('div')
+	overlay.className = 'wg__fill-range'
+	container.appendChild(overlay)
+	fillState.rangeElement = overlay
+
+	updateRangeOverlay(ctx)
+}
+
+/**
+ * Update the range overlay position and size
+ */
+function updateRangeOverlay<T>(ctx: GridContext<T>): void {
+	if (!fillState.rangeElement) return
+
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!container) return
+
+	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = fillState
+
+	// Determine the range (normalize to min/max)
+	const minRow = Math.min(startRowIndex, currentRowIndex)
+	const maxRow = Math.max(startRowIndex, currentRowIndex)
+	const minCol = Math.min(startColIndex, currentColIndex)
+	const maxCol = Math.max(startColIndex, currentColIndex)
+
+	// Find the bounding cells
+	const startCell = ctx.shadow.querySelector(
+		`[data-row="${minRow}"][data-col="${minCol}"]`
+	) as HTMLElement
+	const endCell = ctx.shadow.querySelector(
+		`[data-row="${maxRow}"][data-col="${maxCol}"]`
+	) as HTMLElement
+
+	if (!startCell || !endCell) return
+
+	const containerRect = container.getBoundingClientRect()
+	const startRect = startCell.getBoundingClientRect()
+	const endRect = endCell.getBoundingClientRect()
+
+	// Account for scroll
+	const scrollLeft = container.scrollLeft
+	const scrollTop = container.scrollTop
+
+	const left = startRect.left - containerRect.left + scrollLeft
+	const top = startRect.top - containerRect.top + scrollTop
+	const width = endRect.right - startRect.left
+	const height = endRect.bottom - startRect.top
+
+	fillState.rangeElement.style.left = `${left}px`
+	fillState.rangeElement.style.top = `${top}px`
+	fillState.rangeElement.style.width = `${width}px`
+	fillState.rangeElement.style.height = `${height}px`
+}
+
+/**
+ * Handle mouse up - apply fill and cleanup
+ */
+function handleDocumentMouseUp(e: MouseEvent): void {
+	if (!activeContext) return
+
+	const ctx = activeContext
+
+	// If still pending (no drag), just cleanup
+	if (fillState.isPending) {
+		cleanup(ctx)
+		return
+	}
+
+	// If not dragging, nothing to do
+	if (!fillState.isDragging) return
+
+	// Apply the fill
+	applyFill(ctx)
+
+	// Cleanup
+	cleanup(ctx)
+}
+
+/**
+ * Find which cell is at a given point
+ */
+function findCellAtPoint<T>(ctx: GridContext<T>, x: number, y: number): { rowIndex: number; colIndex: number } | null {
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!container) return null
+
+	// Get all cells and find which one contains the point
+	const cells = ctx.shadow.querySelectorAll('.wg__cell[data-row][data-col]')
+
+	for (const cell of cells) {
+		const rect = (cell as HTMLElement).getBoundingClientRect()
+		if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+			const rowIndex = parseInt((cell as HTMLElement).dataset.row || '-1', 10)
+			const colIndex = parseInt((cell as HTMLElement).dataset.col || '-1', 10)
+			if (rowIndex >= 0 && colIndex >= 0) {
+				return { rowIndex, colIndex }
+			}
+		}
+	}
+
+	return null
+}
+
+/**
+ * Determine fill direction based on start and end positions
+ */
+function getDirection(
+	startRow: number, startCol: number,
+	endRow: number, endCol: number
+): 'up' | 'down' | 'left' | 'right' {
+	const rowDelta = endRow - startRow
+	const colDelta = endCol - startCol
+
+	// If same cell, default to down
+	if (rowDelta === 0 && colDelta === 0) return 'down'
+
+	// Use dominant direction
+	if (Math.abs(rowDelta) >= Math.abs(colDelta)) {
+		return rowDelta > 0 ? 'down' : 'up'
+	} else {
+		return colDelta > 0 ? 'right' : 'left'
+	}
+}
+
+/**
+ * Apply the fill operation
+ */
+async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
+	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex, startField } = fillState
+
+	// Get the source cell value
+	const visualCols = ctx.grid.visualColumns
+	const sourceColumn = visualCols[startColIndex]?.column
+	if (!sourceColumn) return
+
+	// Use draft row if it exists (contains edited values), otherwise use display item
+	const sourceRow = ctx.grid.getRowDraft(startRowIndex) ?? ctx.grid.displayItems[startRowIndex]
+	if (!sourceRow) return
+
+	const sourceValue = (sourceRow as Record<string, unknown>)[startField]
+
+	// Determine direction
+	const direction = getDirection(startRowIndex, startColIndex, currentRowIndex, currentColIndex)
+
+	// Get effective fill direction (column-level override or grid-level)
+	const fillDirection = sourceColumn.fillDirection ?? ctx.grid.fillDirection
+
+	// Calculate target cells (excluding source cell)
+	const targetCells: Array<{ rowIndex: number; colIndex: number; field: string }> = []
+
+	const minRow = Math.min(startRowIndex, currentRowIndex)
+	const maxRow = Math.max(startRowIndex, currentRowIndex)
+
+	// If fillDirection is 'vertical', constrain to same column only
+	const minCol = fillDirection === 'vertical' ? startColIndex : Math.min(startColIndex, currentColIndex)
+	const maxCol = fillDirection === 'vertical' ? startColIndex : Math.max(startColIndex, currentColIndex)
+
+	for (let row = minRow; row <= maxRow; row++) {
+		for (let col = minCol; col <= maxCol; col++) {
+			// Skip source cell
+			if (row === startRowIndex && col === startColIndex) continue
+
+			const column = visualCols[col]?.column
+			if (!column) continue
+
+			const field = String(column.field)
+
+			// Check if cell is editable
+			const rowData = ctx.grid.displayItems[row]
+			if (!rowData) continue
+
+			// Check column-level editable
+			const isEditable = column.editable !== false && ctx.grid.editable
+
+			// Skip non-editable cells
+			if (!isEditable) continue
+
+			// Check if source value is compatible with target column's editor type
+			if (!isValueCompatible(sourceValue, column)) continue
+
+			targetCells.push({ rowIndex: row, colIndex: col, field })
+		}
+	}
+
+	// If no target cells, nothing to do
+	if (targetCells.length === 0) return
+
+	// Prepare detail for callback
+	const detail: FillDragDetail = {
+		sourceCell: {
+			rowIndex: startRowIndex,
+			colIndex: startColIndex,
+			field: startField,
+			value: sourceValue
+		},
+		targetCells,
+		direction
+	}
+
+	// Call onfilldrag callback - if it returns false, cancel
+	if (ctx.grid.onfilldrag) {
+		const result = ctx.grid.onfilldrag(detail)
+		if (result === false) return
+	}
+
+	// Apply the fill to each target cell
+	for (const target of targetCells) {
+		await ctx.grid.commitEdit(target.rowIndex, target.field, sourceValue)
+		// Re-render the cell to show the new value
+		renderCell(ctx, target.rowIndex, target.colIndex)
+	}
+}
+
+/**
+ * Cleanup after fill operation
+ */
+function cleanup<T>(ctx: GridContext<T>): void {
+	// Remove range overlay
+	if (fillState.rangeElement) {
+		fillState.rangeElement.remove()
+		fillState.rangeElement = null
+	}
+
+	// Remove filling class
+	const container = ctx.shadow.querySelector('.wg')
+	container?.classList.remove('wg--filling')
+
+	// Remove document listeners
+	document.removeEventListener('mousemove', handleDocumentMouseMove)
+	document.removeEventListener('mouseup', handleDocumentMouseUp)
+
+	// Reset state (keep handle element)
+	const handleElement = fillState.handleElement
+	fillState = {
+		isPending: false,
+		isDragging: false,
+		startRowIndex: -1,
+		startColIndex: -1,
+		startField: '',
+		startX: 0,
+		startY: 0,
+		currentRowIndex: -1,
+		currentColIndex: -1,
+		handleElement,
+		rangeElement: null
+	}
+	activeContext = null
+}

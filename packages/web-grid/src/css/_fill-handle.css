@@ -1,0 +1,50 @@
+/* ==============================================================================
+   FILL HANDLE (Excel-like autofill)
+   ==============================================================================
+   Small handle at bottom-right of focused cell for drag-to-fill operations
+*/
+
+/* Fill handle - small square at bottom-right corner of focused cell */
+.wg__fill-handle {
+  position: absolute;
+  width: var(--wg-fill-handle-size);
+  height: var(--wg-fill-handle-size);
+  background: var(--wg-fill-handle-bg);
+  border: var(--wg-fill-handle-border-width) solid var(--wg-fill-handle-border-color);
+  cursor: crosshair;
+  z-index: 10;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+/* Hover state - slightly larger */
+.wg__fill-handle:hover {
+  transform: scale(1.2);
+}
+
+/* Fill range overlay - shows which cells will be filled */
+.wg__fill-range {
+  position: absolute;
+  background: var(--wg-fill-range-bg);
+  border: 1px dashed var(--wg-fill-range-border-color);
+  pointer-events: none;
+  z-index: 5;
+  box-sizing: border-box;
+}
+
+/* Container state during fill drag */
+.wg--filling {
+  cursor: crosshair;
+  user-select: none;
+}
+
+/* Override all cell cursors during fill */
+.wg--filling .wg__cell,
+.wg--filling .wg__header {
+  cursor: crosshair;
+}
+
+/* Hide fill handle during edit mode */
+.wg__cell--editing .wg__fill-handle {
+  display: none;
+}

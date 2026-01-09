@@ -23,6 +23,9 @@ export type DateOutputFormat = "date" | "iso" | "timestamp"
 // How to position cursor/selection when entering edit mode
 export type EditStartSelection = "mousePosition" | "selectAll" | "cursorAtStart" | "cursorAtEnd"
 
+// Fill handle direction mode
+export type FillDirection = "vertical" | "all"
+
 // Option for select/combobox/autocomplete editors
 export type EditorOption = {
 	value: string | number | boolean
@@ -196,6 +199,8 @@ export type Column<T> = {
 	frozen?: boolean
 	// Resizable - allow column width to be changed by dragging (default: true)
 	resizable?: boolean
+	// Fill direction - override grid-level fillDirection for this column
+	fillDirection?: FillDirection
 }
 
 // Context for validation tooltip callback
@@ -442,6 +447,9 @@ export type QuickGridProps<T> = {
 	allowColumnReorder?: boolean                         // Enable drag-to-reorder columns (default: false)
 	persistColumnOrder?: boolean                         // Persist column order to localStorage (requires gridName)
 	oncolumnreorder?: (detail: ColumnReorderDetail) => void  // Fired when column is reordered
+
+	// Fill handle (Excel-like autofill)
+	onfilldrag?: (detail: FillDragDetail) => boolean | void  // Return false to cancel fill operation
 }
 
 // =============================================================================
@@ -646,4 +654,11 @@ export type ColumnReorderDetail = {
 	fromIndex: number
 	toIndex: number
 	allOrder: ColumnOrderState[]  // Same format as localStorage - can be sent to server
+}
+
+// Detail passed to onfilldrag callback (Excel-like fill handle)
+export type FillDragDetail = {
+	sourceCell: { rowIndex: number; colIndex: number; field: string; value: unknown }
+	targetCells: Array<{ rowIndex: number; colIndex: number; field: string }>
+	direction: 'up' | 'down' | 'left' | 'right'
 }
