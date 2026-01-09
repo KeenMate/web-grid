@@ -62,6 +62,10 @@ export type {
 	RowLockChangeDetail,
 	LockedRowEditBehavior,
 
+	// Column resize types
+	ColumnWidthState,
+	ColumnResizeDetail,
+
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,

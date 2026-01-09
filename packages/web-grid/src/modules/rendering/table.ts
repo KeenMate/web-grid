@@ -96,12 +96,14 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 		if (isLastFrozen) classes.push('wg__header--frozen-last')
 
 		// Calculate column width for offset tracking
-		const colWidth = column.width || column.maxWidth
+		// Use runtime width override if set (from column resize), otherwise column definition
+		const runtimeWidth = ctx.grid.getColumnWidth(field)
+		const colWidth = runtimeWidth || column.width || column.maxWidth
 		const parsedWidth = parseColumnWidth(colWidth)
 
 		// Build style with width, minWidth, maxWidth, and sticky positioning
-		// Apply min-width equal to width to prevent column shrinking
-		const effectiveMinWidth = column.minWidth || column.width
+		// Only use explicit minWidth (allows resizing below original width)
+		const effectiveMinWidth = column.minWidth
 		const styleProps = [
 			isFrozen ? `position: sticky` : '',
 			isFrozen ? `left: ${cumulativeOffset}px` : '',
@@ -134,6 +136,12 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 			headerInfo = `<span class="wg__header-info" data-tooltip="${ctx.escapeHtml(column.headerInfo)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>`
 		}
 
+		// Resize handle (only for resizable columns)
+		const isResizable = column.resizable !== false
+		const resizeHandle = isResizable
+			? `<div class="wg__resize-handle" data-field="${field}"></div>`
+			: ''
+
 		return `
 			<th class="${classes.join(' ')}" ${styleAttr} data-field="${field}">
 				<div class="wg__header-content">
@@ -141,6 +149,7 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 					${headerInfo}
 					${sortIndicator}
 				</div>
+				${resizeHandle}
 			</th>
 		`
 	}).join('')
@@ -256,14 +265,16 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			}
 
 			// Build cell style with width properties and sticky positioning
-			// Apply min-width equal to width to prevent column shrinking
-			const effectiveMinWidth = column.minWidth || column.width
+			// Use runtime width override if set (from column resize), otherwise column definition
+			const runtimeWidth = ctx.grid.getColumnWidth(field)
+			const cellWidth = runtimeWidth || column.width
+			const effectiveMinWidth = column.minWidth  // Only use explicit minWidth
 			const cellStyleProps = [
 				isFrozen ? `position: sticky` : '',
 				isFrozen ? `left: ${cumulativeOffset}px` : '',
 				isFrozen ? `z-index: 1` : '',
 				`text-align: ${align}`,
-				column.width ? `width: ${column.width}` : '',
+				cellWidth ? `width: ${cellWidth}` : '',
 				effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
 				column.maxWidth ? `max-width: ${column.maxWidth}` : ''
 			].filter(Boolean).join('; ')
@@ -537,14 +548,16 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			}
 
 			// Build cell style with width properties and sticky positioning
-			// Apply min-width equal to width to prevent column shrinking
-			const effectiveMinWidth = column.minWidth || column.width
+			// Use runtime width override if set (from column resize), otherwise column definition
+			const runtimeWidth = ctx.grid.getColumnWidth(field)
+			const cellWidth = runtimeWidth || column.width
+			const effectiveMinWidth = column.minWidth  // Only use explicit minWidth
 			const cellStyleProps = [
 				isFrozen ? `position: sticky` : '',
 				isFrozen ? `left: ${cumulativeOffset}px` : '',
 				isFrozen ? `z-index: 1` : '',
 				`text-align: ${align}`,
-				column.width ? `width: ${column.width}` : '',
+				cellWidth ? `width: ${cellWidth}` : '',
 				effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
 				column.maxWidth ? `max-width: ${column.maxWidth}` : ''
 			].filter(Boolean).join('; ')

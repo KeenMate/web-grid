@@ -69,6 +69,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Override "No options" and "Searching..." messages per column
   - Falls back to `grid.labels.dropdownNoOptions` / `dropdownSearching` if not specified
   - Reactive: updates when column definition changes (useful for i18n)
+- **Resizable Columns** - Drag column header edges to resize columns (Excel-style)
+  - Drag the resize handle between column headers to adjust width
+  - Per-column opt-out via `column.resizable = false`
+  - Respects `column.minWidth` and `column.maxWidth` constraints
+  - `oncolumnresize` callback fired after resize with `{ field, oldWidth, newWidth, allWidths }`
+  - Optional localStorage persistence via `gridName` + `persistColumnWidths` properties
+  - Programmatic API: `setColumnWidth(field, width)`, `setColumnWidths(widths)`, `getColumnWidthsState()`
+  - Visual column separators between headers (`--wg-header-separator` CSS variable)
 - **Showcase: Row Locking Feature Page** - New `/features/row-locking` page with live demos
   - Property-based locking (lockedMember, lockInfoMember)
   - Callback-based locking (getLockInfoCallback)

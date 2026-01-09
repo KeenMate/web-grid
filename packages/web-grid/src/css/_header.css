@@ -13,9 +13,15 @@
   font-weight: var(--wg-header-font-weight);
   padding: var(--wg-header-padding);
   border-bottom: var(--wg-header-border);
+  border-right: var(--wg-header-separator);  /* Column separator */
   box-sizing: border-box;  /* Include padding in width calculation */
   text-align: left;
   user-select: none;
+}
+
+/* Remove separator from last header */
+.wg__header:last-child {
+  border-right: none;
 }
 
 .wg__header--sortable {

@@ -194,6 +194,8 @@ export type Column<T> = {
 	validationTooltipCallback?: (context: ValidationTooltipContext<T>) => string | null
 	// Freeze panes - column sticks to left side during horizontal scroll
 	frozen?: boolean
+	// Resizable - allow column width to be changed by dragging (default: true)
+	resizable?: boolean
 }
 
 // Context for validation tooltip callback
@@ -431,6 +433,10 @@ export type QuickGridProps<T> = {
 	onrowaction?: (detail: RowActionClickDetail<T>) => void  // Deprecated: use ontoolbarclick
 	ondatarequest?: (detail: DataRequestDetail) => void  // Fires when sort/page changes
 	onrowdelete?: (detail: { rowIndex: number; row: T }) => void  // Ctrl+Delete pressed on a row
+	// Column resize & persistence
+	gridName?: string                                    // Unique name for localStorage persistence
+	persistColumnWidths?: boolean                        // Persist column widths to localStorage (requires gridName)
+	oncolumnresize?: (detail: ColumnResizeDetail) => void  // Fired when column is resized
 }
 
 // =============================================================================
@@ -597,4 +603,28 @@ export type RowLockChangeDetail<T> = {
 	rowIndex: number
 	lockInfo: RowLockInfo | null
 	source: 'property' | 'callback' | 'external'
+}
+
+// =============================================================================
+// Column Resize & Persistence Types
+// =============================================================================
+
+// Width state for a single column
+export type ColumnWidthState = {
+	field: string
+	width: string
+}
+
+// Persisted grid state (stored in localStorage)
+export type GridPersistenceState = {
+	columnWidths: ColumnWidthState[]
+	// Future: columnOrder, hidden columns, etc.
+}
+
+// Detail passed to oncolumnresize callback
+export type ColumnResizeDetail = {
+	field: string
+	oldWidth: string
+	newWidth: string
+	allWidths: ColumnWidthState[]  // Same format as localStorage - can be sent to server
 }

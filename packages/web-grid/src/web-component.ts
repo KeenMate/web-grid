@@ -33,7 +33,9 @@ import type {
 	GridLabels,
 	RowLockInfo,
 	RowLockingOptions,
-	RowLockChangeDetail
+	RowLockChangeDetail,
+	ColumnResizeDetail,
+	ColumnWidthState
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -126,6 +128,7 @@ import {
 } from './modules/scroll/index.js'
 
 import { handleSortClick, handlePaginationClick, handlePageSizeChange } from './modules/events/index.js'
+import { handleResizeStart } from './modules/resize/index.js'
 
 import type { GridContext } from './modules/types.js'
 
@@ -258,6 +261,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// ==========================================================================
 
 	connectedCallback(): void {
+		// Load persisted column widths before initial render
+		if (this.grid.gridName && this.grid.persistColumnWidths) {
+			this.grid.loadPersistedWidths()
+		}
 		this.render()
 		// Register paste handler for navigate mode
 		this.addEventListener('paste', this.handlePaste as EventListener)
@@ -518,6 +525,37 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get onrowlockchange(): ((detail: RowLockChangeDetail<T>) => void) | undefined { return this.grid.onrowlockchange }
 	set onrowlockchange(value: ((detail: RowLockChangeDetail<T>) => void) | undefined) { this.grid.onrowlockchange = value }
 
+	// Column resize & persistence
+	get gridName(): string | null { return this.grid.gridName }
+	set gridName(value: string | null) {
+		this.grid.gridName = value
+		// Load persisted widths if both gridName and persistColumnWidths are set
+		this.tryLoadPersistedWidths()
+	}
+
+	get persistColumnWidths(): boolean { return this.grid.persistColumnWidths }
+	set persistColumnWidths(value: boolean) {
+		this.grid.persistColumnWidths = value
+		// Load persisted widths if both gridName and persistColumnWidths are set
+		this.tryLoadPersistedWidths()
+	}
+
+	/**
+	 * Try to load persisted column widths if conditions are met
+	 */
+	private tryLoadPersistedWidths(): void {
+		if (this.grid.gridName && this.grid.persistColumnWidths) {
+			this.grid.loadPersistedWidths()
+			// Re-render if we're connected to DOM
+			if (this.isConnected) {
+				this.render()
+			}
+		}
+	}
+
+	get oncolumnresize(): ((detail: ColumnResizeDetail) => void) | undefined { return this.grid.oncolumnresize }
+	set oncolumnresize(value: ((detail: ColumnResizeDetail) => void) | undefined) { this.grid.oncolumnresize = value }
+
 	// Virtual scroll
 	get virtualScroll(): boolean { return this.grid.virtualScroll }
 	set virtualScroll(value: boolean) { this.grid.virtualScroll = value }
@@ -575,6 +613,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	// Edit permission check
 	canEditCell(rowIndex: number, field: string): boolean { return this.grid.canEditCell(rowIndex, field) }
+
+	// Column width methods
+	setColumnWidth(field: string, width: string): void { this.grid.setColumnWidth(field, width) }
+	setColumnWidths(widths: ColumnWidthState[]): void { this.grid.setColumnWidths(widths) }
+	getColumnWidthsState(): ColumnWidthState[] { return this.grid.getColumnWidthsState() }
 
 	// Public methods for focus and editing
 	/**
@@ -1562,10 +1605,26 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
+		// Column resize handle mousedown
+		table.addEventListener('mousedown', (e: Event) => {
+			const target = e.target as HTMLElement
+			const resizeHandle = target.closest('.wg__resize-handle') as HTMLElement
+			if (resizeHandle) {
+				e.preventDefault()
+				e.stopPropagation()
+				const field = resizeHandle.dataset.field
+				if (field) {
+					handleResizeStart(this, e as MouseEvent, field)
+				}
+			}
+		})
+
 		// Header click for sorting
 		table.addEventListener('click', (e: Event) => {
 			const mouseEvent = e as MouseEvent
 			const target = mouseEvent.target as HTMLElement
+			// Skip if clicking on resize handle (resize handles sorting via mousedown)
+			if (target.closest('.wg__resize-handle')) return
 			const header = target.closest('.wg__header--sortable') as HTMLElement
 			if (header) {
 				handleSortClick(this, mouseEvent)

@@ -1,0 +1,78 @@
+/* ==============================================================================
+   COLUMN RESIZE
+   ==============================================================================
+   Resize handles for column width adjustment
+*/
+
+/* Header needs position:relative for absolute positioning of resize handle */
+.wg__header {
+  position: relative;  /* Adds to existing sticky positioning in _header.css */
+}
+
+/* Resize handle - invisible by default, appears on hover */
+.wg__resize-handle {
+  position: absolute;
+  top: 0;
+  right: var(--wg-resize-handle-offset);
+  bottom: 0;
+  width: var(--wg-resize-handle-width);
+  cursor: col-resize;
+  z-index: 2;  /* Above header content but below frozen column headers */
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+/* Show resize handle on header hover */
+.wg__header:hover .wg__resize-handle {
+  opacity: 1;
+}
+
+/* Visual indicator line */
+.wg__resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 25%;
+  bottom: 25%;
+  left: 50%;
+  width: var(--wg-resize-handle-line-width);
+  background: var(--wg-resize-handle-color);
+  transform: translateX(-50%);
+  border-radius: 1px;
+}
+
+/* Hover state - more prominent */
+.wg__resize-handle:hover::after {
+  background: var(--wg-resize-handle-active-color);
+  top: 15%;
+  bottom: 15%;
+}
+
+/* Active state during drag */
+.wg__resize-handle--active::after {
+  background: var(--wg-resize-handle-active-color);
+  top: 0;
+  bottom: 0;
+}
+
+/* Keep handle visible during drag */
+.wg--resizing .wg__resize-handle {
+  opacity: 1;
+}
+
+/* Prevent text selection during resize */
+.wg--resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+/* Override all cell cursors during resize */
+.wg--resizing .wg__cell,
+.wg--resizing .wg__header {
+  cursor: col-resize;
+}
+
+/* Allow table to shrink during resize */
+.wg--resizing .wg__table {
+  width: auto !important;
+  min-width: 0 !important;
+}

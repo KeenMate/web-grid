@@ -32,7 +32,10 @@ import type {
 	GridLabels,
 	RowLockInfo,
 	RowLockingOptions,
-	RowLockChangeDetail
+	RowLockChangeDetail,
+	ColumnWidthState,
+	ColumnResizeDetail,
+	GridPersistenceState
 } from './types.js'
 
 // Default labels (English)
@@ -113,6 +116,12 @@ export class WebGrid<T = unknown> {
 	protected _rowLocking: RowLockingOptions<T> | undefined = undefined
 	protected _externalLocks: Map<unknown, RowLockInfo> = new Map()
 	protected _onrowlockchange: ((detail: RowLockChangeDetail<T>) => void) | undefined = undefined
+
+	// Column resize & persistence
+	protected _gridName: string | null = null
+	protected _persistColumnWidths: boolean = false
+	protected _columnWidths: Map<string, string> = new Map()  // Runtime width overrides
+	protected _oncolumnresize: ((detail: ColumnResizeDetail) => void) | undefined = undefined
 
 	// ==========================================================================
 	// Callbacks
@@ -679,6 +688,22 @@ export class WebGrid<T = unknown> {
 	get onrowlockchange(): ((detail: RowLockChangeDetail<T>) => void) | undefined { return this._onrowlockchange }
 	set onrowlockchange(value: ((detail: RowLockChangeDetail<T>) => void) | undefined) {
 		this._onrowlockchange = value
+	}
+
+	// Column resize & persistence
+	get gridName(): string | null { return this._gridName }
+	set gridName(value: string | null) {
+		this._gridName = value
+	}
+
+	get persistColumnWidths(): boolean { return this._persistColumnWidths }
+	set persistColumnWidths(value: boolean) {
+		this._persistColumnWidths = value
+	}
+
+	get oncolumnresize(): ((detail: ColumnResizeDetail) => void) | undefined { return this._oncolumnresize }
+	set oncolumnresize(value: ((detail: ColumnResizeDetail) => void) | undefined) {
+		this._oncolumnresize = value
 	}
 
 	// ==========================================================================
@@ -1403,6 +1428,89 @@ export class WebGrid<T = unknown> {
 			case 'block':
 			default:
 				return false
+		}
+	}
+
+	// ==========================================================================
+	// Column Width Management
+	// ==========================================================================
+
+	/**
+	 * Get runtime column width override (or undefined if using column definition)
+	 */
+	getColumnWidth(field: string): string | undefined {
+		return this._columnWidths.get(field)
+	}
+
+	/**
+	 * Set runtime column width override
+	 */
+	setColumnWidth(field: string, width: string): void {
+		this._columnWidths.set(field, width)
+		this.requestUpdate()
+	}
+
+	/**
+	 * Set multiple column widths at once (for restoring saved state)
+	 * Accepts the same format as oncolumnresize.allWidths
+	 */
+	setColumnWidths(widths: ColumnWidthState[]): void {
+		for (const { field, width } of widths) {
+			if (field && width) {
+				this._columnWidths.set(field, width)
+			}
+		}
+		this.requestUpdate()
+	}
+
+	/**
+	 * Get all column widths state (for persistence/callback)
+	 */
+	getColumnWidthsState(): ColumnWidthState[] {
+		return this._columns.map(column => {
+			const field = String(column.field)
+			const width = this._columnWidths.get(field) || column.width || ''
+			return { field, width }
+		}).filter(cw => cw.width)  // Only include columns with widths
+	}
+
+	/**
+	 * Load column widths from localStorage
+	 */
+	loadPersistedWidths(): void {
+		if (!this._gridName || typeof localStorage === 'undefined') return
+
+		try {
+			const key = `wg-${this._gridName}-state`
+			const stored = localStorage.getItem(key)
+			if (!stored) return
+
+			const state: GridPersistenceState = JSON.parse(stored)
+			if (state.columnWidths) {
+				this._columnWidths.clear()
+				for (const cw of state.columnWidths) {
+					this._columnWidths.set(cw.field, cw.width)
+				}
+			}
+		} catch (e) {
+			console.warn('WebGrid: Failed to load persisted column widths', e)
+		}
+	}
+
+	/**
+	 * Save column widths to localStorage
+	 */
+	savePersistedWidths(): void {
+		if (!this._gridName || typeof localStorage === 'undefined') return
+
+		try {
+			const key = `wg-${this._gridName}-state`
+			const state: GridPersistenceState = {
+				columnWidths: this.getColumnWidthsState()
+			}
+			localStorage.setItem(key, JSON.stringify(state))
+		} catch (e) {
+			console.warn('WebGrid: Failed to save persisted column widths', e)
 		}
 	}
 }

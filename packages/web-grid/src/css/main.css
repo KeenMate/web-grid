@@ -25,6 +25,7 @@
 @import '_variables.css';
 @import '_table.css';
 @import '_header.css';
+@import '_resize.css';
 @import '_freeze.css';
 @import '_cells.css';
 @import '_row-locking.css';
