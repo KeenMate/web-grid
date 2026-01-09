@@ -66,6 +66,37 @@
         </div>
 
         <div class="card">
+            <h2>With Frozen Panes</h2>
+            <p>Resizable columns work with frozen panes. Frozen columns stay in place while you resize them or scroll horizontally.</p>
+
+            <div class="controls">
+                <label>
+                    Freeze Columns:
+                    <select id="freezeColumns">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                    </select>
+                </label>
+                <label>
+                    <input type="checkbox" id="stickyRowNumbers" checked> Sticky Row Numbers
+                </label>
+            </div>
+
+            <web-grid id="gridFrozen" style="max-width: 100%; max-height: 400px;"></web-grid>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Combining Features</div>
+                <ul>
+                    <li>Frozen columns can be resized - the sticky positioning adapts to the new width</li>
+                    <li>Resizing a frozen column updates the left offset of subsequent frozen columns</li>
+                    <li>Scroll horizontally to see frozen columns stay in place</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
             <h2>Configuration Options</h2>
 
             <div class="grid-2">
@@ -233,6 +264,55 @@
         grid3.showRowNumbers = true
         grid3.striped = true
         grid3.hoverable = true
+
+        // Grid 4 - Frozen panes + resizable columns
+        const wideData = Array.from({ length: 50 }, (_, i) => ({
+            id: 1000 + i,
+            name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
+            email: `user${i}@example.com`,
+            department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+            role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
+            location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
+            salary: 50000 + (i * 1000),
+            startDate: `202${i % 4}-0${(i % 9) + 1}-${10 + (i % 20)}`,
+            status: i % 7 === 0 ? 'On Leave' : 'Active',
+            phone: `555-${String(i).padStart(4, '0')}`,
+            building: `Building ${String.fromCharCode(65 + (i % 5))}`,
+            floor: (i % 10) + 1
+        }))
+
+        const wideColumns = [
+            { field: 'id', title: 'ID', width: '80px', minWidth: '50px' },
+            { field: 'name', title: 'Name', width: '150px', minWidth: '80px' },
+            { field: 'email', title: 'Email', width: '200px', minWidth: '100px' },
+            { field: 'department', title: 'Department', width: '120px' },
+            { field: 'role', title: 'Role', width: '100px' },
+            { field: 'location', title: 'Location', width: '120px' },
+            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'startDate', title: 'Start Date', width: '110px' },
+            { field: 'status', title: 'Status', width: '100px' },
+            { field: 'phone', title: 'Phone', width: '120px' },
+            { field: 'building', title: 'Building', width: '100px' },
+            { field: 'floor', title: 'Floor', width: '60px' }
+        ]
+
+        const gridFrozen = document.getElementById('gridFrozen')
+        gridFrozen.items = wideData
+        gridFrozen.columns = wideColumns
+        gridFrozen.showRowNumbers = true
+        gridFrozen.stickyRowNumbers = true
+        gridFrozen.freezeColumns = 2
+        gridFrozen.striped = true
+        gridFrozen.hoverable = true
+
+        // Controls for frozen grid
+        document.getElementById('freezeColumns').addEventListener('change', e => {
+            gridFrozen.freezeColumns = parseInt(e.target.value)
+        })
+
+        document.getElementById('stickyRowNumbers').addEventListener('change', e => {
+            gridFrozen.stickyRowNumbers = e.target.checked
+        })
     </script>
 </body>
 </html>

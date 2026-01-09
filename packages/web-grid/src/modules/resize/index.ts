@@ -118,6 +118,11 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 
 	// Also update all body cells in this column for visual feedback
 	updateAllColumnCells(activeContext, resizeState.field, `${newWidth}px`)
+
+	// Update frozen column offsets if we have frozen columns
+	if (activeContext.grid.freezeColumns > 0 || activeContext.grid.stickyRowNumbers) {
+		updateFrozenColumnOffsets(activeContext)
+	}
 }
 
 /**
@@ -190,6 +195,43 @@ function updateAllColumnCells<T>(ctx: GridContext<T>, field: string, width: stri
 	cells.forEach(cell => {
 		cell.style.width = width
 	})
+}
+
+// Row number column width (must match CSS)
+const ROW_NUMBER_COLUMN_WIDTH = 40
+
+/**
+ * Update frozen column left offsets during resize
+ * Recalculates cumulative offsets based on current widths
+ */
+function updateFrozenColumnOffsets<T>(ctx: GridContext<T>): void {
+	const frozenCount = ctx.grid.freezeColumns
+	const hasRowNumbers = ctx.grid.showRowNumbers && ctx.grid.stickyRowNumbers
+	let offset = hasRowNumbers ? ROW_NUMBER_COLUMN_WIDTH : 0
+
+	// Get visual columns (already sorted with frozen first)
+	const visualColumns = ctx.grid.visualColumns
+
+	// Update each frozen column's left position
+	for (let i = 0; i < frozenCount && i < visualColumns.length; i++) {
+		const { column } = visualColumns[i]
+		const field = String(column.field)
+
+		// Update header and body cells with same offset
+		const header = ctx.shadow.querySelector(`th[data-field="${field}"]`) as HTMLElement
+		if (header) {
+			header.style.left = `${offset}px`
+
+			// Update all body cells in this column
+			const cells = ctx.shadow.querySelectorAll(`td[data-field="${field}"]`) as NodeListOf<HTMLElement>
+			cells.forEach(cell => {
+				cell.style.left = `${offset}px`
+			})
+
+			// Increment offset for next column
+			offset += header.getBoundingClientRect().width
+		}
+	}
 }
 
 /**

@@ -71,8 +71,7 @@
   cursor: col-resize;
 }
 
-/* Allow table to shrink during resize */
+/* Allow table to shrink during resize (only override min-width, not width) */
 .wg--resizing .wg__table {
-  width: auto !important;
   min-width: 0 !important;
 }
