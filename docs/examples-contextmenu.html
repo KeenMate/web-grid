@@ -116,7 +116,7 @@
         <header>
             <a href="index.html" class="back-link">← Back to Examples</a>
             <h1>Context Menu</h1>
-            <p class="subtitle">Right-click context menus with dynamic items, conditional visibility, and cell awareness</p>
+            <p class="subtitle">Right-click context menus for cells and column headers with dynamic items and conditional visibility</p>
         </header>
 
         <div id="actionMessage" class="action-message hidden"></div>
@@ -221,6 +221,70 @@
             </div>
             <web-grid id="grid3" striped hoverable style="max-width: 100%; max-height: 250px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
+
+        <div class="card">
+            <h2>Header Context Menu</h2>
+            <p style="color: #666; margin-bottom: 1rem;">
+                Right-click on column headers to access column-specific actions like sorting, freezing, and hiding.
+                Supports predefined actions (string shortcuts) and custom items.
+            </p>
+            <web-grid id="gridHeader" striped hoverable style="max-width: 800px; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+
+            <div id="headerMenuLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                Right-click a column header to see the context menu...
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h2>Header Context Menu API</h2>
+                <h3>Grid Properties</h3>
+                <table class="props-table">
+                    <tr><td><code>headerContextMenu</code></td><td>Array of predefined strings or item configs</td></tr>
+                    <tr><td><code>onheadercontextmenuopen</code></td><td>Callback fired when header menu opens</td></tr>
+                </table>
+
+                <h3 style="margin-top: 1rem;">Predefined Actions</h3>
+                <table class="props-table">
+                    <tr><td><code>'sortAsc'</code></td><td>Sort ascending</td></tr>
+                    <tr><td><code>'sortDesc'</code></td><td>Sort descending</td></tr>
+                    <tr><td><code>'clearSort'</code></td><td>Clear sort (auto-hides if not sorted)</td></tr>
+                    <tr><td><code>'hideColumn'</code></td><td>Remove column from grid</td></tr>
+                    <tr><td><code>'freezeColumn'</code></td><td>Freeze up to this column</td></tr>
+                    <tr><td><code>'unfreezeColumn'</code></td><td>Unfreeze this column</td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>HeaderMenuContext</h2>
+                <p>The context passed to header menu callbacks:</p>
+                <table class="props-table">
+                    <tr><td><code>column</code></td><td>The column definition</td></tr>
+                    <tr><td><code>field</code></td><td>Column field name</td></tr>
+                    <tr><td><code>columnIndex</code></td><td>Index of the column</td></tr>
+                    <tr><td><code>sortDirection</code></td><td>'asc' | 'desc' | null</td></tr>
+                    <tr><td><code>isFrozen</code></td><td>Whether column is frozen</td></tr>
+                </table>
+
+                <div class="code-block" style="margin-top: 1rem;">
+                    <pre>grid.headerContextMenu = [
+    'sortAsc',
+    'sortDesc',
+    'clearSort',
+    { dividerBefore: true },
+    'freezeColumn',
+    'unfreezeColumn',
+    { dividerBefore: true },
+    {
+        id: 'export',
+        label: (ctx) => `Export ${ctx.field}`,
+        icon: '📊',
+        onclick: (ctx) => exportColumn(ctx.field)
+    }
+]</pre>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Currency Conversion Dialog -->
@@ -239,14 +303,14 @@
         const USD_TO_EUR = 0.92
 
         let products = [
-            { id: 1, name: 'Laptop Pro', category: 'Electronics', price: 1299, stock: 15, active: true },
-            { id: 2, name: 'Wireless Mouse', category: 'Electronics', price: 49, stock: 120, active: true },
-            { id: 3, name: 'Office Chair', category: 'Furniture', price: 299, stock: 8, active: true },
-            { id: 4, name: 'Standing Desk', category: 'Furniture', price: 599, stock: 3, active: false },
-            { id: 5, name: 'Monitor 27"', category: 'Electronics', price: 449, stock: 22, active: true },
-            { id: 6, name: 'Keyboard RGB', category: 'Electronics', price: 89, stock: 65, active: true },
-            { id: 7, name: 'Desk Lamp', category: 'Furniture', price: 45, stock: 0, active: false },
-            { id: 8, name: 'Webcam HD', category: 'Electronics', price: 79, stock: 34, active: true }
+            { id: 1, name: 'Laptop Pro', category: 'Electronics', price: 1299, stock: 15, active: true, sku: 'LP-001', supplier: 'TechCorp', weight: 2.1, rating: 4.8, discount: 0 },
+            { id: 2, name: 'Wireless Mouse', category: 'Electronics', price: 49, stock: 120, active: true, sku: 'WM-002', supplier: 'PeripheralsInc', weight: 0.1, rating: 4.5, discount: 10 },
+            { id: 3, name: 'Office Chair', category: 'Furniture', price: 299, stock: 8, active: true, sku: 'OC-003', supplier: 'ComfortSeating', weight: 15.0, rating: 4.2, discount: 0 },
+            { id: 4, name: 'Standing Desk', category: 'Furniture', price: 599, stock: 3, active: false, sku: 'SD-004', supplier: 'ErgoWorks', weight: 35.0, rating: 4.7, discount: 15 },
+            { id: 5, name: 'Monitor 27"', category: 'Electronics', price: 449, stock: 22, active: true, sku: 'MN-005', supplier: 'DisplayTech', weight: 5.5, rating: 4.6, discount: 5 },
+            { id: 6, name: 'Keyboard RGB', category: 'Electronics', price: 89, stock: 65, active: true, sku: 'KB-006', supplier: 'PeripheralsInc', weight: 0.8, rating: 4.4, discount: 0 },
+            { id: 7, name: 'Desk Lamp', category: 'Furniture', price: 45, stock: 0, active: false, sku: 'DL-007', supplier: 'LightingPro', weight: 1.2, rating: 3.9, discount: 20 },
+            { id: 8, name: 'Webcam HD', category: 'Electronics', price: 79, stock: 34, active: true, sku: 'WC-008', supplier: 'TechCorp', weight: 0.2, rating: 4.3, discount: 0 }
         ]
 
         // Message display
@@ -502,6 +566,61 @@
             grid3.contextMenuYOffset = parseInt(yOffsetSlider.value)
             yOffsetValue.textContent = yOffsetSlider.value
         })
+
+        // =============================================================
+        // Header Context Menu Grid
+        // =============================================================
+
+        const headerColumns = [
+            { field: 'id', title: 'ID', width: '60px', align: 'center', sortable: false },  // Not sortable - sort options hidden in context menu
+            { field: 'sku', title: 'SKU', width: '90px', sortable: true },
+            { field: 'name', title: 'Product Name', width: '160px', sortable: true },
+            { field: 'category', title: 'Category', sortable: true, width: '120px' },
+            { field: 'supplier', title: 'Supplier', width: '140px', sortable: true },
+            { field: 'price', title: 'Price', width: '100px', align: 'right', sortable: true, formatCallback: (v) => `$${v.toFixed(2)}` },
+            { field: 'discount', title: 'Discount', width: '90px', align: 'center', sortable: true, formatCallback: (v) => v > 0 ? `${v}%` : '-' },
+            { field: 'stock', title: 'Stock', width: '80px', align: 'center', sortable: true },
+            { field: 'weight', title: 'Weight', width: '90px', align: 'right', sortable: true, formatCallback: (v) => `${v} kg` },
+            { field: 'rating', title: 'Rating', width: '80px', align: 'center', sortable: true, formatCallback: (v) => `★ ${v}` },
+            { field: 'active', title: 'Status', width: '90px', align: 'center', formatCallback: (v) => v ? '✓ Active' : '✗ Inactive' }
+        ]
+
+        // Store original columns for "Show All Columns"
+        const originalHeaderColumns = [...headerColumns]
+
+        const gridHeader = document.getElementById('gridHeader')
+        gridHeader.items = products
+        gridHeader.columns = headerColumns
+        gridHeader.sortMode = 'multi'
+
+        // Header context menu with predefined and custom actions
+        gridHeader.headerContextMenu = [
+            'sortAsc',
+            'sortDesc',
+            'clearSort',
+            { dividerBefore: true },
+            'freezeColumn',
+            'unfreezeColumn',
+            { dividerBefore: true },
+            'columnVisibility',  // Submenu with all columns - toggle visibility
+            'hideColumn',
+            { dividerBefore: true },
+            {
+                id: 'exportColumn',
+                label: (ctx) => `Export "${ctx.column.title}" Data`,
+                icon: '📊',
+                onclick: (ctx) => {
+                    const values = products.map(p => p[ctx.field])
+                    showMessage(`Would export ${values.length} values from "${ctx.column.title}"`)
+                }
+            }
+        ]
+
+        // Log header context menu events
+        gridHeader.onheadercontextmenuopen = (ctx) => {
+            document.getElementById('headerMenuLog').innerHTML =
+                `<strong>Menu opened:</strong> ${ctx.column.title} (field: "${ctx.field}", index: ${ctx.columnIndex}, frozen: ${ctx.isFrozen}, sort: ${ctx.sortDirection || 'none'})`
+        }
     </script>
 </body>
 </html>

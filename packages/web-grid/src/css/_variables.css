@@ -286,8 +286,8 @@
   /* ==========================================================================
      COLUMN RESIZE
      ========================================================================== */
-  --wg-resize-handle-width: 8px;
-  --wg-resize-handle-offset: -4px;  /* Centered on column border */
+  --wg-resize-handle-width: 12px;
+  --wg-resize-handle-offset: -6px;  /* Centered on column border */
   --wg-resize-handle-line-width: 2px;
   --wg-resize-handle-color: var(--wg-border-color);
   --wg-resize-handle-active-color: var(--wg-accent-color);

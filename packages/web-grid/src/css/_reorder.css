@@ -4,15 +4,18 @@
    Drag-and-drop column reordering styles
 */
 
-/* Dragging header - reduced opacity */
+/* Dragging header - use dashed outline instead of opacity to avoid showing body data through */
 .wg__header--dragging {
-  opacity: 0.5;
+  opacity: 1;
+  background: var(--wg-header-bg) !important;
+  outline: 2px dashed var(--wg-accent-color);
+  outline-offset: -2px;
 }
 
-/* Ghost element that follows cursor */
+/* Ghost element that follows cursor - fixed to viewport for simplicity */
 .wg__reorder-ghost {
-  position: absolute;
-  z-index: 1000;
+  position: fixed;
+  z-index: 10000;
   background: var(--wg-header-bg);
   border: 2px solid var(--wg-accent-color);
   border-radius: var(--wg-border-radius-sm);
@@ -26,11 +29,9 @@
   white-space: nowrap;
 }
 
-/* Drop indicator line */
+/* Drop indicator line - top/height set dynamically to account for scroll */
 .wg__drop-indicator {
   position: absolute;
-  top: 0;
-  bottom: 0;
   width: 3px;
   background: var(--wg-accent-color);
   z-index: 999;

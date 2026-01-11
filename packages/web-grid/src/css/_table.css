@@ -33,13 +33,36 @@ web-grid:not(:defined) {
    TABLE
    ============================================================================== */
 .wg__table {
-  width: max-content;
-  min-width: max-content;  /* Prevent columns from shrinking below their specified widths */
+  width: 100%;
+  min-width: max-content;  /* Expand beyond container if columns are wide */
   border-collapse: collapse;
   table-layout: fixed;
   background: var(--wg-table-bg);
   font-size: var(--wg-font-size-base);
   line-height: var(--wg-line-height-base);
+}
+
+/* Filler column - absorbs extra space so data columns keep exact widths */
+.wg__filler {
+  width: auto;
+  min-width: 0;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Filler header matches header row - needs same sticky behavior */
+th.wg__filler {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--wg-header-bg);
+  border-bottom: var(--wg-header-border) !important;
+}
+
+/* Filler body cells are transparent */
+td.wg__filler {
+  background: transparent;
 }
 
 /* ==============================================================================

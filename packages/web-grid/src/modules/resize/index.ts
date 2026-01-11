@@ -78,8 +78,12 @@ export function handleResizeStart<T>(ctx: GridContext<T>, e: MouseEvent, field: 
 
 	activeContext = ctx as GridContext
 
-	// Clear min-width on header cell to allow free resizing
-	headerCell.style.minWidth = ''
+	// Set min-width to actual column minWidth (not initial width which might be larger)
+	if (column.minWidth) {
+		headerCell.style.minWidth = column.minWidth
+	} else {
+		headerCell.style.minWidth = `${resizeState.minWidth}px`
+	}
 
 	// Add resizing class to grid container
 	const container = ctx.shadow.querySelector('.wg')
@@ -114,6 +118,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	// Apply width to header cell immediately for visual feedback
 	if (resizeState.headerCell) {
 		resizeState.headerCell.style.width = `${newWidth}px`
+		resizeState.headerCell.style.maxWidth = `${newWidth}px`
 	}
 
 	// Also update all body cells in this column for visual feedback
@@ -144,8 +149,14 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	}
 	const newWidthStr = `${newWidth}px`
 
-	// Store the width in grid state
-	ctx.grid.setColumnWidth(field, newWidthStr)
+	// Store the width in grid state (skip re-render since we already updated inline styles)
+	ctx.grid.setColumnWidth(field, newWidthStr, true)
+
+	// Update the <col> element in colgroup for table-layout: fixed
+	const col = ctx.shadow.querySelector(`col[data-field="${field}"]`) as HTMLElement
+	if (col) {
+		col.style.width = newWidthStr
+	}
 
 	// Remove resizing class
 	const container = ctx.shadow.querySelector('.wg')
@@ -194,6 +205,7 @@ function updateAllColumnCells<T>(ctx: GridContext<T>, field: string, width: stri
 	const cells = ctx.shadow.querySelectorAll(`td[data-field="${field}"]`) as NodeListOf<HTMLElement>
 	cells.forEach(cell => {
 		cell.style.width = width
+		cell.style.maxWidth = width
 	})
 }
 

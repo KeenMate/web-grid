@@ -12,6 +12,8 @@ import type {
 	ToolbarClickDetail,
 	RowActionClickDetail,
 	ContextMenuContext,
+	HeaderMenuConfig,
+	HeaderMenuContext,
 	EditTrigger,
 	EditStartSelection,
 	EditingCell,
@@ -64,7 +66,19 @@ const DEFAULT_LABELS: GridLabels = {
 
 	// Dropdown
 	dropdownNoOptions: 'No options',
-	dropdownSearching: 'Searching...'
+	dropdownSearching: 'Searching...',
+
+	// Context menu
+	contextMenu: {
+		sortAsc: 'Sort Ascending',
+		sortDesc: 'Sort Descending',
+		clearSort: 'Clear Sort',
+		hideColumn: 'Hide Column',
+		freezeColumn: 'Freeze Column',
+		unfreezeColumn: 'Unfreeze Column',
+		columnVisibility: 'Column Visibility',
+		showAll: 'Show all'
+	}
 }
 
 /**
@@ -109,6 +123,7 @@ export class WebGrid<T = unknown> {
 	protected _contextMenu: ContextMenuItem<T>[] | undefined = undefined
 	protected _contextMenuXOffset: number = 8
 	protected _contextMenuYOffset: number = 0
+	protected _headerContextMenu: HeaderMenuConfig<T>[] | undefined = undefined
 	protected _rowShortcuts: RowShortcut<T>[] | undefined = undefined
 	protected _showShortcutsHelp: boolean = false
 	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
@@ -151,6 +166,7 @@ export class WebGrid<T = unknown> {
 	protected _ontoolbarclick: ((detail: ToolbarClickDetail<T>) => void) | undefined
 	protected _onrowaction: ((detail: RowActionClickDetail<T>) => void) | undefined
 	protected _oncontextmenuopen: ((context: ContextMenuContext<T>) => void) | undefined
+	protected _onheadercontextmenuopen: ((context: HeaderMenuContext<T>) => void) | undefined
 	protected _ondatarequest: ((detail: DataRequestDetail) => void) | undefined
 	protected _onrowdelete: ((detail: { rowIndex: number; row: T }) => void) | undefined
 
@@ -363,9 +379,13 @@ export class WebGrid<T = unknown> {
 		const normalCols: Array<{ column: Column<T>; originalIndex: number }> = []
 
 		// First, separate explicitly frozen columns (column.frozen = true)
-		const explicitlyFrozenCount = this._columns.filter(c => c.frozen).length
+		// Skip hidden columns entirely
+		const explicitlyFrozenCount = this._columns.filter(c => c.frozen && !c.hidden).length
 
 		this._columns.forEach((column, index) => {
+			// Skip hidden columns
+			if (column.hidden) return
+
 			const entry = { column, originalIndex: index }
 			if (column.frozen) {
 				// Explicitly frozen columns go first
@@ -492,6 +512,12 @@ export class WebGrid<T = unknown> {
 	get contextMenuYOffset(): number { return this._contextMenuYOffset }
 	set contextMenuYOffset(value: number) {
 		this._contextMenuYOffset = value
+	}
+
+	// Header context menu
+	get headerContextMenu(): HeaderMenuConfig<T>[] | undefined { return this._headerContextMenu }
+	set headerContextMenu(value: HeaderMenuConfig<T>[] | undefined) {
+		this._headerContextMenu = value
 	}
 
 	// Row keyboard shortcuts
@@ -701,6 +727,13 @@ export class WebGrid<T = unknown> {
 
 	set oncontextmenuopen(value: ((context: ContextMenuContext<T>) => void) | undefined) {
 		this._oncontextmenuopen = value
+	}
+
+	get onheadercontextmenuopen(): ((context: HeaderMenuContext<T>) => void) | undefined {
+		return this._onheadercontextmenuopen
+	}
+	set onheadercontextmenuopen(value: ((context: HeaderMenuContext<T>) => void) | undefined) {
+		this._onheadercontextmenuopen = value
 	}
 
 	get ondatarequest(): ((detail: DataRequestDetail) => void) | undefined {
@@ -1589,10 +1622,13 @@ export class WebGrid<T = unknown> {
 
 	/**
 	 * Set runtime column width override
+	 * @param skipRender - If true, don't trigger a re-render (useful during resize when DOM is already updated)
 	 */
-	setColumnWidth(field: string, width: string): void {
+	setColumnWidth(field: string, width: string, skipRender = false): void {
 		this._columnWidths.set(field, width)
-		this.requestUpdate()
+		if (!skipRender) {
+			this.requestUpdate()
+		}
 	}
 
 	/**

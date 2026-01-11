@@ -122,14 +122,12 @@ function createGhost<T>(ctx: GridContext<T>, headerCell: HTMLElement, e: MouseEv
 	ghost.className = 'wg__reorder-ghost'
 	ghost.textContent = headerCell.querySelector('.wg__header-title')?.textContent || ''
 
-	// Position near cursor (offset slightly so it doesn't block the cursor)
-	const containerRect = ctx.shadow.querySelector('.wg')?.getBoundingClientRect()
-	if (containerRect) {
-		ghost.style.left = `${e.clientX - containerRect.left + 10}px`
-		ghost.style.top = `${e.clientY - containerRect.top - 10}px`
-	}
+	// Position near cursor using viewport coordinates (ghost is position: fixed)
+	ghost.style.left = `${e.clientX + 10}px`
+	ghost.style.top = `${e.clientY - 10}px`
 
-	ctx.shadow.querySelector('.wg')?.appendChild(ghost)
+	// Append to shadow root (not .wg container) to avoid overflow clipping
+	ctx.shadow.appendChild(ghost)
 	reorderState.ghost = ghost
 }
 
@@ -192,11 +190,10 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	const container = activeContext.shadow.querySelector('.wg')
 	if (!container) return
 
-	// Move ghost to follow cursor
+	// Move ghost to follow cursor using viewport coordinates (ghost is position: fixed)
 	if (reorderState.ghost) {
-		const containerRect = container.getBoundingClientRect()
-		reorderState.ghost.style.left = `${e.clientX - containerRect.left + 10}px`
-		reorderState.ghost.style.top = `${e.clientY - containerRect.top - 10}px`
+		reorderState.ghost.style.left = `${e.clientX + 10}px`
+		reorderState.ghost.style.top = `${e.clientY - 10}px`
 	}
 
 	// Find drop target based on mouse position
@@ -257,9 +254,9 @@ function updateDropIndicator<T>(ctx: GridContext<T>, dropIndex: number): void {
 	const visualCols = ctx.grid.visualColumns
 	const frozenCount = ctx.grid.totalFrozenColumns
 	const nonFrozenCols = visualCols.slice(frozenCount)
-	const container = ctx.shadow.querySelector('.wg')
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	const containerRect = container?.getBoundingClientRect()
-	if (!containerRect) return
+	if (!containerRect || !container) return
 
 	let targetX: number
 
@@ -269,7 +266,7 @@ function updateDropIndicator<T>(ctx: GridContext<T>, dropIndex: number): void {
 		const lastHeader = ctx.shadow.querySelector(`th[data-field="${lastField}"]`) as HTMLElement
 		if (lastHeader) {
 			const rect = lastHeader.getBoundingClientRect()
-			targetX = rect.right - containerRect.left
+			targetX = rect.right - containerRect.left + container.scrollLeft
 		} else {
 			return
 		}
@@ -279,13 +276,19 @@ function updateDropIndicator<T>(ctx: GridContext<T>, dropIndex: number): void {
 		const header = ctx.shadow.querySelector(`th[data-field="${field}"]`) as HTMLElement
 		if (header) {
 			const rect = header.getBoundingClientRect()
-			targetX = rect.left - containerRect.left
+			targetX = rect.left - containerRect.left + container.scrollLeft
 		} else {
 			return
 		}
 	}
 
+	// Position indicator at visible area (accounting for scroll)
+	const scrollTop = container.scrollTop
+	const visibleHeight = container.clientHeight
+
 	indicator.style.left = `${targetX}px`
+	indicator.style.top = `${scrollTop}px`
+	indicator.style.height = `${visibleHeight}px`
 	indicator.style.display = 'block'
 }
 

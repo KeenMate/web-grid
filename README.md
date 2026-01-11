@@ -14,8 +14,9 @@ A lightweight, accessible data grid web component with sorting, filtering, inlin
 - **Keyboard Navigation** - Excel-like navigation with Enter, Tab, Arrow keys
 - **Row Toolbar** - Floating action buttons (add, delete, duplicate, move)
 - **Inline Actions Column** - Render toolbar buttons as a fixed table column
-- **Context Menu** - Right-click menus with custom actions
+- **Context Menu** - Right-click menus with custom actions for rows and headers
 - **Keyboard Shortcuts** - Custom grid-level shortcuts with help overlay
+- **Row Selection** - Multi-row selection via row numbers with range shortcuts
 - **Virtual Scrolling** - Efficient rendering for large datasets (10,000+ rows)
 - **Infinite Scroll** - Load more data as user scrolls
 - **Custom Styling** - Cell and row styling via callbacks
@@ -132,12 +133,22 @@ grid.toolbarPosition = 'right';  // 'auto' | 'left' | 'right' | 'top' | 'inline'
 grid.toolbarTrigger = 'hover';   // 'hover' | 'click' | 'button'
 grid.inlineActionsTitle = 'Actions';  // Header for inline mode
 
-// Context menu
-grid.contextMenu = [...];
+// Context menus
+grid.contextMenu = [...];        // Right-click on cells/rows
+grid.headerContextMenu = [...];  // Right-click on column headers
 
 // Keyboard shortcuts
 grid.rowShortcuts = [...];
+grid.rangeShortcuts = [...];  // Shortcuts for selected rows
 grid.showShortcutsHelp = true;
+
+// Row selection
+grid.selectedRows;            // Array of selected row indices (read-only)
+grid.selectRow(index, mode);  // mode: 'replace' | 'toggle' | 'range'
+grid.selectRowRange(from, to);
+grid.clearSelection();
+grid.isRowSelected(index);
+grid.getSelectedRowsData();
 
 // Virtual scroll
 grid.virtualScroll = true;
@@ -287,6 +298,11 @@ grid.rowLocking = {
 | `unlockRowById(id)` | Unlock row externally |
 | `updateRowById(id, data)` | Partial update row by ID |
 | `replaceRowById(id, row)` | Replace entire row by ID |
+| `selectRow(index, mode)` | Select row ('replace', 'toggle', 'range') |
+| `selectRowRange(from, to)` | Select range of rows |
+| `clearSelection()` | Clear all selected rows |
+| `isRowSelected(index)` | Check if row is selected |
+| `getSelectedRowsData()` | Get data for selected rows |
 
 ## Events
 
@@ -402,6 +418,32 @@ grid.contextMenu = [
 ]
 ```
 
+### Header Context Menu
+
+Right-click context menu for column headers with predefined actions:
+
+```javascript
+grid.headerContextMenu = [
+  'sortAsc',           // Sort ascending
+  'sortDesc',          // Sort descending
+  'clearSort',         // Clear sort (visible only if sorted)
+  { dividerBefore: true },
+  'freezeColumn',      // Freeze up to this column
+  'unfreezeColumn',    // Unfreeze this column
+  { dividerBefore: true },
+  'columnVisibility',  // Submenu to show/hide columns
+  'hideColumn',        // Hide this column
+  {
+    id: 'custom',
+    label: 'Custom Action',
+    icon: '⚡',
+    onclick: (ctx) => console.log('Column:', ctx.column.field)
+  }
+]
+
+// Labels are translatable via grid.labels.contextMenu.*
+```
+
 ### Custom Keyboard Shortcuts
 
 ```javascript
@@ -421,6 +463,53 @@ grid.rowShortcuts = [
 ]
 
 grid.showShortcutsHelp = true
+```
+
+### Row Selection
+
+Select multiple rows by clicking row numbers, then perform batch operations:
+
+```javascript
+// Enable row numbers (required for selection)
+grid.showRowNumbers = true
+
+// Selection interactions:
+// - Click row number → select (clears others)
+// - Ctrl+Click → toggle in selection
+// - Shift+Click → select range
+// - Click+Drag → select range while dragging
+// - Escape → clear selection
+
+// Define shortcuts for selected rows
+grid.rangeShortcuts = [
+  {
+    key: 'Delete',
+    id: 'delete-selected',
+    label: 'Delete selected rows',
+    action: ({ rows, rowIndices }) => {
+      // Delete from end to preserve indices
+      for (const idx of [...rowIndices].reverse()) {
+        grid.items.splice(idx, 1)
+      }
+      grid.items = [...grid.items]
+      grid.clearSelection()
+    }
+  },
+  {
+    key: 'Ctrl+Alt+E',
+    id: 'export-selected',
+    label: 'Export selected',
+    action: ({ rows }) => exportToCSV(rows)
+  }
+]
+
+// Programmatic selection
+grid.selectRow(5, 'replace')      // Select row 5
+grid.selectRow(7, 'toggle')       // Toggle row 7
+grid.selectRowRange(0, 4)         // Select rows 0-4
+console.log(grid.selectedRows)    // [0, 1, 2, 3, 4, 5, 7]
+console.log(grid.getSelectedRowsData())  // Array of row objects
+grid.clearSelection()
 ```
 
 ### Labels/i18n

@@ -13,15 +13,17 @@
   font-weight: var(--wg-header-font-weight);
   padding: var(--wg-header-padding);
   border-bottom: var(--wg-header-border);
-  border-right: var(--wg-header-separator);  /* Column separator */
+  /* Use box-shadow instead of border-right to avoid flicker with sticky + border-collapse */
+  box-shadow: inset -1px 0 0 var(--wg-border-color);
   box-sizing: border-box;  /* Include padding in width calculation */
   text-align: left;
   user-select: none;
+  overflow: hidden;  /* Required for text-overflow to work in table cells */
 }
 
 /* Remove separator from last header */
 .wg__header:last-child {
-  border-right: none;
+  box-shadow: none;
 }
 
 .wg__header--sortable {
@@ -46,6 +48,10 @@
 
 .wg__header-title {
   flex: 1;
+  min-width: 0;  /* Allow shrinking in flexbox */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Sort Indicator */

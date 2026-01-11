@@ -201,6 +201,8 @@ export type Column<T> = {
 	resizable?: boolean
 	// Fill direction - override grid-level fillDirection for this column
 	fillDirection?: FillDirection
+	// Hidden - column is not rendered but kept in columns array for visibility toggling
+	hidden?: boolean
 }
 
 // Context for validation tooltip callback
@@ -319,6 +321,43 @@ export type ContextMenuItem<T> = {
 }
 
 // =============================================================================
+// Header Context Menu Types
+// =============================================================================
+
+// Context passed to header context menu callbacks
+export type HeaderMenuContext<T> = {
+	column: Column<T>
+	field: string
+	columnIndex: number
+	sortDirection: 'asc' | 'desc' | null
+	isFrozen: boolean
+	allColumns: Column<T>[]  // All columns (including hidden) for visibility submenu
+	labels: GridLabels       // Grid labels for translations
+}
+
+// Predefined header menu actions (string shorthand)
+export type PredefinedHeaderMenuItemType = 'sortAsc' | 'sortDesc' | 'clearSort' | 'hideColumn' | 'freezeColumn' | 'unfreezeColumn' | 'columnVisibility'
+
+// Header context menu item configuration
+export type HeaderMenuItem<T> = {
+	id: string
+	label: string | ((context: HeaderMenuContext<T>) => string)
+	icon?: string | ((context: HeaderMenuContext<T>) => string)
+	shortcut?: string
+	disabled?: boolean | ((context: HeaderMenuContext<T>) => boolean)
+	visible?: boolean | ((context: HeaderMenuContext<T>) => boolean)
+	danger?: boolean
+	dividerBefore?: boolean
+	onclick?: (context: HeaderMenuContext<T>) => void | Promise<void>
+	// Submenu support
+	children?: HeaderMenuItem<T>[]  // Static submenu items
+	submenu?: (context: HeaderMenuContext<T>) => HeaderMenuItem<T>[]  // Dynamic submenu items
+}
+
+// Header context menu configuration (predefined string or full item)
+export type HeaderMenuConfig<T> = PredefinedHeaderMenuItemType | HeaderMenuItem<T>
+
+// =============================================================================
 // Row Keyboard Shortcuts Types
 // =============================================================================
 
@@ -423,11 +462,14 @@ export type QuickGridProps<T> = {
 	rowActions?: RowToolbarConfig<T>[]  // Deprecated: use rowToolbar
 	toolbarAlign?: 'top' | 'center' | 'bottom'  // Deprecated: use toolbarVerticalAlign
 	toolbarTopPosition?: 'start' | 'center' | 'end' | 'cursor'  // Deprecated: use toolbarHorizontalAlign
-	// Context menu
+	// Context menu (row/cell)
 	contextMenu?: ContextMenuItem<T>[]
 	contextMenuXOffset?: number           // Horizontal offset from click (default: 0)
 	contextMenuYOffset?: number           // Vertical offset from click (default: 4)
 	oncontextmenuopen?: (context: ContextMenuContext<T>) => void
+	// Header context menu (column headers)
+	headerContextMenu?: HeaderMenuConfig<T>[]
+	onheadercontextmenuopen?: (context: HeaderMenuContext<T>) => void
 	// Row keyboard shortcuts
 	rowShortcuts?: RowShortcut<T>[]              // Shortcut definitions
 	showShortcutsHelp?: boolean                   // Show info icon (default: false)
@@ -573,6 +615,18 @@ export type GridLabels = {
 	// Dropdown
 	dropdownNoOptions: string       // "No options" - shown when filter returns empty
 	dropdownSearching: string       // "Searching..." - shown during async search
+
+	// Context menu
+	contextMenu: {
+		sortAsc: string              // "Sort Ascending"
+		sortDesc: string             // "Sort Descending"
+		clearSort: string            // "Clear Sort"
+		hideColumn: string           // "Hide Column"
+		freezeColumn: string         // "Freeze Column"
+		unfreezeColumn: string       // "Unfreeze Column"
+		columnVisibility: string     // "Column Visibility"
+		showAll: string              // "Show all" - first option in column visibility submenu
+	}
 }
 
 // Summary content callback

@@ -10,8 +10,6 @@
 
 .wg__header--frozen {
   background: var(--wg-frozen-header-bg, var(--wg-header-bg));
-  /* Shadow on right edge to indicate frozen state */
-  box-shadow: var(--wg-frozen-column-shadow, 2px 0 4px rgba(0, 0, 0, 0.1));
 }
 
 /* Corner cell (row number header when sticky) - highest z-index */
@@ -25,16 +23,17 @@
 
 .wg__cell--frozen {
   background: var(--wg-frozen-column-bg, var(--wg-surface-1));
-  /* Shadow on right edge */
-  box-shadow: var(--wg-frozen-column-shadow, 2px 0 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Only the last frozen cell gets the separator border */
+.wg__cell--frozen-last {
+  box-shadow: inset -1px 0 0 var(--wg-border-color);
 }
 
 /* Row number cells when sticky */
 .wg__row-number.wg__cell--frozen {
   background: var(--wg-header-bg);
   z-index: 2 !important;
-  /* Combine border shadow with frozen shadow */
-  box-shadow: inset -1px 0 0 var(--wg-border-color), var(--wg-frozen-column-shadow, 2px 0 4px rgba(0, 0, 0, 0.1));
 }
 
 /* ==========================================================================

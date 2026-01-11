@@ -126,6 +126,44 @@
         </div>
 
         <div class="card">
+            <h2>Virtual Scroll + Reorder + Resize</h2>
+            <p>Combining all features: virtual scrolling with 10,000 rows, column reordering, and column resizing.</p>
+
+            <web-grid id="gridVirtual" style="max-width: 100%; max-height: 400px;"></web-grid>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Features Combined</div>
+                <ul>
+                    <li>Virtual scroll renders only visible rows (10,000 total)</li>
+                    <li>Drag column headers to reorder</li>
+                    <li>Resize columns by dragging the right edge</li>
+                    <li>Frozen columns stay in place while scrolling</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Header Context Menu</h2>
+            <p>Right-click on column headers to access sort, hide, and freeze actions. Supports predefined actions and custom items.</p>
+
+            <web-grid id="gridHeaderMenu" style="max-width: 100%; max-height: 400px;"></web-grid>
+
+            <div id="headerMenuLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                Right-click a column header to see the context menu...
+            </div>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Predefined Actions</div>
+                <ul>
+                    <li><code>sortAsc</code> / <code>sortDesc</code> - Sort column</li>
+                    <li><code>clearSort</code> - Clear sort (only shown if sorted)</li>
+                    <li><code>hideColumn</code> - Hide the column</li>
+                    <li><code>freezeColumn</code> / <code>unfreezeColumn</code> - Freeze/unfreeze</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
             <h2>Configuration Options</h2>
 
             <div class="grid-2">
@@ -266,7 +304,7 @@
             { field: 'id', title: 'ID', width: '80px' },
             { field: 'name', title: 'Name', width: '150px' },
             { field: 'email', title: 'Email', width: '200px' },
-            { field: 'department', title: 'Department', width: '120px' },
+            { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
             { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
             { field: 'status', title: 'Status', width: '100px' },
             { field: 'phone', title: 'Phone', width: '120px' }
@@ -292,6 +330,7 @@
         grid2.gridName = 'resize-demo-grid'
         grid2.persistColumnWidths = true
         grid2.allowColumnReorder = true
+        grid2.persistColumnOrder = true
 
         // Callback to show resize data
         grid2.oncolumnresize = (detail) => {
@@ -318,7 +357,7 @@
             { field: 'id', title: 'ID', width: '80px' },
             { field: 'name', title: 'Name', width: '150px' },
             { field: 'email', title: 'Email', width: '200px' },
-            { field: 'status', title: 'Status (not resizable)', width: '150px', resizable: false },
+            { field: 'status', title: 'Status (not resizable)', width: '80px', resizable: false },
             { field: 'phone', title: 'Phone', width: '120px' }
         ]
         grid3.showRowNumbers = true
@@ -346,7 +385,7 @@
             { field: 'id', title: 'ID', width: '80px', minWidth: '50px' },
             { field: 'name', title: 'Name', width: '150px', minWidth: '80px' },
             { field: 'email', title: 'Email', width: '200px', minWidth: '100px' },
-            { field: 'department', title: 'Department', width: '120px' },
+            { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
             { field: 'role', title: 'Role', width: '100px' },
             { field: 'location', title: 'Location', width: '120px' },
             { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
@@ -381,7 +420,7 @@
             { field: 'id', title: 'ID (Frozen)', width: '80px' },
             { field: 'name', title: 'Name (Frozen)', width: '150px' },
             { field: 'email', title: 'Email', width: '200px' },
-            { field: 'department', title: 'Department', width: '120px' },
+            { field: 'department', title: 'Department', width: '120px', minWidth: '40px' },
             { field: 'role', title: 'Role', width: '100px' },
             { field: 'location', title: 'Location', width: '120px' },
             { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
@@ -423,6 +462,89 @@
             gridReorder.setColumnOrder([])
             document.getElementById('reorderLog').innerHTML = 'Column order reset to default.'
         })
+
+        // Grid 6 - Virtual Scroll + Reorder + Resize
+        const virtualData = Array.from({ length: 10000 }, (_, i) => ({
+            id: 1000 + i,
+            name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry'][i % 8] + ' ' + ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'][i % 5],
+            email: `user${i}@example.com`,
+            department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+            role: ['Manager', 'Senior', 'Junior', 'Lead', 'Director'][i % 5],
+            location: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'][i % 5],
+            salary: 50000 + (i * 100),
+            status: i % 7 === 0 ? 'On Leave' : 'Active'
+        }))
+
+        const virtualColumns = [
+            { field: 'id', title: 'ID', width: '80px' },
+            { field: 'name', title: 'Name', width: '150px' },
+            { field: 'email', title: 'Email', width: '200px' },
+            { field: 'department', title: 'Department', width: '120px' },
+            { field: 'role', title: 'Role', width: '100px' },
+            { field: 'location', title: 'Location', width: '120px' },
+            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'status', title: 'Status', width: '100px' }
+        ]
+
+        const gridVirtual = document.getElementById('gridVirtual')
+        gridVirtual.items = virtualData
+        gridVirtual.columns = virtualColumns
+        gridVirtual.showRowNumbers = true
+        gridVirtual.stickyRowNumbers = true
+        gridVirtual.freezeColumns = 1
+        gridVirtual.striped = true
+        gridVirtual.hoverable = true
+        gridVirtual.virtualScroll = true
+        gridVirtual.allowColumnReorder = true
+
+        // Grid 7 - Header Context Menu
+        const headerMenuColumns = [
+            { field: 'id', title: 'ID', width: '80px' },
+            { field: 'name', title: 'Name', width: '150px' },
+            { field: 'email', title: 'Email', width: '200px' },
+            { field: 'department', title: 'Department', width: '120px' },
+            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString() },
+            { field: 'status', title: 'Status', width: '100px' }
+        ]
+
+        const gridHeaderMenu = document.getElementById('gridHeaderMenu')
+        gridHeaderMenu.items = sampleData
+        gridHeaderMenu.columns = headerMenuColumns
+        gridHeaderMenu.showRowNumbers = true
+        gridHeaderMenu.striped = true
+        gridHeaderMenu.hoverable = true
+        gridHeaderMenu.sortMode = 'multi'
+
+        // Store original columns for reset
+        const originalHeaderMenuColumns = [...headerMenuColumns]
+
+        // Header context menu with predefined and custom actions
+        gridHeaderMenu.headerContextMenu = [
+            'sortAsc',
+            'sortDesc',
+            'clearSort',
+            { dividerBefore: true },
+            'freezeColumn',
+            'unfreezeColumn',
+            { dividerBefore: true },
+            'hideColumn',
+            {
+                id: 'showAllColumns',
+                label: 'Show All Columns',
+                icon: '👁',
+                onclick: (ctx) => {
+                    // Restore all columns from original
+                    gridHeaderMenu.columns = [...originalHeaderMenuColumns]
+                    document.getElementById('headerMenuLog').innerHTML = `Restored all columns`
+                }
+            }
+        ]
+
+        // Log header menu events
+        gridHeaderMenu.onheadercontextmenuopen = (ctx) => {
+            document.getElementById('headerMenuLog').innerHTML =
+                `<strong>Menu opened:</strong> ${ctx.field} (index: ${ctx.columnIndex}, frozen: ${ctx.isFrozen}, sort: ${ctx.sortDirection || 'none'})`
+        }
     </script>
 </body>
 </html>

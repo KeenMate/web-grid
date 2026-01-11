@@ -53,7 +53,7 @@ export function renderCell<T>(
 	const classes = ['wg__cell']
 	if (isEditable) classes.push('wg__cell--editable')
 	if (isFocused && !isEditing) classes.push('wg__cell--focused')
-	if (column.textOverflow === 'ellipsis') classes.push('wg__cell--ellipsis')
+	if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
 	if (isEditing) classes.push('wg__cell--editing')
 	if (isInvalid) classes.push('wg__cell--invalid')
 	if (column.cellClass) classes.push(column.cellClass)

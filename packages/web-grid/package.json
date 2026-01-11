@@ -1,6 +1,6 @@
 {
 	"name": "@keenmate/web-grid",
-	"version": "1.0.0-rc07",
+	"version": "1.0.0-rc09",
 	"description": "Framework-agnostic data grid web component with sorting, filtering, inline editing, and keyboard navigation",
 	"type": "module",
 	"main": "./dist/web-grid.umd.js",

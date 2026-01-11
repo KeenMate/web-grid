@@ -5,7 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0-rc07] - Unreleased
+## [1.0.0-rc09] - 2026-01-11 (Published)
+
+### Changed
+- **Non-Resizable Column Cursor** - Columns with `resizable: false` now show `not-allowed` cursor instead of hiding the resize handle entirely. This provides visual feedback that the column exists but cannot be resized.
+
+### Fixed
+- **Column Reorder Header Transparency** - Dragging a column header no longer shows body cell content through the header when scrolled down. Changed from `opacity: 0.5` to opaque background with dashed outline indicator.
+- **Column Reorder Drop Indicator Position** - The blue drop indicator line now correctly positions based on scroll offset, staying visible in the viewport when scrolled down.
+- **Filler Header Sticky Positioning** - The filler `<th>` element now has proper `position: sticky` and `z-index` to match other header cells when scrolling.
+- **Frozen Column Border Bleed** - Freezing columns no longer adds vertical separators to all frozen cells. Only the last frozen column now has the separator border.
+- **Context Menu Divider Items** - Standalone `{ dividerBefore: true }` markers now correctly apply dividers to the next item instead of rendering as "undefined" menu items.
+- **Hide Column Synced with Column Visibility** - The `'hideColumn'` action now sets `column.hidden = true` instead of removing the column from the array, keeping it synced with the Column Visibility submenu.
+
+### Added
+- **Header Context Menu** - Right-click context menu for column headers
+  - `headerContextMenu` property accepts array of predefined strings or custom items
+  - Predefined actions: `'sortAsc'`, `'sortDesc'`, `'clearSort'`, `'hideColumn'`, `'freezeColumn'`, `'unfreezeColumn'`, `'columnVisibility'`
+  - String shorthand for predefined actions (same pattern as row toolbar)
+  - Custom items with `id`, `label`, `icon`, `onclick`, `disabled`, `visible`, `dividerBefore`
+  - `HeaderMenuContext` provides `column`, `field`, `columnIndex`, `sortDirection`, `isFrozen`, `allColumns`, `labels`
+  - `onheadercontextmenuopen` callback fired before menu opens
+  - Auto-visibility: sort options hidden if column not sortable, freeze/unfreeze shown based on state
+- **Context Menu Submenus** - Menu items can now have nested submenus
+  - `children` property for static submenu items
+  - `submenu` callback for dynamic submenu generation
+  - Submenus appear on hover with arrow indicator
+- **Column Visibility Submenu** - New `'columnVisibility'` predefined action
+  - Shows submenu with all columns and "Show all" option at top
+  - Toggle column visibility with checkboxes (☑ visible, ☐ hidden)
+  - "Show all" checkbox reflects whether all columns are visible
+  - Menu stays open for multiple toggles with reactive checkbox updates
+  - All labels translatable via `labels.contextMenu.*`
+- **Header Filler Context Menu** - Right-clicking the empty header filler cell shows column-agnostic menu items (e.g., Column Visibility)
+- **Context Menu Close on Scroll** - Context menus automatically close when page is scrolled
+- **Translatable Context Menu Labels** - All predefined header context menu labels are now translatable via `labels.contextMenu.*` (`sortAsc`, `sortDesc`, `clearSort`, `hideColumn`, `freezeColumn`, `unfreezeColumn`, `columnVisibility`, `showAll`)
+- **Multi-Sort via Context Menu** - Ctrl+clicking Sort Ascending/Descending in the header context menu adds to existing sort (when `sortMode === 'multi'`) instead of replacing it, matching Ctrl+click behavior on header cells
+- **Column Hidden Property** - `column.hidden` property to show/hide columns
+  - Hidden columns are excluded from rendering but kept in columns array
+  - Allows toggling visibility without losing column configuration
+- **Virtual Scroll + Reorder + Resize Demo** - New example combining virtual scrolling (10,000 rows), column reordering, and column resizing in `examples-resizable-columns.html`.
+
+## [1.0.0-rc08] - 2026-01-09 (Published)
 
 ### Added
 - **Row Keyboard Shortcuts** - Grid-level keyboard shortcuts for row operations

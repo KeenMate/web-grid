@@ -15,6 +15,8 @@ import type {
 	ToolbarClickDetail,
 	RowActionClickDetail,
 	ContextMenuContext,
+	HeaderMenuConfig,
+	HeaderMenuContext,
 	CustomEditorContext,
 	EditTrigger,
 	EditStartSelection,
@@ -106,7 +108,13 @@ import {
 import type { VirtualScrollParams } from './modules/rendering/index.js'
 
 import { DatePicker, parseFormat, formatDate, normalizeDate, toISODateString } from './modules/datepicker/index.js'
-import { openContextMenu, closeContextMenu } from './modules/contextmenu/index.js'
+import {
+	openContextMenu,
+	closeContextMenu,
+	openHeaderContextMenu,
+	normalizeHeaderMenuItems,
+	executeHeaderMenuAction
+} from './modules/contextmenu/index.js'
 import {
 	normalizeToolbarItems,
 	openToolbar,
@@ -240,6 +248,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	// Context menu element (rendered to document.body)
 	private contextMenuElement: HTMLElement | null = null
+	private headerContextMenuElement: HTMLElement | null = null
 
 	// Virtual scroll state
 	private virtualScrollStart = 0
@@ -293,6 +302,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		if (this.contextMenuElement) {
 			closeContextMenu(this.contextMenuElement)
 			this.contextMenuElement = null
+		}
+		if (this.headerContextMenuElement) {
+			closeContextMenu(this.headerContextMenuElement)
+			this.headerContextMenuElement = null
 		}
 		// Close any open toolbar
 		closeToolbar()
@@ -404,6 +417,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	get contextMenuYOffset(): number { return this.grid.contextMenuYOffset }
 	set contextMenuYOffset(value: number) { this.grid.contextMenuYOffset = value }
+
+	// Header context menu
+	get headerContextMenu(): HeaderMenuConfig<T>[] | undefined { return this.grid.headerContextMenu }
+	set headerContextMenu(value: HeaderMenuConfig<T>[] | undefined) { this.grid.headerContextMenu = value }
+
+	set onheadercontextmenuopen(value: ((context: HeaderMenuContext<T>) => void) | undefined) {
+		this.grid.onheadercontextmenuopen = value
+	}
 
 	// Row keyboard shortcuts
 	get rowShortcuts(): RowShortcut<T>[] | undefined { return this.grid.rowShortcuts }
@@ -2848,15 +2869,31 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	/**
-	 * Handle context menu (right-click) on cells
+	 * Handle context menu (right-click) on cells or headers
 	 */
 	private handleContextMenu(e: MouseEvent): void {
+		const target = e.target as HTMLElement
+
+		// Check for header right-click first
+		const header = target.closest('.wg__header') as HTMLElement
+		if (header) {
+			this.handleHeaderContextMenu(e, header)
+			return
+		}
+
+		// Check for header filler cell right-click
+		const fillerHeader = target.closest('th.wg__filler') as HTMLElement
+		if (fillerHeader) {
+			this.handleFillerContextMenu(e)
+			return
+		}
+
+		// Handle cell context menu
 		const contextMenuItems = this.grid.contextMenu
 		if (!contextMenuItems || contextMenuItems.length === 0) {
 			return // No context menu defined, use browser default
 		}
 
-		const target = e.target as HTMLElement
 		const cell = target.closest('.wg__cell') as HTMLElement
 		if (!cell) {
 			return // Right-click not on a cell
@@ -2933,6 +2970,220 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			() => {
 				// onClose callback
 				this.contextMenuElement = null
+			}
+		)
+	}
+
+	/**
+	 * Handle context menu (right-click) on column headers
+	 */
+	private handleHeaderContextMenu(e: MouseEvent, header: HTMLElement): void {
+		const headerMenuItems = this.grid.headerContextMenu
+		if (!headerMenuItems || headerMenuItems.length === 0) {
+			return // No header context menu defined, use browser default
+		}
+
+		e.preventDefault()
+
+		// Close any existing context menu (cell or header)
+		if (this.contextMenuElement) {
+			closeContextMenu(this.contextMenuElement)
+			this.contextMenuElement = null
+		}
+		if (this.headerContextMenuElement) {
+			closeContextMenu(this.headerContextMenuElement)
+			this.headerContextMenuElement = null
+		}
+
+		// Get column info from header
+		const field = header.dataset.field
+		if (!field) return
+
+		const columnIndex = this.grid.columns.findIndex(c => String(c.field) === field)
+		if (columnIndex === -1) return
+
+		const column = this.grid.columns[columnIndex]
+		const frozenCount = this.grid.freezeColumns
+		const isFrozen = columnIndex < frozenCount
+
+		// Get sort direction for this column
+		const sortState = this.grid.sort.find(s => s.column === field)
+		const sortDirection = sortState?.direction ?? null
+
+		// Create context for callbacks
+		const menuContext: HeaderMenuContext<T> = {
+			column,
+			field,
+			columnIndex,
+			sortDirection,
+			isFrozen,
+			allColumns: this.grid.columns,  // Include all columns for visibility submenu
+			labels: this.grid.labels
+		}
+
+		// Fire onheadercontextmenuopen event
+		if (this.grid.onheadercontextmenuopen) {
+			this.grid.onheadercontextmenuopen(menuContext)
+		}
+
+		// Normalize menu items (convert string shortcuts to full items)
+		const normalizedItems = normalizeHeaderMenuItems(headerMenuItems, menuContext)
+		if (normalizedItems.length === 0) return
+
+		// Open the header context menu
+		this.headerContextMenuElement = openHeaderContextMenu(
+			this,
+			e.clientX,
+			e.clientY,
+			normalizedItems,
+			menuContext,
+			(itemId: string, keepOpen?: boolean, ctrlKey?: boolean) => {
+				// Check if it's a predefined action
+				const predefinedActions = ['sortAsc', 'sortDesc', 'clearSort', 'hideColumn', 'freezeColumn', 'unfreezeColumn']
+				if (predefinedActions.includes(itemId)) {
+					executeHeaderMenuAction(this, itemId, menuContext, ctrlKey)
+				}
+
+				// Handle "Show all" columns action
+				if (itemId === 'show-all-columns') {
+					this.grid.columns.forEach(col => {
+						col.hidden = false
+					})
+					this.grid.columns = [...this.grid.columns]
+					return
+				}
+
+				// Handle column visibility toggles (submenu items)
+				if (itemId.startsWith('toggle-col-')) {
+					const field = itemId.replace('toggle-col-', '')
+					const col = this.grid.columns.find(c => String(c.field) === field)
+					if (col) {
+						col.hidden = !col.hidden
+						this.grid.columns = [...this.grid.columns]
+					}
+					return  // Don't search for onclick - handled here
+				}
+
+				// Also call custom onclick if defined (for top-level items)
+				const clickedItem = normalizedItems.find(item => item.id === itemId)
+				if (clickedItem?.onclick) {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					;(clickedItem.onclick as (ctx: any) => void | Promise<void>)(menuContext)
+				}
+
+				// Close menu after click unless keepOpen is true
+				if (!keepOpen && this.headerContextMenuElement) {
+					closeContextMenu(this.headerContextMenuElement)
+					this.headerContextMenuElement = null
+				}
+			},
+			() => {
+				// onClose callback
+				this.headerContextMenuElement = null
+			}
+		)
+	}
+
+	/**
+	 * Handle context menu (right-click) on header filler cell
+	 * Shows limited options (only column-agnostic items like columnVisibility)
+	 */
+	private handleFillerContextMenu(e: MouseEvent): void {
+		const headerMenuItems = this.grid.headerContextMenu
+		if (!headerMenuItems || headerMenuItems.length === 0) {
+			return // No header context menu defined, use browser default
+		}
+
+		e.preventDefault()
+
+		// Close any existing context menu
+		if (this.contextMenuElement) {
+			closeContextMenu(this.contextMenuElement)
+			this.contextMenuElement = null
+		}
+		if (this.headerContextMenuElement) {
+			closeContextMenu(this.headerContextMenuElement)
+			this.headerContextMenuElement = null
+		}
+
+		// Filter to only column-agnostic items (columnVisibility and custom items without column-specific behavior)
+		const fillerMenuItems = headerMenuItems.filter(item => {
+			// Keep columnVisibility
+			if (item === 'columnVisibility') return true
+			// Keep custom items with static labels (not functions that might access column)
+			if (typeof item === 'object' && item.id) {
+				// Filter out items with dynamic label/icon that likely depend on column
+				if (typeof item.label === 'function') return false
+				if (typeof item.icon === 'function') return false
+				return true
+			}
+			// Filter out column-specific predefined actions
+			if (typeof item === 'string') return false
+			// Filter out divider-only markers
+			if (typeof item === 'object' && item.dividerBefore && !item.id && !item.label) return false
+			return false
+		})
+
+		if (fillerMenuItems.length === 0) return
+
+		// Create a minimal context for filler (no specific column)
+		const menuContext: HeaderMenuContext<T> = {
+			column: null as unknown as Column<T>,  // No column for filler
+			field: '',
+			columnIndex: -1,
+			sortDirection: null,
+			isFrozen: false,
+			allColumns: this.grid.columns,
+			labels: this.grid.labels
+		}
+
+		// Normalize menu items
+		const normalizedItems = normalizeHeaderMenuItems(fillerMenuItems, menuContext)
+		if (normalizedItems.length === 0) return
+
+		// Open the context menu
+		this.headerContextMenuElement = openHeaderContextMenu(
+			this,
+			e.clientX,
+			e.clientY,
+			normalizedItems,
+			menuContext,
+			(itemId: string, keepOpen?: boolean, _ctrlKey?: boolean) => {
+				// Handle "Show all" columns action
+				if (itemId === 'show-all-columns') {
+					this.grid.columns.forEach(col => {
+						col.hidden = false
+					})
+					this.grid.columns = [...this.grid.columns]
+					return
+				}
+
+				// Handle column visibility toggles
+				if (itemId.startsWith('toggle-col-')) {
+					const field = itemId.replace('toggle-col-', '')
+					const col = this.grid.columns.find(c => String(c.field) === field)
+					if (col) {
+						col.hidden = !col.hidden
+						this.grid.columns = [...this.grid.columns]
+					}
+					return
+				}
+
+				// Call custom onclick if defined
+				const clickedItem = normalizedItems.find(item => item.id === itemId)
+				if (clickedItem?.onclick) {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					;(clickedItem.onclick as (ctx: any) => void | Promise<void>)(menuContext)
+				}
+
+				// Close menu after click unless keepOpen is true
+				if (!keepOpen && this.headerContextMenuElement) {
+					closeContextMenu(this.headerContextMenuElement)
+					this.headerContextMenuElement = null
+				}
+			},
+			() => {
+				this.headerContextMenuElement = null
 			}
 		)
 	}

@@ -104,12 +104,14 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 
 		// Build style with width, minWidth, maxWidth, and sticky positioning
 		// Only use explicit minWidth (allows resizing below original width)
+		// Add max-width equal to width to enforce column width for text-overflow
 		const effectiveMinWidth = column.minWidth
 		const styleProps = [
 			isFrozen ? `position: sticky` : '',
 			isFrozen ? `left: ${cumulativeOffset}px` : '',
 			isFrozen ? `z-index: 2` : '',
 			colWidth ? `width: ${colWidth}` : '',
+			colWidth ? `max-width: ${colWidth}` : '',
 			effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
 			`text-align: ${column.align || 'left'}`
 		].filter(Boolean).join('; ')
@@ -137,11 +139,9 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 			headerInfo = `<span class="wg__header-info" data-tooltip="${ctx.escapeHtml(column.headerInfo)}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>`
 		}
 
-		// Resize handle (only for resizable columns)
+		// Resize handle (always rendered, but disabled class for non-resizable columns)
 		const isResizable = column.resizable !== false
-		const resizeHandle = isResizable
-			? `<div class="wg__resize-handle" data-field="${field}"></div>`
-			: ''
+		const resizeHandle = `<div class="wg__resize-handle${isResizable ? '' : ' wg__resize-handle--disabled'}" data-field="${field}"></div>`
 
 		return `
 			<th class="${classes.join(' ')}" ${styleAttr} data-field="${field}">
@@ -155,7 +155,7 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 		`
 	}).join('')
 
-	return `<tr>${rowNumberColumnHtml}${inlineActionsHeaderHtml}${actionsColumnHtml}${headerCells}</tr>`
+	return `<tr>${rowNumberColumnHtml}${inlineActionsHeaderHtml}${actionsColumnHtml}${headerCells}<th class="wg__filler">&nbsp;</th></tr>`
 }
 
 /**
@@ -252,7 +252,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			const isEditingThisCell = ctx.grid.isEditing(rowIndex, field)
 			if (isEditable) classes.push('wg__cell--editable')
 			if (isFocused && !isEditingThisCell) classes.push('wg__cell--focused')
-			if (column.textOverflow === 'ellipsis') classes.push('wg__cell--ellipsis')
+			if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
 			if (isEditingThisCell) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
 			if (isFrozen) classes.push('wg__cell--frozen')
@@ -361,7 +361,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			? `data-tooltip="${ctx.escapeHtml(lockInfo?.lockedBy ? `Locked by ${lockInfo.lockedBy}` : 'This row is locked')}"`
 			: ''
 
-		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}</tr>`
+		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__filler"></td></tr>`
 	}).join('')
 }
 
@@ -536,7 +536,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			const isEditingThisCell = ctx.grid.isEditing(rowIndex, field)
 			if (isEditable) classes.push('wg__cell--editable')
 			if (isFocused && !isEditingThisCell) classes.push('wg__cell--focused')
-			if (column.textOverflow === 'ellipsis') classes.push('wg__cell--ellipsis')
+			if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
 			if (isEditingThisCell) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
 			if (isFrozen) classes.push('wg__cell--frozen')
@@ -644,7 +644,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			? `data-tooltip="${ctx.escapeHtml(lockInfo?.lockedBy ? `Locked by ${lockInfo.lockedBy}` : 'This row is locked')}"`
 			: ''
 
-		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}</tr>`)
+		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__filler"></td></tr>`)
 	}
 
 	// Bottom spacer row - height on TD for better browser compatibility

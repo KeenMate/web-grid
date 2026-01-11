@@ -4,10 +4,9 @@
    Resize handles for column width adjustment
 */
 
-/* Header needs position:relative for absolute positioning of resize handle */
-.wg__header {
-  position: relative;  /* Adds to existing sticky positioning in _header.css */
-}
+/* Note: .wg__header has position: sticky in _header.css, which also
+   creates a containing block for absolutely positioned children.
+   Do NOT add position: relative here - it would break sticky headers! */
 
 /* Resize handle - invisible by default, appears on hover */
 .wg__resize-handle {
@@ -54,6 +53,16 @@
   bottom: 0;
 }
 
+/* Disabled state - non-resizable columns */
+.wg__resize-handle--disabled {
+  cursor: not-allowed;
+}
+
+/* Hide visual indicator for disabled handles */
+.wg__resize-handle--disabled::after {
+  display: none;
+}
+
 /* Keep handle visible during drag */
 .wg--resizing .wg__resize-handle {
   opacity: 1;
@@ -71,7 +80,7 @@
   cursor: col-resize;
 }
 
-/* Allow table to shrink during resize (only override min-width, not width) */
+/* Allow table to shrink during resize - override min-width: 100% to allow smaller */
 .wg--resizing .wg__table {
   min-width: 0 !important;
 }
