@@ -137,7 +137,7 @@
 
         // Column definitions
         const columns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center', isEditable: false },
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center', isEditable: false },
             {
                 field: 'name',
                 title: 'Name',
@@ -165,7 +165,7 @@
                 field: 'salary',
                 title: 'Salary',
                 width: '100px',
-                align: 'right',
+                horizontalAlign: 'right',
                 editor: 'number',
                 cellClass: 'salary-highlight',
                 cellClassCallback: (val, row) => val >= 90000 ? 'salary-high' : null,

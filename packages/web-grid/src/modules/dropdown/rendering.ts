@@ -47,6 +47,10 @@ export function renderDropdown<T>(
 			? (ctx.grid.displayItems[editingCell.rowIndex] as Record<string, unknown>)?.[editingCell.field]
 			: undefined
 
+		// Get column alignment for dropdown options
+		const column = ctx.getCurrentEditingColumn()
+		const dropdownAlign = column?.horizontalAlign || 'left'
+
 		dropdown.innerHTML = options.map((opt, i) => {
 			const isHighlighted = i === ctx.highlightedIndex
 			const isSelected = getOptionValue(opt, opts) === currentValue
@@ -63,7 +67,7 @@ export function renderDropdown<T>(
 			const icon = getOptionIcon(opt, opts)
 			const subtitle = getOptionSubtitle(opt, opts)
 
-			const classes = ['wg__dropdown-option']
+			const classes = ['wg__dropdown-option', `wg__dropdown-option--align-${dropdownAlign}`]
 			if (isHighlighted) classes.push('wg__dropdown-option--highlighted')
 			if (isSelected) classes.push('wg__dropdown-option--selected')
 			if (disabled) classes.push('wg__dropdown-option--disabled')

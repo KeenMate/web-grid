@@ -48,10 +48,13 @@ export function renderCellDisplay<T>(
 		`
 	}
 
+	// Line clamp style if maxLines is set
+	const lineClampStyle = column.maxLines ? `style="-webkit-line-clamp: ${column.maxLines}"` : ''
+
 	// templateCallback returns raw HTML - don't escape it
 	if (column.templateCallback) {
-		return `<span class="wg__cell-text">${value}</span>`
+		return `<span class="wg__cell-text" ${lineClampStyle}>${value}</span>`
 	}
 
-	return `<span class="wg__cell-text">${ctx.escapeHtml(value)}</span>`
+	return `<span class="wg__cell-text" ${lineClampStyle}>${ctx.escapeHtml(value)}</span>`
 }

@@ -106,6 +106,8 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 		// Only use explicit minWidth (allows resizing below original width)
 		// Add max-width equal to width to enforce column width for text-overflow
 		const effectiveMinWidth = column.minWidth
+		const hAlign = column.headerHorizontalAlign || column.horizontalAlign || 'left'
+		const vAlign = column.headerVerticalAlign || column.verticalAlign || 'middle'
 		const styleProps = [
 			isFrozen ? `position: sticky` : '',
 			isFrozen ? `left: ${cumulativeOffset}px` : '',
@@ -113,7 +115,8 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 			colWidth ? `width: ${colWidth}` : '',
 			colWidth ? `max-width: ${colWidth}` : '',
 			effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
-			`text-align: ${column.align || 'left'}`
+			`text-align: ${hAlign}`,
+			`vertical-align: ${vAlign}`
 		].filter(Boolean).join('; ')
 		const styleAttr = `style="${styleProps}"`
 
@@ -145,10 +148,14 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 
 		return `
 			<th class="${classes.join(' ')}" ${styleAttr} data-field="${field}">
-				<div class="wg__header-content">
-					<span class="wg__header-title">${ctx.escapeHtml(column.title)}</span>
-					${headerInfo}
-					${sortIndicator}
+				<div class="wg__header-container">
+					<div class="wg__header-content wg__header-content--align-${hAlign} wg__header-content--valign-${vAlign}">
+						<span class="wg__header-title">${ctx.escapeHtml(column.title)}</span>
+						${headerInfo}
+					</div>
+					<div class="wg__header-controls">
+						${sortIndicator}
+					</div>
 				</div>
 				${resizeHandle}
 			</th>
@@ -241,7 +248,8 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 		const cells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 			const field = String(column.field)
 			const value = ctx.grid.getCellValue(item, column, rowIndex)
-			const align = column.align || 'left'
+			const align = column.horizontalAlign || 'left'
+			const vAlign = column.verticalAlign || 'middle'
 			const isEditable = ctx.grid.isCellEditable(column)
 			// Use originalIndex for focus check (navigation uses original indices)
 			const isFocused = ctx.grid.isCellFocused(rowIndex, originalIndex)
@@ -253,6 +261,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			if (isEditable) classes.push('wg__cell--editable')
 			if (isFocused && !isEditingThisCell) classes.push('wg__cell--focused')
 			if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
+			if (column.maxLines) classes.push('wg__cell--line-clamp')
 			if (isEditingThisCell) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
 			if (isFrozen) classes.push('wg__cell--frozen')
@@ -275,6 +284,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 				isFrozen ? `left: ${cumulativeOffset}px` : '',
 				isFrozen ? `z-index: 1` : '',
 				`text-align: ${align}`,
+				`vertical-align: ${vAlign}`,
 				cellWidth ? `width: ${cellWidth}` : '',
 				effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
 				column.maxWidth ? `max-width: ${column.maxWidth}` : ''
@@ -525,7 +535,8 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 		const cells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 			const field = String(column.field)
 			const value = ctx.grid.getCellValue(item, column, rowIndex)
-			const align = column.align || 'left'
+			const align = column.horizontalAlign || 'left'
+			const vAlign = column.verticalAlign || 'middle'
 			const isEditable = ctx.grid.isCellEditable(column)
 			// Use originalIndex for focus check (navigation uses original indices)
 			const isFocused = ctx.grid.isCellFocused(rowIndex, originalIndex)
@@ -537,6 +548,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			if (isEditable) classes.push('wg__cell--editable')
 			if (isFocused && !isEditingThisCell) classes.push('wg__cell--focused')
 			if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
+			if (column.maxLines) classes.push('wg__cell--line-clamp')
 			if (isEditingThisCell) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
 			if (isFrozen) classes.push('wg__cell--frozen')
@@ -559,6 +571,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 				isFrozen ? `left: ${cumulativeOffset}px` : '',
 				isFrozen ? `z-index: 1` : '',
 				`text-align: ${align}`,
+				`vertical-align: ${vAlign}`,
 				cellWidth ? `width: ${cellWidth}` : '',
 				effectiveMinWidth ? `min-width: ${effectiveMinWidth}` : '',
 				column.maxWidth ? `max-width: ${column.maxWidth}` : ''

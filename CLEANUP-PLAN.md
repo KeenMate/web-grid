@@ -172,3 +172,26 @@ Per web-multiselect pattern: Boolean properties use `is*` prefix.
 
 - [x] **Theme toggle fix** - Prevents dropdown state corruption
   - `examples-custom-styling.html` - Calls `grid.cancelEdit()` before theme switch
+
+- [x] **Comprehensive alignment support** - Cell, header, and dropdown alignment
+  - `types.ts` - Added `horizontalAlign`, `verticalAlign`, `headerHorizontalAlign`, `headerVerticalAlign` to Column type
+  - `modules/rendering/table.ts` - Headers and cells now apply both horizontal and vertical alignment
+  - `modules/dropdown/rendering.ts` - Dropdown options inherit column alignment
+  - `css/_header.css` - Removed hardcoded `text-align: left` (now from inline style)
+  - `css/_dropdown.css` - Added `.wg__dropdown-option--align-{left|center|right}` modifiers
+
+- [x] **Min row height CSS variable** - Configurable row height
+  - `css/_variables.css` - Added `--wg-row-min-height: auto`
+  - `css/_cells.css` - Added `height: var(--wg-row-min-height)` (height acts as min-height in tables)
+  - `examples-custom-styling.html` - Added row height slider control
+
+- [x] **Min header height CSS variable** - Configurable header height
+  - `css/_variables.css` - Added `--wg-header-min-height: auto`
+  - `css/_header.css` - Added `height: var(--wg-header-min-height)` (height acts as min-height in tables)
+  - `examples-custom-styling.html` - Added header height slider control
+
+- [x] **Renamed `align` to `horizontalAlign`** - Consistent with `verticalAlign`
+  - `types.ts` - Changed `align` → `horizontalAlign`, `headerAlign` → `headerHorizontalAlign`
+  - `modules/rendering/table.ts` - Updated all `column.align` → `column.horizontalAlign`
+  - `modules/dropdown/rendering.ts` - Updated alignment reference
+  - All example files updated

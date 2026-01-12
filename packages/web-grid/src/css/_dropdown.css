@@ -192,3 +192,32 @@
   font-style: italic;
   text-align: center;
 }
+
+/* Dropdown option alignment modifiers - inherit from column.align */
+.wg__dropdown-option--align-left {
+  justify-content: flex-start;
+}
+.wg__dropdown-option--align-left .wg__dropdown-option-content {
+  text-align: left;
+}
+
+.wg__dropdown-option--align-center {
+  justify-content: center;
+}
+.wg__dropdown-option--align-center .wg__dropdown-option-content {
+  text-align: center;
+}
+
+.wg__dropdown-option--align-right {
+  justify-content: flex-end;
+}
+.wg__dropdown-option--align-right .wg__dropdown-option-content {
+  text-align: right;
+}
+
+.wg__dropdown-option--align-justify {
+  justify-content: flex-start;  /* Justify doesn't apply to single-line options */
+}
+.wg__dropdown-option--align-justify .wg__dropdown-option-content {
+  text-align: justify;
+}

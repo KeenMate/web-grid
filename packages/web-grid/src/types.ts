@@ -166,7 +166,11 @@ export type Column<T> = {
 	minWidth?: string
 	maxWidth?: string
 	textOverflow?: 'wrap' | 'ellipsis'
-	align?: "left" | "center" | "right"
+	maxLines?: number  // Maximum visible lines when textOverflow is 'wrap' (uses CSS line-clamp)
+	horizontalAlign?: "left" | "center" | "right" | "justify"  // Horizontal alignment for cells (default: "left", also used by dropdown options)
+	verticalAlign?: "top" | "middle" | "bottom"  // Vertical alignment for cells (default: "middle")
+	headerHorizontalAlign?: "left" | "center" | "right" | "justify"  // Header horizontal alignment (defaults to horizontalAlign)
+	headerVerticalAlign?: "top" | "middle" | "bottom"  // Header vertical alignment (defaults to verticalAlign)
 	cellClass?: string  // Custom CSS class(es) applied to all cells in this column
 	cellClassCallback?: (value: unknown, row: T) => string | null  // Dynamic CSS class based on value/row
 	formatCallback?: (value: unknown, row: T) => string

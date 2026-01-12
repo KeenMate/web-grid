@@ -202,11 +202,11 @@
         ]
 
         const navigateColumns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
             { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
-            { field: 'age', title: 'Age', width: '80px', align: 'center', isEditable: true, editor: 'number', editorOptions: { min: 0, max: 120 } },
+            { field: 'age', title: 'Age', width: '80px', horizontalAlign: 'center', isEditable: true, editor: 'number', editorOptions: { min: 0, max: 120 } },
             { field: 'city', title: 'City', isEditable: true, editor: 'text' },
-            { field: 'active', title: 'Active', width: '80px', align: 'center', isEditable: true, editor: 'checkbox' },
+            { field: 'active', title: 'Active', width: '80px', horizontalAlign: 'center', isEditable: true, editor: 'checkbox' },
             {
                 field: 'role',
                 title: 'Role',
@@ -247,7 +247,7 @@
         ]
 
         const validationColumns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
             {
                 field: 'name',
                 title: 'Name',
@@ -264,7 +264,7 @@
                 field: 'age',
                 title: 'Age',
                 width: '80px',
-                align: 'center',
+                horizontalAlign: 'center',
                 isEditable: true,
                 editor: 'number',
                 beforeCommitCallback: ({ value }) => {
@@ -279,7 +279,7 @@
                 field: 'score',
                 title: 'Score',
                 width: '80px',
-                align: 'center',
+                horizontalAlign: 'center',
                 isEditable: true,
                 editor: 'number',
                 beforeCommitCallback: ({ value }) => {
@@ -362,7 +362,7 @@
         ]
 
         const allEditorsColumns = [
-            { field: 'id', title: 'ID', width: '50px', align: 'center' },
+            { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
             { field: 'name', title: 'Text', width: '100px', isEditable: true, editor: 'text' },
             {
                 field: 'status',
@@ -420,7 +420,7 @@
                     dateFormat: 'YYYY-MM-DD'
                 }
             },
-            { field: 'verified', title: 'Checkbox', width: '90px', align: 'center', isEditable: true, editor: 'checkbox' },
+            { field: 'verified', title: 'Checkbox', width: '90px', horizontalAlign: 'center', isEditable: true, editor: 'checkbox' },
         ]
 
         const gridAllEditors = document.getElementById('gridAllEditors')
@@ -447,7 +447,7 @@
         ]
 
         const customEditorColumns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
             { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
             {
                 field: 'settings',
@@ -517,10 +517,10 @@
         ]
 
         const alwaysEditableColumns = [
-            { field: 'id', title: 'ID', width: '50px', align: 'center' },
+            { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
             { field: 'name', title: 'Name', isEditable: true, editor: 'text', editTrigger: 'always' },
-            { field: 'qty', title: 'Quantity', width: '100px', align: 'center', isEditable: true, editor: 'number', editTrigger: 'always' },
-            { field: 'price', title: 'Price', width: '100px', align: 'right', isEditable: true, editor: 'number', editTrigger: 'always', formatCallback: (v) => `$${v.toFixed(2)}` }
+            { field: 'qty', title: 'Quantity', width: '100px', horizontalAlign: 'center', isEditable: true, editor: 'number', editTrigger: 'always' },
+            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', isEditable: true, editor: 'number', editTrigger: 'always', formatCallback: (v) => `$${v.toFixed(2)}` }
         ]
 
         const gridAlways = document.getElementById('gridAlways')

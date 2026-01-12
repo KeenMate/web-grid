@@ -311,7 +311,7 @@ if (result) {
         ]
 
         const columns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center', isEditable: false },
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center', isEditable: false },
             { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
             { field: 'department', title: 'Department', width: '120px', isEditable: true, editor: 'select',
                 editorOptions: {
@@ -323,7 +323,7 @@ if (result) {
                     ]
                 }
             },
-            { field: 'salary', title: 'Salary', width: '100px', align: 'right', isEditable: true, editor: 'number',
+            { field: 'salary', title: 'Salary', width: '100px', horizontalAlign: 'right', isEditable: true, editor: 'number',
                 formatCallback: (v) => '$' + Number(v).toLocaleString()
             },
             { field: 'status', title: 'Status', width: '100px', isEditable: true, editor: 'select',

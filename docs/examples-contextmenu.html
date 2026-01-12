@@ -348,12 +348,12 @@
 
         // Read-only columns
         const readOnlyColumns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
             { field: 'name', title: 'Product Name', isSortable: true },
             { field: 'category', title: 'Category', isSortable: true, width: '120px' },
-            { field: 'price', title: 'Price', width: '100px', align: 'right', formatCallback: (v) => `$${v.toFixed(2)}` },
-            { field: 'stock', title: 'Stock', width: '80px', align: 'center' },
-            { field: 'active', title: 'Status', width: '80px', align: 'center', formatCallback: (v) => v ? '✓' : '✗' }
+            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', formatCallback: (v) => `$${v.toFixed(2)}` },
+            { field: 'stock', title: 'Stock', width: '80px', horizontalAlign: 'center' },
+            { field: 'active', title: 'Status', width: '80px', horizontalAlign: 'center', formatCallback: (v) => v ? '✓' : '✗' }
         ]
 
         // Read-only context menu
@@ -423,7 +423,7 @@
         // =============================================================
 
         const editableColumns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
             { field: 'name', title: 'Product Name', isSortable: true, isEditable: true, editor: 'text' },
             {
                 field: 'category',
@@ -444,7 +444,7 @@
                 field: 'price',
                 title: 'Price',
                 width: '100px',
-                align: 'right',
+                horizontalAlign: 'right',
                 isEditable: true,
                 editor: 'number',
                 formatCallback: (v) => `$${v.toFixed(2)}`
@@ -453,7 +453,7 @@
                 field: 'stock',
                 title: 'Stock',
                 width: '80px',
-                align: 'center',
+                horizontalAlign: 'center',
                 isEditable: true,
                 editor: 'number'
             },
@@ -461,7 +461,7 @@
                 field: 'active',
                 title: 'Active',
                 width: '80px',
-                align: 'center',
+                horizontalAlign: 'center',
                 isEditable: true,
                 editor: 'checkbox'
             }
@@ -572,17 +572,17 @@
         // =============================================================
 
         const headerColumns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center', isSortable: false },  // Not sortable - sort options hidden in context menu
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center', isSortable: false },  // Not sortable - sort options hidden in context menu
             { field: 'sku', title: 'SKU', width: '90px', isSortable: true },
             { field: 'name', title: 'Product Name', width: '160px', isSortable: true },
             { field: 'category', title: 'Category', isSortable: true, width: '120px' },
             { field: 'supplier', title: 'Supplier', width: '140px', isSortable: true },
-            { field: 'price', title: 'Price', width: '100px', align: 'right', isSortable: true, formatCallback: (v) => `$${v.toFixed(2)}` },
-            { field: 'discount', title: 'Discount', width: '90px', align: 'center', isSortable: true, formatCallback: (v) => v > 0 ? `${v}%` : '-' },
-            { field: 'stock', title: 'Stock', width: '80px', align: 'center', isSortable: true },
-            { field: 'weight', title: 'Weight', width: '90px', align: 'right', isSortable: true, formatCallback: (v) => `${v} kg` },
-            { field: 'rating', title: 'Rating', width: '80px', align: 'center', isSortable: true, formatCallback: (v) => `★ ${v}` },
-            { field: 'active', title: 'Status', width: '90px', align: 'center', formatCallback: (v) => v ? '✓ Active' : '✗ Inactive' }
+            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', isSortable: true, formatCallback: (v) => `$${v.toFixed(2)}` },
+            { field: 'discount', title: 'Discount', width: '90px', horizontalAlign: 'center', isSortable: true, formatCallback: (v) => v > 0 ? `${v}%` : '-' },
+            { field: 'stock', title: 'Stock', width: '80px', horizontalAlign: 'center', isSortable: true },
+            { field: 'weight', title: 'Weight', width: '90px', horizontalAlign: 'right', isSortable: true, formatCallback: (v) => `${v} kg` },
+            { field: 'rating', title: 'Rating', width: '80px', horizontalAlign: 'center', isSortable: true, formatCallback: (v) => `★ ${v}` },
+            { field: 'active', title: 'Status', width: '90px', horizontalAlign: 'center', formatCallback: (v) => v ? '✓ Active' : '✗ Inactive' }
         ]
 
         // Store original columns for "Show All Columns"

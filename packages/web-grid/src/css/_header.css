@@ -12,11 +12,12 @@
   color: var(--wg-header-color);
   font-weight: var(--wg-header-font-weight);
   padding: var(--wg-header-padding);
+  height: var(--wg-header-min-height);  /* In table layout, height acts as min-height */
   border-bottom: var(--wg-header-border);
   /* Use box-shadow instead of border-right to avoid flicker with sticky + border-collapse */
   box-shadow: inset -1px 0 0 var(--wg-border-color);
   box-sizing: border-box;  /* Include padding in width calculation */
-  text-align: left;
+  /* text-align set by inline style from column.headerAlign or column.align */
   user-select: none;
   overflow: hidden;  /* Required for text-overflow to work in table cells */
 }
@@ -38,20 +39,59 @@
   background: var(--wg-header-bg-sorted);
 }
 
-/* Header Content Layout */
-.wg__header-content {
+/* Header Container - flex layout for content + controls */
+.wg__header-container {
   display: flex;
-  align-items: center;
+  align-items: stretch;  /* Children take full height */
   gap: 4px;
-  justify-content: space-between;
+  height: 100%;
+}
+
+/* Header Content - takes remaining space */
+.wg__header-content {
+  flex: 1;
+  min-width: 0;  /* Allow shrinking */
+  display: flex;
+  align-items: center;  /* Vertically center title */
+  justify-content: flex-start;  /* Default: left */
+}
+
+/* Horizontal alignment modifiers */
+.wg__header-content--align-left {
+  justify-content: flex-start;
+}
+.wg__header-content--align-center {
+  justify-content: center;
+}
+.wg__header-content--align-right {
+  justify-content: flex-end;
+}
+.wg__header-content--align-justify {
+  justify-content: flex-start;  /* Justify doesn't apply to single-line headers, fallback to left */
+}
+
+/* Vertical alignment modifiers */
+.wg__header-content--valign-top {
+  align-items: flex-start;
+}
+.wg__header-content--valign-middle {
+  align-items: center;
+}
+.wg__header-content--valign-bottom {
+  align-items: flex-end;
 }
 
 .wg__header-title {
-  flex: 1;
-  min-width: 0;  /* Allow shrinking in flexbox */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Header Controls - fixed space for sort indicator */
+.wg__header-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;  /* Vertically center sort indicator */
 }
 
 /* Sort Indicator */
@@ -60,8 +100,6 @@
   opacity: var(--wg-sort-indicator-opacity);
   min-width: 16px;
   text-align: center;
-  display: inline-flex;
-  align-items: center;
 }
 
 .wg__sort-placeholder {

@@ -196,7 +196,7 @@ grid.isShortcutsHelpVisible = true</pre>
         let nextId = 9
 
         const columns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center' },
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center' },
             { field: 'name', title: 'Product Name', isEditable: true, editor: 'text' },
             { field: 'category', title: 'Category', width: '120px', isEditable: true, editor: 'select',
               editorOptions: {
@@ -207,9 +207,9 @@ grid.isShortcutsHelpVisible = true</pre>
                 ]
               }
             },
-            { field: 'price', title: 'Price', width: '100px', align: 'right', isEditable: true, editor: 'number',
+            { field: 'price', title: 'Price', width: '100px', horizontalAlign: 'right', isEditable: true, editor: 'number',
               formatCallback: (v) => `$${v.toFixed(2)}` },
-            { field: 'stock', title: 'Stock', width: '80px', align: 'center', isEditable: true, editor: 'number' }
+            { field: 'stock', title: 'Stock', width: '80px', horizontalAlign: 'center', isEditable: true, editor: 'number' }
         ]
 
         function logAction(action, ctx) {

@@ -212,6 +212,29 @@
                 <li><strong>Inactive rows:</strong> Grayed out with reduced opacity</li>
             </ul>
 
+            <div class="control-panel" style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--wg-surface-2, #f5f5f5); border-radius: 6px;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                    Header Height:
+                    <input type="range" id="headerHeightRange" min="24" max="60" value="32" style="width: 100px;">
+                    <span id="headerHeightValue" style="min-width: 45px;">32px</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                    Row Min Height:
+                    <input type="range" id="rowHeightRange" min="20" max="80" value="32" style="width: 100px;">
+                    <span id="rowHeightValue" style="min-width: 45px;">32px</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                    Row Max Height:
+                    <input type="range" id="rowMaxHeightRange" min="0" max="150" value="0" style="width: 100px;">
+                    <span id="rowMaxHeightValue" style="min-width: 45px;">none</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                    Bio Max Lines:
+                    <input type="range" id="maxLinesRange" min="0" max="10" value="3" style="width: 100px;">
+                    <span id="maxLinesValue" style="min-width: 45px;">3</span>
+                </label>
+            </div>
+
             <web-grid id="grid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
 
@@ -256,21 +279,21 @@
 
         // Sample employee data with varied salaries and statuses
         const sampleData = [
-            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, hireDate: '2020-03-15', sex: 'F', status: 'Active', product: 'laptop', notes: 'Team lead' },
-            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, hireDate: '2019-07-22', sex: 'M', status: 'Active', product: 'shirt', notes: '' },
-            { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 92000, hireDate: '2018-11-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'Senior dev' },
-            { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, hireDate: '2021-01-10', sex: 'M', status: 'Inactive', product: 'coffee', notes: 'On sabbatical' },
-            { id: 5, name: 'Eva Martinez', department: 'HR', salary: 65000, hireDate: '2020-06-20', sex: 'F', status: 'Active', product: 'jeans', notes: '' },
-            { id: 6, name: 'Frank Lee', department: 'Engineering', salary: 88000, hireDate: '2019-02-14', sex: 'M', status: 'Active', product: 'phone', notes: '' },
-            { id: 7, name: 'Grace Kim', department: 'Marketing', salary: 75000, hireDate: '2020-09-05', sex: 'F', status: 'Inactive', product: 'apple', notes: 'Parental leave' },
-            { id: 8, name: 'Henry Chen', department: 'Sales', salary: 71000, hireDate: '2021-04-18', sex: 'M', status: 'Active', product: 'bread', notes: '' },
-            { id: 9, name: 'Ivy Wang', department: 'Engineering', salary: 98000, hireDate: '2017-08-30', sex: 'F', status: 'Active', product: 'laptop', notes: 'Architect' },
-            { id: 10, name: 'Jack Davis', department: 'HR', salary: 62000, hireDate: '2022-02-01', sex: 'M', status: 'Active', product: 'sneakers', notes: '' },
-            { id: 11, name: 'Karen Wilson', department: 'Engineering', salary: 89000, hireDate: '2019-05-12', sex: 'F', status: 'Active', product: null, notes: '' },
-            { id: 12, name: 'Leo Garcia', department: 'Marketing', salary: 73000, hireDate: '2020-11-25', sex: 'M', status: 'Inactive', product: 'shirt', notes: 'Transitioning' },
-            { id: 13, name: 'Maria Lopez', department: 'Finance', salary: 85000, hireDate: '2018-04-08', sex: 'F', status: 'Active', product: 'coffee', notes: 'CFO assistant' },
-            { id: 14, name: 'Frosty McSnowface', department: 'Sales', salary: 67000, hireDate: '2023-12-25', sex: 'snowman', status: 'Active', product: null, notes: 'Seasonal' },
-            { id: 15, name: 'Olivia Moore', department: 'Engineering', salary: 102000, hireDate: '2016-03-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'VP Engineering' },
+            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, hireDate: '2020-03-15', sex: 'F', status: 'Active', product: 'laptop', notes: 'Team lead', bio: 'Experienced software engineer with expertise in distributed systems and cloud architecture. Leads a team of 5 developers.' },
+            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, hireDate: '2019-07-22', sex: 'M', status: 'Active', product: 'shirt', notes: '', bio: 'Creative marketing specialist focused on digital campaigns and brand development.' },
+            { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 92000, hireDate: '2018-11-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'Senior dev', bio: 'Full-stack developer with strong background in React and Node.js. Passionate about clean code and testing.' },
+            { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, hireDate: '2021-01-10', sex: 'M', status: 'Inactive', product: 'coffee', notes: 'On sabbatical', bio: 'Sales representative with excellent client relationship skills. Currently on extended leave.' },
+            { id: 5, name: 'Eva Martinez', department: 'HR', salary: 65000, hireDate: '2020-06-20', sex: 'F', status: 'Active', product: 'jeans', notes: '', bio: 'HR coordinator specializing in recruitment and employee onboarding processes.' },
+            { id: 6, name: 'Frank Lee', department: 'Engineering', salary: 88000, hireDate: '2019-02-14', sex: 'M', status: 'Active', product: 'phone', notes: '', bio: 'Backend engineer with expertise in Python and microservices architecture.' },
+            { id: 7, name: 'Grace Kim', department: 'Marketing', salary: 75000, hireDate: '2020-09-05', sex: 'F', status: 'Inactive', product: 'apple', notes: 'Parental leave', bio: 'Content strategist with focus on SEO and social media marketing.' },
+            { id: 8, name: 'Henry Chen', department: 'Sales', salary: 71000, hireDate: '2021-04-18', sex: 'M', status: 'Active', product: 'bread', notes: '', bio: 'Account manager handling enterprise clients in the tech sector.' },
+            { id: 9, name: 'Ivy Wang', department: 'Engineering', salary: 98000, hireDate: '2017-08-30', sex: 'F', status: 'Active', product: 'laptop', notes: 'Architect', bio: 'Principal software architect responsible for system design and technical decisions across multiple projects.' },
+            { id: 10, name: 'Jack Davis', department: 'HR', salary: 62000, hireDate: '2022-02-01', sex: 'M', status: 'Active', product: 'sneakers', notes: '', bio: 'Junior HR assistant supporting the recruitment team.' },
+            { id: 11, name: 'Karen Wilson', department: 'Engineering', salary: 89000, hireDate: '2019-05-12', sex: 'F', status: 'Active', product: null, notes: '', bio: 'DevOps engineer managing CI/CD pipelines and cloud infrastructure on AWS and Azure.' },
+            { id: 12, name: 'Leo Garcia', department: 'Marketing', salary: 73000, hireDate: '2020-11-25', sex: 'M', status: 'Inactive', product: 'shirt', notes: 'Transitioning', bio: 'Marketing analyst with data-driven approach to campaign optimization.' },
+            { id: 13, name: 'Maria Lopez', department: 'Finance', salary: 85000, hireDate: '2018-04-08', sex: 'F', status: 'Active', product: 'coffee', notes: 'CFO assistant', bio: 'Financial analyst supporting executive team with budgeting and forecasting.' },
+            { id: 14, name: 'Frosty McSnowface', department: 'Sales', salary: 67000, hireDate: '2023-12-25', sex: 'snowman', status: 'Active', product: null, notes: 'Seasonal', bio: 'Seasonal sales associate. Melts under pressure but always keeps a cool head.' },
+            { id: 15, name: 'Olivia Moore', department: 'Engineering', salary: 102000, hireDate: '2016-03-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'VP Engineering', bio: 'VP of Engineering overseeing all technical teams and driving innovation across the organization.' },
         ]
 
         // Helper function to get salary color class (rainbow gradient)
@@ -315,8 +338,8 @@
 
         // Column definitions
         const columns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center', isEditable: false },
-            { field: 'name', title: 'Name', width: '180px', editor: 'text' },
+            { field: 'id', title: 'ID', width: '60px', horizontalAlign: 'center', verticalAlign: 'top', isEditable: false },
+            { field: 'name', title: 'Name', width: '180px', editor: 'text', verticalAlign: 'middle' },
             {
                 field: 'department',
                 title: 'Dept (combo)',
@@ -331,7 +354,8 @@
                 field: 'salary',
                 title: 'Salary',
                 width: '120px',
-                align: 'right',
+                horizontalAlign: 'right',
+                verticalAlign: 'bottom',
                 editor: 'number',
                 formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : '',
                 // Dynamic cell styling based on salary value
@@ -350,7 +374,7 @@
                 field: 'sex',
                 title: 'Sex',
                 width: '60px',
-                align: 'center',
+                horizontalAlign: 'center',
                 isEditable: false,
                 // Use templateCallback to render Font Awesome icons
                 templateCallback: (row) => {
@@ -364,7 +388,7 @@
                 field: 'status',
                 title: 'Status',
                 width: '100px',
-                align: 'center',
+                horizontalAlign: 'center',
                 editor: 'select',
                 editorOptions: {
                     options: statusOptions
@@ -484,6 +508,15 @@
                         }
                     }
                 }
+            },
+            {
+                field: 'bio',
+                title: 'Bio (justify)',
+                width: '250px',
+                horizontalAlign: 'justify',
+                textOverflow: 'wrap',
+                maxLines: 3,  // Limit to 3 visible lines with ellipsis
+                isEditable: false
             }
         ]
 
@@ -554,6 +587,52 @@
             // Close any open dropdown/editor before theme switch to avoid state corruption
             grid.cancelEdit()
             document.documentElement.classList.toggle('dark', themeToggle.checked)
+        })
+
+        // Header height control
+        const headerHeightRange = document.getElementById('headerHeightRange')
+        const headerHeightValue = document.getElementById('headerHeightValue')
+        headerHeightRange.addEventListener('input', () => {
+            const value = headerHeightRange.value + 'px'
+            headerHeightValue.textContent = value
+            grid.style.setProperty('--wg-header-min-height', value)
+        })
+
+        // Row height control
+        const rowHeightRange = document.getElementById('rowHeightRange')
+        const rowHeightValue = document.getElementById('rowHeightValue')
+        rowHeightRange.addEventListener('input', () => {
+            const value = rowHeightRange.value + 'px'
+            rowHeightValue.textContent = value
+            grid.style.setProperty('--wg-row-min-height', value)
+        })
+
+        // Row max height control
+        const rowMaxHeightRange = document.getElementById('rowMaxHeightRange')
+        const rowMaxHeightValue = document.getElementById('rowMaxHeightValue')
+        rowMaxHeightRange.addEventListener('input', () => {
+            const val = parseInt(rowMaxHeightRange.value)
+            if (val === 0) {
+                rowMaxHeightValue.textContent = 'none'
+                grid.style.setProperty('--wg-row-max-height', 'none')
+            } else {
+                rowMaxHeightValue.textContent = val + 'px'
+                grid.style.setProperty('--wg-row-max-height', val + 'px')
+            }
+        })
+
+        // Bio max lines control
+        const maxLinesRange = document.getElementById('maxLinesRange')
+        const maxLinesValue = document.getElementById('maxLinesValue')
+        maxLinesRange.addEventListener('input', () => {
+            const val = parseInt(maxLinesRange.value)
+            maxLinesValue.textContent = val === 0 ? 'none' : val
+            // Update the bio column's maxLines property
+            const bioColumn = columns.find(c => c.field === 'bio')
+            if (bioColumn) {
+                bioColumn.maxLines = val === 0 ? undefined : val
+                grid.columns = [...columns]  // Trigger re-render
+            }
         })
     </script>
 </body>
