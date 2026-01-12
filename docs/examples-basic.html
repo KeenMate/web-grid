@@ -20,19 +20,19 @@
 
             <div class="controls">
                 <label>
-                    <input type="checkbox" id="striped" checked> Striped
+                    <input type="checkbox" id="isStriped" checked> Striped
                 </label>
                 <label>
-                    <input type="checkbox" id="hoverable" checked> Hoverable
+                    <input type="checkbox" id="isHoverable" checked> Hoverable
                 </label>
                 <label>
                     <input type="checkbox" id="sortable" checked> Sortable
                 </label>
                 <label>
-                    <input type="checkbox" id="pageable"> Pageable
+                    <input type="checkbox" id="isPageable"> Pageable
                 </label>
                 <label>
-                    <input type="checkbox" id="editable" checked> Editable
+                    <input type="checkbox" id="isEditable" checked> Editable
                 </label>
                 <label>
                     <input type="checkbox" id="navigate" checked> Navigate Mode
@@ -137,7 +137,7 @@
 
         // Column definitions
         const columns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center', editable: false },
+            { field: 'id', title: 'ID', width: '60px', align: 'center', isEditable: false },
             {
                 field: 'name',
                 title: 'Name',
@@ -204,7 +204,7 @@
                     iconMember: 'icon',
                     disabledMember: 'disabled'
                 },
-                openDropdownOnEnter: true,
+                shouldOpenDropdownOnEnter: true,
                 tooltipMember: 'statusTooltip'
             },
             {
@@ -222,7 +222,7 @@
                     minSearchLength: 2,
                     debounceMs: 300,
                     showOnFocus: false,
-                    onSearchCallback: async (query, row, signal) => {
+                    searchCallback: async (query, row, signal) => {
                         await new Promise(resolve => setTimeout(resolve, 500))
                         const allManagers = [
                             { value: 'John Doe', label: 'John Doe' },
@@ -253,9 +253,9 @@
         grid.items = sampleData
         grid.columns = columns
         grid.pageSize = 5
-        grid.editable = true
+        grid.isEditable = true
         grid.editTrigger = 'navigate'
-        grid.showRowNumbers = true
+        grid.isRowNumbersVisible = true
         grid.sortMode = 'multi'
         grid.tooltipShowDelay = 0
         grid.tooltipHideDelay = 100
@@ -297,24 +297,24 @@
         }
 
         // Wire up controls
-        document.getElementById('striped').addEventListener('change', (e) => {
-            grid.striped = e.target.checked
+        document.getElementById('isStriped').addEventListener('change', (e) => {
+            grid.isStriped = e.target.checked
         })
 
-        document.getElementById('hoverable').addEventListener('change', (e) => {
-            grid.hoverable = e.target.checked
+        document.getElementById('isHoverable').addEventListener('change', (e) => {
+            grid.isHoverable = e.target.checked
         })
 
         document.getElementById('sortable').addEventListener('change', (e) => {
             grid.sortMode = e.target.checked ? 'multi' : 'none'
         })
 
-        document.getElementById('pageable').addEventListener('change', (e) => {
-            grid.pageable = e.target.checked
+        document.getElementById('isPageable').addEventListener('change', (e) => {
+            grid.isPageable = e.target.checked
         })
 
-        document.getElementById('editable').addEventListener('change', (e) => {
-            grid.editable = e.target.checked
+        document.getElementById('isEditable').addEventListener('change', (e) => {
+            grid.isEditable = e.target.checked
         })
 
         document.getElementById('navigate').addEventListener('change', (e) => {

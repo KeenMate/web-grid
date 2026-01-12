@@ -127,7 +127,7 @@
                 Right-click any cell to see the context menu. Try "Copy Cell" to see dynamic labels based on column.
                 Right-click the Price column to see the "Convert to Euro" option.
             </p>
-            <web-grid id="grid1" striped hoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="grid1" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
 
         <div class="card">
@@ -136,7 +136,7 @@
                 Right-click to see context-aware options. Note: "Delete" is disabled for active products,
                 "Restock" only appears for low-stock items (stock &lt; 20).
             </p>
-            <web-grid id="grid2" striped hoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="grid2" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
 
         <div class="grid-2">
@@ -219,7 +219,7 @@
                     <input type="range" id="yOffsetSlider" min="-50" max="50" value="0" style="width: 100%;">
                 </div>
             </div>
-            <web-grid id="grid3" striped hoverable style="max-width: 100%; max-height: 250px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="grid3" isStriped isHoverable style="max-width: 100%; max-height: 250px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
 
         <div class="card">
@@ -228,7 +228,7 @@
                 Right-click on column headers to access column-specific actions like sorting, freezing, and hiding.
                 Supports predefined actions (string shortcuts) and custom items.
             </p>
-            <web-grid id="gridHeader" striped hoverable style="max-width: 800px; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="gridHeader" isStriped isHoverable style="max-width: 800px; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
 
             <div id="headerMenuLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
                 Right-click a column header to see the context menu...
@@ -349,8 +349,8 @@
         // Read-only columns
         const readOnlyColumns = [
             { field: 'id', title: 'ID', width: '60px', align: 'center' },
-            { field: 'name', title: 'Product Name', sortable: true },
-            { field: 'category', title: 'Category', sortable: true, width: '120px' },
+            { field: 'name', title: 'Product Name', isSortable: true },
+            { field: 'category', title: 'Category', isSortable: true, width: '120px' },
             { field: 'price', title: 'Price', width: '100px', align: 'right', formatCallback: (v) => `$${v.toFixed(2)}` },
             { field: 'stock', title: 'Stock', width: '80px', align: 'center' },
             { field: 'active', title: 'Status', width: '80px', align: 'center', formatCallback: (v) => v ? '✓' : '✗' }
@@ -424,13 +424,13 @@
 
         const editableColumns = [
             { field: 'id', title: 'ID', width: '60px', align: 'center' },
-            { field: 'name', title: 'Product Name', sortable: true, editable: true, editor: 'text' },
+            { field: 'name', title: 'Product Name', isSortable: true, isEditable: true, editor: 'text' },
             {
                 field: 'category',
                 title: 'Category',
                 width: '130px',
-                sortable: true,
-                editable: true,
+                isSortable: true,
+                isEditable: true,
                 editor: 'select',
                 editorOptions: {
                     options: [
@@ -445,7 +445,7 @@
                 title: 'Price',
                 width: '100px',
                 align: 'right',
-                editable: true,
+                isEditable: true,
                 editor: 'number',
                 formatCallback: (v) => `$${v.toFixed(2)}`
             },
@@ -454,7 +454,7 @@
                 title: 'Stock',
                 width: '80px',
                 align: 'center',
-                editable: true,
+                isEditable: true,
                 editor: 'number'
             },
             {
@@ -462,7 +462,7 @@
                 title: 'Active',
                 width: '80px',
                 align: 'center',
-                editable: true,
+                isEditable: true,
                 editor: 'checkbox'
             }
         ]
@@ -528,7 +528,7 @@
         const grid2 = document.getElementById('grid2')
         grid2.items = products
         grid2.columns = editableColumns
-        grid2.editable = true
+        grid2.isEditable = true
         grid2.editTrigger = 'dblclick'
         grid2.contextMenu = editableContextMenu
 
@@ -572,16 +572,16 @@
         // =============================================================
 
         const headerColumns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center', sortable: false },  // Not sortable - sort options hidden in context menu
-            { field: 'sku', title: 'SKU', width: '90px', sortable: true },
-            { field: 'name', title: 'Product Name', width: '160px', sortable: true },
-            { field: 'category', title: 'Category', sortable: true, width: '120px' },
-            { field: 'supplier', title: 'Supplier', width: '140px', sortable: true },
-            { field: 'price', title: 'Price', width: '100px', align: 'right', sortable: true, formatCallback: (v) => `$${v.toFixed(2)}` },
-            { field: 'discount', title: 'Discount', width: '90px', align: 'center', sortable: true, formatCallback: (v) => v > 0 ? `${v}%` : '-' },
-            { field: 'stock', title: 'Stock', width: '80px', align: 'center', sortable: true },
-            { field: 'weight', title: 'Weight', width: '90px', align: 'right', sortable: true, formatCallback: (v) => `${v} kg` },
-            { field: 'rating', title: 'Rating', width: '80px', align: 'center', sortable: true, formatCallback: (v) => `★ ${v}` },
+            { field: 'id', title: 'ID', width: '60px', align: 'center', isSortable: false },  // Not sortable - sort options hidden in context menu
+            { field: 'sku', title: 'SKU', width: '90px', isSortable: true },
+            { field: 'name', title: 'Product Name', width: '160px', isSortable: true },
+            { field: 'category', title: 'Category', isSortable: true, width: '120px' },
+            { field: 'supplier', title: 'Supplier', width: '140px', isSortable: true },
+            { field: 'price', title: 'Price', width: '100px', align: 'right', isSortable: true, formatCallback: (v) => `$${v.toFixed(2)}` },
+            { field: 'discount', title: 'Discount', width: '90px', align: 'center', isSortable: true, formatCallback: (v) => v > 0 ? `${v}%` : '-' },
+            { field: 'stock', title: 'Stock', width: '80px', align: 'center', isSortable: true },
+            { field: 'weight', title: 'Weight', width: '90px', align: 'right', isSortable: true, formatCallback: (v) => `${v} kg` },
+            { field: 'rating', title: 'Rating', width: '80px', align: 'center', isSortable: true, formatCallback: (v) => `★ ${v}` },
             { field: 'active', title: 'Status', width: '90px', align: 'center', formatCallback: (v) => v ? '✓ Active' : '✗ Inactive' }
         ]
 

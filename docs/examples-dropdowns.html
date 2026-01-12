@@ -127,7 +127,7 @@
         ]
 
         const columns = [
-            { field: 'id', title: 'ID', width: '50px', editable: false },
+            { field: 'id', title: 'ID', width: '50px', isEditable: false },
             {
                 field: 'priority',
                 title: 'Priority (custom render)',
@@ -193,7 +193,7 @@
                     getDisplayCallback: (opt) => `${opt.firstName} ${opt.lastName}`,
                     getIconCallback: (opt) => opt.avatar,
                     getSubtitleCallback: (opt) => opt.email,
-                    onSearchCallback: async (query) => {
+                    searchCallback: async (query) => {
                         await new Promise(r => setTimeout(r, 300))
                         const users = [
                             { id: 1, firstName: 'Alice', lastName: 'Johnson', email: 'alice@example.com', avatar: '👩' },
@@ -214,7 +214,7 @@
         const grid = document.getElementById('grid')
         grid.items = gridData
         grid.columns = columns
-        grid.editable = true
+        grid.isEditable = true
         grid.editTrigger = 'navigate'
         grid.tooltipShowDelay = 0
         grid.tooltipHideDelay = 100

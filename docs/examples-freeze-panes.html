@@ -20,7 +20,7 @@
 
             <div class="controls">
                 <label>
-                    <input type="checkbox" id="stickyRowNumbers" checked> Sticky Row Numbers
+                    <input type="checkbox" id="stickyRowNumbers" checked> isStickyRowNumbers
                 </label>
                 <label>
                     Freeze Columns:
@@ -32,7 +32,7 @@
                     </select>
                 </label>
                 <label>
-                    <input type="checkbox" id="showRowNumbers" checked> Show Row Numbers
+                    <input type="checkbox" id="showRowNumbers" checked> isRowNumbersVisible
                 </label>
             </div>
 
@@ -41,7 +41,7 @@
             <div class="note" style="margin-top: 1rem;">
                 <div class="note-title">How it works</div>
                 <ul>
-                    <li><code>stickyRowNumbers: true</code> - Row number column stays fixed on the left</li>
+                    <li><code>isStickyRowNumbers: true</code> - Row number column stays fixed on the left</li>
                     <li><code>freezeColumns: N</code> - First N columns are frozen (after visual reorder)</li>
                     <li><code>frozen: true</code> on Column - Mark individual columns as frozen (they move to the left)</li>
                 </ul>
@@ -68,11 +68,11 @@
                     <h3>Grid-Level Properties</h3>
                     <table class="props-table">
                         <tr>
-                            <td><code>showRowNumbers</code></td>
+                            <td><code>isRowNumbersVisible</code></td>
                             <td>Show row number column</td>
                         </tr>
                         <tr>
-                            <td><code>stickyRowNumbers</code></td>
+                            <td><code>isStickyRowNumbers</code></td>
                             <td>Make row numbers sticky (frozen)</td>
                         </tr>
                         <tr>
@@ -162,15 +162,15 @@
         const grid = document.getElementById('grid')
         grid.items = wideData
         grid.columns = columns
-        grid.showRowNumbers = true
-        grid.stickyRowNumbers = true
+        grid.isRowNumbersVisible = true
+        grid.isStickyRowNumbers = true
         grid.freezeColumns = 2
-        grid.striped = true
-        grid.hoverable = true
+        grid.isStriped = true
+        grid.isHoverable = true
 
         // Controls for first grid
         document.getElementById('stickyRowNumbers').addEventListener('change', e => {
-            grid.stickyRowNumbers = e.target.checked
+            grid.isStickyRowNumbers = e.target.checked
         })
 
         document.getElementById('freezeColumns').addEventListener('change', e => {
@@ -178,7 +178,7 @@
         })
 
         document.getElementById('showRowNumbers').addEventListener('change', e => {
-            grid.showRowNumbers = e.target.checked
+            grid.isRowNumbersVisible = e.target.checked
         })
 
         // Second grid - demonstrating column-level frozen property
@@ -199,10 +199,10 @@
 
         grid2.items = wideData.slice(0, 20)
         grid2.columns = columnsWithFrozen
-        grid2.showRowNumbers = true
-        grid2.stickyRowNumbers = true
-        grid2.striped = true
-        grid2.hoverable = true
+        grid2.isRowNumbersVisible = true
+        grid2.isStickyRowNumbers = true
+        grid2.isStriped = true
+        grid2.isHoverable = true
     </script>
 </body>
 </html>

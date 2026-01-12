@@ -1,0 +1,174 @@
+# Web-Grid Library Cleanup Plan
+
+## Overview
+Clean up property names, CSS variables, and event/callback naming to align with web-multiselect and web-daterangepicker patterns.
+
+**Status:** In Progress
+**Scope:** Breaking changes (new library, no backwards compatibility needed)
+
+---
+
+## Progress Tracking
+
+- [ ] **Phase 1:** CSS Variable Cleanup
+- [ ] **Phase 2:** Event/Callback Renames
+- [ ] **Phase 3:** Boolean Property Renames
+- [ ] **Phase 4:** Update Examples/Docs
+- [ ] **Phase 5:** Verification
+
+---
+
+## 1. Events vs Callbacks Renames
+
+Per CLAUDE.md: Events (`on*`) = fire-and-forget, Callbacks (`*Callback`) = return value affects behavior.
+
+### Tasks
+
+- [ ] `onfilldrag` → `fillDragCallback` (returns boolean to cancel fill)
+  - types.ts:509
+  - grid.ts
+  - fill-handle module
+- [ ] `onSearchCallback` → `searchCallback` (returns results, remove `on` prefix)
+  - types.ts:107
+  - dropdown modules
+
+---
+
+## 2. Boolean Property Renames
+
+Per web-multiselect pattern: Boolean properties use `is*` prefix.
+
+### Grid-Level Properties
+
+- [ ] `filterable` → `isFilterable`
+- [ ] `pageable` → `isPageable`
+- [ ] `striped` → `isStriped`
+- [ ] `hoverable` → `isHoverable`
+- [ ] `editable` → `isEditable`
+- [ ] `showRowNumbers` → `isRowNumbersVisible`
+- [ ] `stickyRowNumbers` → `isStickyRowNumbers`
+- [ ] `showRowToolbar` → `isRowToolbarVisible`
+- [ ] `showShortcutsHelp` → `isShortcutsHelpVisible`
+- [ ] `virtualScroll` → `isVirtualScrollEnabled`
+- [ ] `infiniteScroll` → `isInfiniteScrollEnabled`
+- [ ] `persistColumnWidths` → `shouldPersistColumnWidths`
+- [ ] `persistColumnOrder` → `shouldPersistColumnOrder`
+- [ ] `allowColumnReorder` → `isColumnReorderAllowed`
+- [ ] `checkboxAlwaysEditable` → `isCheckboxAlwaysEditable`
+- [ ] `dropdownShowOnFocus` → `shouldShowDropdownOnFocus`
+- [ ] `openDropdownOnEnter` → `shouldOpenDropdownOnEnter`
+- [ ] `summaryInline` → `isSummaryInline`
+
+### Column-Level Properties
+
+- [ ] `sortable` → `isSortable`
+- [ ] `filterable` → `isFilterable`
+- [ ] `editable` → `isEditable`
+- [ ] `frozen` → `isFrozen`
+- [ ] `resizable` → `isResizable`
+- [ ] `hidden` → `isHidden`
+- [ ] `showEditButton` → `isEditButtonVisible`
+- [ ] `openDropdownOnEnter` → `shouldOpenDropdownOnEnter`
+
+---
+
+## 3. CSS Variable Cleanup
+
+### 3.1 Add Component-Specific Variables
+
+- [ ] Add to `_variables.css`:
+  ```css
+  /* Dropdown */
+  --wg-dropdown-option-gap: var(--wg-spacing-sm);
+  --wg-dropdown-option-padding: calc(0.6 * var(--wg-rem)) calc(1.2 * var(--wg-rem));
+  --wg-dropdown-empty-padding: calc(0.8 * var(--wg-rem)) calc(1.2 * var(--wg-rem));
+
+  /* Inline Actions */
+  --wg-inline-actions-padding: var(--wg-spacing-xs) var(--wg-spacing-sm);
+
+  /* Toolbar */
+  --wg-toolbar-row-gap: calc(0.2 * var(--wg-rem));
+  --wg-toolbar-label-font-size: var(--wg-font-size-xs);
+
+  /* Tooltip */
+  --wg-tooltip-padding: calc(0.6 * var(--wg-rem)) calc(1.0 * var(--wg-rem));
+  --wg-tooltip-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  ```
+
+### 3.2 Replace Hardcoded Values
+
+- [ ] `_dropdown.css`: Replace generic spacing with component-specific variables
+- [ ] `_toolbar.css`: Replace hardcoded gap and font-size
+- [ ] `_dialogs.css`: Replace hardcoded padding and box-shadow
+
+---
+
+## 4. Files to Modify
+
+### Core Files
+- `packages/web-grid/src/types.ts` - Type definitions
+- `packages/web-grid/src/grid.ts` - Property implementation
+- `packages/web-grid/src/web-component.ts` - Attribute mapping
+
+### CSS Files
+- `packages/web-grid/src/css/_variables.css`
+- `packages/web-grid/src/css/_dropdown.css`
+- `packages/web-grid/src/css/_toolbar.css`
+- `packages/web-grid/src/css/_dialogs.css`
+
+### Module Files
+- `packages/web-grid/src/modules/fill-handle/index.ts`
+- `packages/web-grid/src/modules/dropdown/` (multiple files)
+- All other modules referencing renamed properties
+
+### Docs/Examples
+- `docs/examples-*.html` (all example files)
+
+---
+
+## 5. Verification Checklist
+
+- [ ] Run `make build` - no TypeScript errors
+- [ ] Run `make dev` and test:
+  - [ ] Filtering with `isFilterable`
+  - [ ] Pagination with `isPageable`
+  - [ ] Fill handle with `fillDragCallback`
+  - [ ] Autocomplete search with `searchCallback`
+  - [ ] Column sorting with `isSortable`
+  - [ ] Row toolbar with `isRowToolbarVisible`
+- [ ] Test all example pages
+
+---
+
+## Summary Stats
+
+| Category | Count |
+|----------|-------|
+| Event/Callback Renames | 2 |
+| Grid Boolean Renames | 18 |
+| Column Boolean Renames | 8 |
+| CSS Variables to Add | ~8 |
+| CSS Files to Update | 4 |
+
+---
+
+## Recent Changes (Session Work)
+
+### Completed
+
+- [x] **dropdownMinWidth option** - Added to EditorOptions for dropdowns wider than anchor cell
+  - `types.ts` - Added `dropdownMinWidth?: string`
+  - `modules/dropdown/rendering.ts` - Changed `width` to `minWidth` in Floating UI size middleware
+
+- [x] **Dropdown highlight visibility** - Fixed for custom background colors
+  - `css/_dropdown.css` - Added `box-shadow: inset 0 0 0 2px var(--wg-accent-color)` to highlighted state
+  - Works with select, combobox, and autocomplete
+
+- [x] **Product autocomplete example** - Added to examples-custom-styling.html
+  - Custom `renderOptionCallback` with group-based colors (Electronics/Clothing/Food)
+  - `cellClassCallback` for cell styling by product group
+  - CSS variables for light/dark mode product colors
+  - `editStartSelection: 'selectAll'`
+
+- [x] **Theme toggle fix** - Prevents dropdown state corruption
+  - `examples-custom-styling.html` - Calls `grid.cancelEdit()` before theme switch

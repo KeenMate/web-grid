@@ -124,7 +124,7 @@
                 <li><span class="key-hint">Escape</span> Cancel editing</li>
                 <li><span class="key-hint">Any character</span> Start typing to edit</li>
             </ul>
-            <web-grid id="gridNavigate" striped hoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="gridNavigate" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
             <div id="navigateStatus" class="status-message hidden"></div>
         </div>
 
@@ -138,7 +138,7 @@
                 <li><strong>Score:</strong> Must be 0-100 (rounds to integer)</li>
                 <li><strong>Email:</strong> Must contain @</li>
             </ul>
-            <web-grid id="gridValidation" striped hoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="gridValidation" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
             <div id="validationStatus" class="status-message hidden"></div>
         </div>
 
@@ -146,7 +146,7 @@
         <div class="card">
             <h2>All Editor Types</h2>
             <p>Demonstrating every editor type available:</p>
-            <web-grid id="gridAllEditors" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="gridAllEditors" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             <div id="allEditorsStatus" class="status-message hidden"></div>
         </div>
 
@@ -154,7 +154,7 @@
         <div class="card">
             <h2>Custom Editor (JSON Dialog)</h2>
             <p>The "Settings" column uses <code>editor: "custom"</code> with a dialog for JSON editing. Press F2, Space, or double-click to open.</p>
-            <web-grid id="gridCustomEditor" striped hoverable style="max-width: 100%; max-height: 300px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="gridCustomEditor" isStriped isHoverable style="max-width: 100%; max-height: 300px; border: 1px solid #e2e8f0;"></web-grid>
             <div id="customEditorStatus" class="status-message hidden"></div>
         </div>
 
@@ -162,7 +162,7 @@
         <div class="card">
             <h2>Always Editable (Spreadsheet Mode)</h2>
             <p>All cells are always in edit mode. Use <span class="key-hint">Tab</span> to move between cells.</p>
-            <web-grid id="gridAlways" striped={false} hoverable style="max-width: 100%; max-height: 300px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="gridAlways" isStriped={false} isHoverable style="max-width: 100%; max-height: 300px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
     </div>
 
@@ -203,15 +203,15 @@
 
         const navigateColumns = [
             { field: 'id', title: 'ID', width: '60px', align: 'center' },
-            { field: 'name', title: 'Name', editable: true, editor: 'text' },
-            { field: 'age', title: 'Age', width: '80px', align: 'center', editable: true, editor: 'number', editorOptions: { min: 0, max: 120 } },
-            { field: 'city', title: 'City', editable: true, editor: 'text' },
-            { field: 'active', title: 'Active', width: '80px', align: 'center', editable: true, editor: 'checkbox' },
+            { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
+            { field: 'age', title: 'Age', width: '80px', align: 'center', isEditable: true, editor: 'number', editorOptions: { min: 0, max: 120 } },
+            { field: 'city', title: 'City', isEditable: true, editor: 'text' },
+            { field: 'active', title: 'Active', width: '80px', align: 'center', isEditable: true, editor: 'checkbox' },
             {
                 field: 'role',
                 title: 'Role',
                 width: '130px',
-                editable: true,
+                isEditable: true,
                 editor: 'select',
                 editorOptions: {
                     options: [
@@ -226,7 +226,7 @@
         const gridNavigate = document.getElementById('gridNavigate')
         gridNavigate.items = navigateData
         gridNavigate.columns = navigateColumns
-        gridNavigate.editable = true
+        gridNavigate.isEditable = true
         gridNavigate.editTrigger = 'navigate'
         gridNavigate.onrowchange = (detail) => {
             if (detail.isValid) {
@@ -251,7 +251,7 @@
             {
                 field: 'name',
                 title: 'Name',
-                editable: true,
+                isEditable: true,
                 editor: 'text',
                 beforeCommitCallback: ({ value }) => {
                     const str = String(value || '').trim()
@@ -265,7 +265,7 @@
                 title: 'Age',
                 width: '80px',
                 align: 'center',
-                editable: true,
+                isEditable: true,
                 editor: 'number',
                 beforeCommitCallback: ({ value }) => {
                     const num = Number(value)
@@ -280,7 +280,7 @@
                 title: 'Score',
                 width: '80px',
                 align: 'center',
-                editable: true,
+                isEditable: true,
                 editor: 'number',
                 beforeCommitCallback: ({ value }) => {
                     const num = Number(value)
@@ -291,7 +291,7 @@
             {
                 field: 'email',
                 title: 'Email',
-                editable: true,
+                isEditable: true,
                 editor: 'text',
                 beforeCommitCallback: ({ value }) => {
                     const str = String(value || '')
@@ -304,7 +304,7 @@
         const gridValidation = document.getElementById('gridValidation')
         gridValidation.items = validationData
         gridValidation.columns = validationColumns
-        gridValidation.editable = true
+        gridValidation.isEditable = true
         gridValidation.editTrigger = 'navigate'
         gridValidation.onrowchange = (detail) => {
             if (detail.isValid) {
@@ -363,12 +363,12 @@
 
         const allEditorsColumns = [
             { field: 'id', title: 'ID', width: '50px', align: 'center' },
-            { field: 'name', title: 'Text', width: '100px', editable: true, editor: 'text' },
+            { field: 'name', title: 'Text', width: '100px', isEditable: true, editor: 'text' },
             {
                 field: 'status',
                 title: 'Select',
                 width: '110px',
-                editable: true,
+                isEditable: true,
                 editor: 'select',
                 editorOptions: {
                     options: [
@@ -382,7 +382,7 @@
                 field: 'city',
                 title: 'Combobox',
                 width: '130px',
-                editable: true,
+                isEditable: true,
                 editor: 'combobox',
                 formatCallback: (v) => cityOptions.find(c => c.value === v)?.label || v,
                 editorOptions: {
@@ -396,7 +396,7 @@
                 field: 'country',
                 title: 'Autocomplete',
                 width: '150px',
-                editable: true,
+                isEditable: true,
                 editor: 'autocomplete',
                 formatCallback: (v) => allCountries.find(c => c.value === v)?.label || v,
                 editorOptions: {
@@ -414,19 +414,19 @@
                 field: 'birthdate',
                 title: 'Date',
                 width: '130px',
-                editable: true,
+                isEditable: true,
                 editor: 'date',
                 editorOptions: {
                     dateFormat: 'YYYY-MM-DD'
                 }
             },
-            { field: 'verified', title: 'Checkbox', width: '90px', align: 'center', editable: true, editor: 'checkbox' },
+            { field: 'verified', title: 'Checkbox', width: '90px', align: 'center', isEditable: true, editor: 'checkbox' },
         ]
 
         const gridAllEditors = document.getElementById('gridAllEditors')
         gridAllEditors.items = allEditorsData
         gridAllEditors.columns = allEditorsColumns
-        gridAllEditors.editable = true
+        gridAllEditors.isEditable = true
         gridAllEditors.editTrigger = 'navigate'
         gridAllEditors.onrowchange = (detail) => {
             if (detail.isValid) {
@@ -448,11 +448,11 @@
 
         const customEditorColumns = [
             { field: 'id', title: 'ID', width: '60px', align: 'center' },
-            { field: 'name', title: 'Name', editable: true, editor: 'text' },
+            { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
             {
                 field: 'settings',
                 title: 'Settings (JSON)',
-                editable: true,
+                isEditable: true,
                 editor: 'custom',
                 formatCallback: (v) => v ? JSON.stringify(v).substring(0, 30) + (JSON.stringify(v).length > 30 ? '...' : '') : '(empty)',
                 cellEditCallback: (context) => {
@@ -470,7 +470,7 @@
         const gridCustomEditor = document.getElementById('gridCustomEditor')
         gridCustomEditor.items = customEditorData
         gridCustomEditor.columns = customEditorColumns
-        gridCustomEditor.editable = true
+        gridCustomEditor.isEditable = true
         gridCustomEditor.editTrigger = 'navigate'
         gridCustomEditor.onrowchange = (detail) => {
             if (detail.isValid) {
@@ -518,15 +518,15 @@
 
         const alwaysEditableColumns = [
             { field: 'id', title: 'ID', width: '50px', align: 'center' },
-            { field: 'name', title: 'Name', editable: true, editor: 'text', editTrigger: 'always' },
-            { field: 'qty', title: 'Quantity', width: '100px', align: 'center', editable: true, editor: 'number', editTrigger: 'always' },
-            { field: 'price', title: 'Price', width: '100px', align: 'right', editable: true, editor: 'number', editTrigger: 'always', formatCallback: (v) => `$${v.toFixed(2)}` }
+            { field: 'name', title: 'Name', isEditable: true, editor: 'text', editTrigger: 'always' },
+            { field: 'qty', title: 'Quantity', width: '100px', align: 'center', isEditable: true, editor: 'number', editTrigger: 'always' },
+            { field: 'price', title: 'Price', width: '100px', align: 'right', isEditable: true, editor: 'number', editTrigger: 'always', formatCallback: (v) => `$${v.toFixed(2)}` }
         ]
 
         const gridAlways = document.getElementById('gridAlways')
         gridAlways.items = alwaysEditableData
         gridAlways.columns = alwaysEditableColumns
-        gridAlways.editable = true
+        gridAlways.isEditable = true
         gridAlways.onrowchange = (detail) => {
             if (detail.isValid) {
                 alwaysEditableData[detail.rowIndex] = { ...detail.draftRow }

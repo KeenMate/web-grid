@@ -103,7 +103,7 @@ export async function performAutocompleteSearch<T>(
 	column: Column<T>
 ): Promise<void> {
 	const opts = column.editorOptions || {}
-	if (!opts.onSearchCallback) return
+	if (!opts.searchCallback) return
 
 	// Cancel previous request
 	if (ctx.searchAbortController) {
@@ -122,7 +122,7 @@ export async function performAutocompleteSearch<T>(
 		if (!editingCell) return
 
 		const item = ctx.grid.displayItems[editingCell.rowIndex]
-		const results = await opts.onSearchCallback(query, item, signal)
+		const results = await opts.searchCallback(query, item, signal)
 
 		if (!signal.aborted) {
 			// Clear searching state BEFORE rendering so dropdown shows correct message

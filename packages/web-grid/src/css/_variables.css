@@ -124,15 +124,15 @@
   --wg-header-color: var(--wg-text-color-1);
   --wg-header-border: 2px solid var(--wg-border-color);
   --wg-header-separator: 1px solid var(--wg-border-color);  /* Vertical separator between headers */
-  --wg-header-padding: var(--wg-spacing-sm) var(--wg-spacing-md);
+  --wg-header-padding: var(--wg-spacing-sm);
   --wg-header-font-weight: var(--wg-font-weight-semibold);
 
   /* ==========================================================================
      CELL COMPONENT
      ========================================================================== */
-  --wg-cell-padding: var(--wg-spacing-sm) var(--wg-spacing-md);
+  --wg-cell-padding: var(--wg-spacing-sm);
   --wg-cell-padding-block: var(--wg-spacing-sm);
-  --wg-cell-padding-inline: var(--wg-spacing-md);
+  --wg-cell-padding-inline: var(--wg-spacing-sm);
   --wg-cell-color: var(--wg-text-color-1);
   --wg-cell-border: 1px solid var(--wg-border-color);
   --wg-cell-bg-hover: var(--wg-hover-bg);
@@ -211,7 +211,7 @@
   --wg-editor-validating-opacity: 0.7;
 
   /* Dropdown Toggle */
-  --wg-dropdown-toggle-right: var(--wg-spacing-md);
+  --wg-dropdown-toggle-right: var(--wg-spacing-sm);
   --wg-dropdown-toggle-size: calc(1.2 * var(--wg-rem));
   --wg-dropdown-toggle-hitbox: calc(2.4 * var(--wg-rem));
 
@@ -308,4 +308,31 @@
   --wg-selection-bg: color-mix(in srgb, var(--wg-accent-color) 15%, transparent);
   --wg-selection-row-number-bg: var(--wg-accent-color);
   --wg-selection-row-number-color: var(--base-text-inverted, #fff);
+
+  /* ==========================================================================
+     DROPDOWN MENU (Component-Specific)
+     ========================================================================== */
+  --wg-dropdown-option-gap: var(--wg-spacing-sm);
+  --wg-dropdown-option-padding: calc(0.6 * var(--wg-rem)) var(--wg-spacing-sm) calc(0.6 * var(--wg-rem)) calc(var(--wg-spacing-sm) - 1px);
+  --wg-dropdown-empty-padding: calc(0.8 * var(--wg-rem)) var(--wg-spacing-sm) calc(0.8 * var(--wg-rem)) calc(var(--wg-spacing-sm) - 1px);
+
+  /* ==========================================================================
+     INLINE ACTIONS (Component-Specific)
+     ========================================================================== */
+  --wg-inline-actions-padding: var(--wg-spacing-xs) var(--wg-spacing-sm);
+  --wg-inline-actions-gap: calc(0.2 * var(--wg-rem));
+
+  /* ==========================================================================
+     TOOLBAR EXTRAS (Component-Specific)
+     ========================================================================== */
+  --wg-toolbar-row-gap: calc(0.2 * var(--wg-rem));
+  --wg-toolbar-row-padding: 0 calc(0.4 * var(--wg-rem));
+  --wg-toolbar-label-font-size: var(--wg-font-size-sm);
+  --wg-toolbar-btn-gap: calc(0.4 * var(--wg-rem));
+
+  /* ==========================================================================
+     TOOLTIP EXTRAS (Component-Specific)
+     ========================================================================== */
+  --wg-tooltip-padding: calc(0.6 * var(--wg-rem)) calc(1.0 * var(--wg-rem));
+  --wg-tooltip-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }

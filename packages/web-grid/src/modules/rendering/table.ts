@@ -38,11 +38,11 @@ function parseColumnWidth(width: string | undefined): number {
  */
 export function getContainerClasses<T>(ctx: GridContext<T>): string {
 	const classes = ['wg']
-	if (ctx.grid.striped) classes.push('wg--striped')
-	if (ctx.grid.hoverable) classes.push('wg--hoverable')
-	if (ctx.grid.editable) classes.push('wg--editable')
+	if (ctx.grid.isStriped) classes.push('wg--striped')
+	if (ctx.grid.isHoverable) classes.push('wg--hoverable')
+	if (ctx.grid.isEditable) classes.push('wg--editable')
 	if (ctx.grid.isNavigateMode) classes.push('wg--navigate-mode')
-	if (ctx.grid.allowColumnReorder) classes.push('wg--reorderable')
+	if (ctx.grid.isColumnReorderAllowed) classes.push('wg--reorderable')
 	return classes.join(' ')
 }
 
@@ -58,8 +58,8 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 
 	// Row number column (may be sticky)
 	let rowNumberColumnHtml = ''
-	if (ctx.grid.showRowNumbers) {
-		const isSticky = ctx.grid.stickyRowNumbers
+	if (ctx.grid.isRowNumbersVisible) {
+		const isSticky = ctx.grid.isStickyRowNumbers
 		const stickyStyle = isSticky
 			? `position: sticky; left: 0; z-index: 4;`
 			: ''
@@ -70,20 +70,20 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 	}
 
 	// Inline actions column (toolbarPosition="inline")
-	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
+	const showInlineActions = ctx.grid.isRowToolbarVisible && ctx.grid.toolbarPosition === 'inline'
 	const inlineActionsHeaderHtml = showInlineActions
 		? `<th class="wg__header wg__inline-actions-header">${ctx.escapeHtml(ctx.grid.inlineActionsTitle || ctx.grid.labels.inlineActionsHeader)}</th>`
 		: ''
 
 	// Actions column for button trigger mode (floating toolbar trigger)
-	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
+	const showActionsColumn = ctx.grid.isRowToolbarVisible && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
 	const actionsColumnHtml = showActionsColumn
 		? '<th class="wg__header wg__actions-column"></th>'
 		: ''
 
 	const headerCells = visualColumns.map(({ column, originalIndex }, visualIndex) => {
 		const field = String(column.field)
-		const isSortable = column.sortable !== false && ctx.grid.sortMode !== 'none'
+		const isSortable = column.isSortable !== false && ctx.grid.sortMode !== 'none'
 		const sortState = ctx.grid.getColumnSortState(field)
 		const sortPriority = ctx.grid.getColumnSortPriority(field)
 		const isSorted = sortState !== undefined
@@ -140,7 +140,7 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 		}
 
 		// Resize handle (always rendered, but disabled class for non-resizable columns)
-		const isResizable = column.resizable !== false
+		const isResizable = column.isResizable !== false
 		const resizeHandle = `<div class="wg__resize-handle${isResizable ? '' : ' wg__resize-handle--disabled'}" data-field="${field}"></div>`
 
 		return `
@@ -166,14 +166,14 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 	const visualColumns = ctx.grid.visualColumns
 
 	// Row number column
-	const showRowNumbers = ctx.grid.showRowNumbers
-	const stickyRowNumbers = ctx.grid.stickyRowNumbers
+	const showRowNumbers = ctx.grid.isRowNumbersVisible
+	const stickyRowNumbers = ctx.grid.isStickyRowNumbers
 
 	// Inline actions column (toolbarPosition="inline")
-	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
+	const showInlineActions = ctx.grid.isRowToolbarVisible && ctx.grid.toolbarPosition === 'inline'
 
 	// Actions column for button trigger mode (floating toolbar trigger)
-	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
+	const showActionsColumn = ctx.grid.isRowToolbarVisible && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
 	if (items.length === 0) {
@@ -436,14 +436,14 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 	const { startIndex, endIndex, rowHeight, totalItems } = params
 
 	// Row number column
-	const showRowNumbers = ctx.grid.showRowNumbers
-	const stickyRowNumbers = ctx.grid.stickyRowNumbers
+	const showRowNumbers = ctx.grid.isRowNumbersVisible
+	const stickyRowNumbers = ctx.grid.isStickyRowNumbers
 
 	// Inline actions column (toolbarPosition="inline")
-	const showInlineActions = ctx.grid.showRowToolbar && ctx.grid.toolbarPosition === 'inline'
+	const showInlineActions = ctx.grid.isRowToolbarVisible && ctx.grid.toolbarPosition === 'inline'
 
 	// Actions column for button trigger mode (floating toolbar trigger)
-	const showActionsColumn = ctx.grid.showRowToolbar && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
+	const showActionsColumn = ctx.grid.isRowToolbarVisible && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'
 	const colspanWithExtras = visualColumns.length + (showActionsColumn ? 1 : 0) + (showRowNumbers ? 1 : 0) + (showInlineActions ? 1 : 0)
 
 	if (items.length === 0) {
@@ -663,7 +663,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 export function renderPagination<T>(ctx: GridContext<T>, position: string = 'bottom-center'): string {
 	// Don't render if not pageable or showPagination is false
 	const showPag = ctx.grid.showPagination
-	if (!ctx.grid.pageable || showPag === false) return ''
+	if (!ctx.grid.isPageable || showPag === false) return ''
 	// 'auto' mode: hide when only 1 page
 	if (showPag === 'auto' && ctx.grid.totalPages <= 1) return ''
 

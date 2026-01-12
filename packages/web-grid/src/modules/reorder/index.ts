@@ -330,7 +330,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 		}
 
 		// Persist to localStorage if enabled
-		if (ctx.grid.persistColumnOrder && ctx.grid.gridName) {
+		if (ctx.grid.shouldPersistColumnOrder && ctx.grid.gridName) {
 			ctx.grid.savePersistedState()
 		}
 	}

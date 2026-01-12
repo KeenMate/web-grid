@@ -77,7 +77,7 @@
             </div>
 
             <div class="grid-wrapper">
-                <web-grid id="grid1" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+                <web-grid id="grid1" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             </div>
 
             <div class="stats">
@@ -96,7 +96,7 @@
             </p>
 
             <div class="grid-wrapper">
-                <web-grid id="grid2" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+                <web-grid id="grid2" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
                 <div id="loadingIndicator" class="loading-indicator hidden">Loading 1,000 more items...</div>
             </div>
 
@@ -113,7 +113,7 @@
                 <h2>Virtual Scroll API</h2>
                 <div class="code-block">
                     <pre>// Enable virtual scroll explicitly
-grid.virtualScroll = true
+grid.isVirtualScrollEnabled = true
 
 // Or auto-enable via threshold
 grid.virtualScrollThreshold = 100  // Enable when >= 100 items
@@ -135,7 +135,7 @@ if (grid.shouldUseVirtualScroll()) {
                 <h2>Infinite Scroll API</h2>
                 <div class="code-block">
                     <pre>// Enable infinite scroll
-grid.infiniteScroll = true
+grid.isInfiniteScrollEnabled = true
 
 // Distance from bottom to trigger (px)
 grid.infiniteScrollThreshold = 100  // Default: 100px
@@ -215,11 +215,11 @@ grid.ondatarequest = (detail) => {
 
         const columns = [
             { field: 'id', title: 'ID', width: '70px', align: 'center' },
-            { field: 'name', title: 'Name', width: '150px', editable: true },
-            { field: 'department', title: 'Department', width: '120px', editable: true },
-            { field: 'salary', title: 'Salary', width: '100px', align: 'right', editable: true, formatCallback: v => `$${v.toLocaleString()}` },
-            { field: 'status', title: 'Status', width: '100px', editable: true },
-            { field: 'location', title: 'Location', width: '120px', editable: true },
+            { field: 'name', title: 'Name', width: '150px', isEditable: true },
+            { field: 'department', title: 'Department', width: '120px', isEditable: true },
+            { field: 'salary', title: 'Salary', width: '100px', align: 'right', isEditable: true, formatCallback: v => `$${v.toLocaleString()}` },
+            { field: 'status', title: 'Status', width: '100px', isEditable: true },
+            { field: 'location', title: 'Location', width: '120px', isEditable: true },
             { field: 'startDate', title: 'Start Date', width: '110px' }
         ]
 
@@ -232,16 +232,16 @@ grid.ondatarequest = (detail) => {
 
         grid1.columns = columns
         grid1.sortMode = 'multi'
-        grid1.editable = true  // Enable editing to test with virtual scroll
+        grid1.isEditable = true  // Enable editing to test with virtual scroll
         grid1.editTrigger = 'navigate'  // Enable focus visual on click
 
         // Enable virtual scroll
-        grid1.virtualScroll = true
+        grid1.isVirtualScrollEnabled = true
         grid1.virtualScrollRowHeight = 38
         grid1.virtualScrollBuffer = 10
 
         // Row toolbar
-        grid1.showRowToolbar = true
+        grid1.isRowToolbarVisible = true
         grid1.toolbarTrigger = 'hover'
         grid1.rowToolbar = [
             {
@@ -315,13 +315,13 @@ grid.ondatarequest = (detail) => {
         grid2.sortMode = 'multi'
 
         // Enable both virtual scroll and infinite scroll
-        grid2.virtualScroll = true
+        grid2.isVirtualScrollEnabled = true
         grid2.virtualScrollRowHeight = 38
-        grid2.infiniteScroll = true
+        grid2.isInfiniteScrollEnabled = true
         grid2.infiniteScrollThreshold = 100
 
         // Row toolbar
-        grid2.showRowToolbar = true
+        grid2.isRowToolbarVisible = true
         grid2.toolbarTrigger = 'hover'
         grid2.rowToolbar = [
             {

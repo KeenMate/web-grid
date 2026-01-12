@@ -46,6 +46,9 @@ import type {
 	RangeShortcutContext
 } from './types.js'
 
+// Date formatting utilities for auto-formatting date columns
+import { parseFormat, formatDate } from './modules/datepicker/index.js'
+
 // Default labels (English)
 const DEFAULT_LABELS: GridLabels = {
 	// Toolbar
@@ -95,25 +98,25 @@ export class WebGrid<T = unknown> {
 	protected _items: T[] = []
 	protected _columns: Column<T>[] = []
 	protected _sortMode: SortMode = "none"
-	protected _filterable: boolean = false
-	protected _pageable: boolean = false
+	protected _isFilterable: boolean = false
+	protected _isPageable: boolean = false
 	protected _pageSize: number = 10
 	protected _pageSizes: number[] = [10, 25, 50, 100]
-	protected _striped: boolean = true
-	protected _hoverable: boolean = true
-	protected _editable: boolean = false
+	protected _isStriped: boolean = true
+	protected _isHoverable: boolean = true
+	protected _isEditable: boolean = false
 	protected _editTrigger: EditTrigger = "dblclick"
 	protected _editStartSelection: EditStartSelection = "mousePosition"
 	protected _mode: GridMode = "excel"
 	protected _dropdownToggleVisibility: ToggleVisibility = "always"
-	protected _dropdownShowOnFocus: boolean = true
-	protected _openDropdownOnEnter: boolean = false
-	protected _checkboxAlwaysEditable: boolean = false
-	protected _showRowNumbers: boolean = false
-	protected _stickyRowNumbers: boolean = false
+	protected _shouldShowDropdownOnFocus: boolean = true
+	protected _shouldOpenDropdownOnEnter: boolean = false
+	protected _isCheckboxAlwaysEditable: boolean = false
+	protected _isRowNumbersVisible: boolean = false
+	protected _isStickyRowNumbers: boolean = false
 	protected _freezeColumns: number = 0
 	protected _invalidCells: CellValidationState[] = []
-	protected _showRowToolbar: boolean = false
+	protected _isRowToolbarVisible: boolean = false
 	protected _rowToolbar: RowToolbarConfig<T>[] = ['add', 'delete', 'duplicate']
 	protected _toolbarVerticalAlign: 'top' | 'center' | 'bottom' = 'bottom'
 	protected _toolbarHorizontalAlign: 'start' | 'center' | 'end' | 'cursor' = 'center'
@@ -125,7 +128,7 @@ export class WebGrid<T = unknown> {
 	protected _contextMenuYOffset: number = 0
 	protected _headerContextMenu: HeaderMenuConfig<T>[] | undefined = undefined
 	protected _rowShortcuts: RowShortcut<T>[] | undefined = undefined
-	protected _showShortcutsHelp: boolean = false
+	protected _isShortcutsHelpVisible: boolean = false
 	protected _shortcutsHelpPosition: 'top-right' | 'top-left' = 'top-right'
 	protected _shortcutsHelpContentCallback: (() => string) | undefined = undefined
 
@@ -140,19 +143,19 @@ export class WebGrid<T = unknown> {
 
 	// Column resize & persistence
 	protected _gridName: string | null = null
-	protected _persistColumnWidths: boolean = false
+	protected _shouldPersistColumnWidths: boolean = false
 	protected _columnWidths: Map<string, string> = new Map()  // Runtime width overrides
 	protected _oncolumnresize: ((detail: ColumnResizeDetail) => void) | undefined = undefined
 
 	// Column reorder & persistence
-	protected _allowColumnReorder: boolean = false
-	protected _persistColumnOrder: boolean = false
+	protected _isColumnReorderAllowed: boolean = false
+	protected _shouldPersistColumnOrder: boolean = false
 	protected _columnOrder: Map<string, number> = new Map()  // Runtime order overrides
 	protected _oncolumnreorder: ((detail: ColumnReorderDetail) => void) | undefined = undefined
 
 	// Fill handle
 	protected _fillDirection: FillDirection = 'vertical'
-	protected _onfilldrag: ((detail: FillDragDetail) => boolean | void) | undefined = undefined
+	protected _fillDragCallback: ((detail: FillDragDetail) => boolean | void) | undefined = undefined
 
 	// ==========================================================================
 	// Callbacks
@@ -192,7 +195,7 @@ export class WebGrid<T = unknown> {
 	protected _summaryPosition?: string
 	protected _summaryContentCallback?: SummaryContentCallback<T>
 	protected _summaryMetadata: unknown = undefined
-	protected _summaryInline: boolean = true
+	protected _isSummaryInline: boolean = true
 
 	// Custom styles
 	protected _customStylesCallback?: () => string
@@ -202,13 +205,13 @@ export class WebGrid<T = unknown> {
 	protected _labels: GridLabels = { ...DEFAULT_LABELS }
 
 	// Virtual scroll
-	protected _virtualScroll: boolean = false
+	protected _isVirtualScrollEnabled: boolean = false
 	protected _virtualScrollThreshold: number = 100
 	protected _virtualScrollRowHeight: number = 38
 	protected _virtualScrollBuffer: number = 10
 
 	// Infinite scroll
-	protected _infiniteScroll: boolean = false
+	protected _isInfiniteScrollEnabled: boolean = false
 	protected _infiniteScrollThreshold: number = 100
 	protected _hasMoreItems: boolean = true
 	protected _isLoadingMore: boolean = false
@@ -255,15 +258,15 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get filterable(): boolean { return this._filterable }
-	set filterable(value: boolean) {
-		this._filterable = value
+	get isFilterable(): boolean { return this._isFilterable }
+	set isFilterable(value: boolean) {
+		this._isFilterable = value
 		this.requestUpdate()
 	}
 
-	get pageable(): boolean { return this._pageable }
-	set pageable(value: boolean) {
-		this._pageable = value
+	get isPageable(): boolean { return this._isPageable }
+	set isPageable(value: boolean) {
+		this._isPageable = value
 		this.requestUpdate()
 	}
 
@@ -279,21 +282,21 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get striped(): boolean { return this._striped }
-	set striped(value: boolean) {
-		this._striped = value
+	get isStriped(): boolean { return this._isStriped }
+	set isStriped(value: boolean) {
+		this._isStriped = value
 		this.requestUpdate()
 	}
 
-	get hoverable(): boolean { return this._hoverable }
-	set hoverable(value: boolean) {
-		this._hoverable = value
+	get isHoverable(): boolean { return this._isHoverable }
+	set isHoverable(value: boolean) {
+		this._isHoverable = value
 		this.requestUpdate()
 	}
 
-	get editable(): boolean { return this._editable }
-	set editable(value: boolean) {
-		this._editable = value
+	get isEditable(): boolean { return this._isEditable }
+	set isEditable(value: boolean) {
+		this._isEditable = value
 		this.requestUpdate()
 	}
 
@@ -328,38 +331,38 @@ export class WebGrid<T = unknown> {
 		return column.dropdownToggleVisibility ?? this._dropdownToggleVisibility
 	}
 
-	get dropdownShowOnFocus(): boolean { return this._dropdownShowOnFocus }
-	set dropdownShowOnFocus(value: boolean) {
-		this._dropdownShowOnFocus = value
+	get shouldShowDropdownOnFocus(): boolean { return this._shouldShowDropdownOnFocus }
+	set shouldShowDropdownOnFocus(value: boolean) {
+		this._shouldShowDropdownOnFocus = value
 	}
 
-	get openDropdownOnEnter(): boolean { return this._openDropdownOnEnter }
-	set openDropdownOnEnter(value: boolean) {
-		this._openDropdownOnEnter = value
+	get shouldOpenDropdownOnEnter(): boolean { return this._shouldOpenDropdownOnEnter }
+	set shouldOpenDropdownOnEnter(value: boolean) {
+		this._shouldOpenDropdownOnEnter = value
 	}
 
 	/**
-	 * Get effective openDropdownOnEnter for a column (column override or grid default)
+	 * Get effective shouldOpenDropdownOnEnter for a column (column override or grid default)
 	 */
-	getEffectiveOpenDropdownOnEnter(column: Column<T>): boolean {
-		return column.openDropdownOnEnter ?? this._openDropdownOnEnter
+	getEffectiveShouldOpenDropdownOnEnter(column: Column<T>): boolean {
+		return column.shouldOpenDropdownOnEnter ?? this._shouldOpenDropdownOnEnter
 	}
 
-	get checkboxAlwaysEditable(): boolean { return this._checkboxAlwaysEditable }
-	set checkboxAlwaysEditable(value: boolean) {
-		this._checkboxAlwaysEditable = value
+	get isCheckboxAlwaysEditable(): boolean { return this._isCheckboxAlwaysEditable }
+	set isCheckboxAlwaysEditable(value: boolean) {
+		this._isCheckboxAlwaysEditable = value
 		this.requestUpdate()
 	}
 
-	get showRowNumbers(): boolean { return this._showRowNumbers }
-	set showRowNumbers(value: boolean) {
-		this._showRowNumbers = value
+	get isRowNumbersVisible(): boolean { return this._isRowNumbersVisible }
+	set isRowNumbersVisible(value: boolean) {
+		this._isRowNumbersVisible = value
 		this.requestUpdate()
 	}
 
-	get stickyRowNumbers(): boolean { return this._stickyRowNumbers }
-	set stickyRowNumbers(value: boolean) {
-		this._stickyRowNumbers = value
+	get isStickyRowNumbers(): boolean { return this._isStickyRowNumbers }
+	set isStickyRowNumbers(value: boolean) {
+		this._isStickyRowNumbers = value
 		this.requestUpdate()
 	}
 
@@ -378,16 +381,16 @@ export class WebGrid<T = unknown> {
 		const frozenCols: Array<{ column: Column<T>; originalIndex: number }> = []
 		const normalCols: Array<{ column: Column<T>; originalIndex: number }> = []
 
-		// First, separate explicitly frozen columns (column.frozen = true)
+		// First, separate explicitly frozen columns (column.isFrozen = true)
 		// Skip hidden columns entirely
-		const explicitlyFrozenCount = this._columns.filter(c => c.frozen && !c.hidden).length
+		const explicitlyFrozenCount = this._columns.filter(c => c.isFrozen && !c.isHidden).length
 
 		this._columns.forEach((column, index) => {
 			// Skip hidden columns
-			if (column.hidden) return
+			if (column.isHidden) return
 
 			const entry = { column, originalIndex: index }
-			if (column.frozen) {
+			if (column.isFrozen) {
 				// Explicitly frozen columns go first
 				frozenCols.push(entry)
 			} else {
@@ -427,7 +430,7 @@ export class WebGrid<T = unknown> {
 	 * Get the total number of frozen columns (from frozen: true + freezeColumns prop).
 	 */
 	get totalFrozenColumns(): number {
-		const explicitlyFrozen = this._columns.filter(c => c.frozen).length
+		const explicitlyFrozen = this._columns.filter(c => c.isFrozen).length
 		return explicitlyFrozen + this._freezeColumns
 	}
 
@@ -449,9 +452,9 @@ export class WebGrid<T = unknown> {
 	get currentCellError(): string | null { return this._currentCellError }
 	get hoveredRowIndex(): number | null { return this._hoveredRowIndex }
 
-	get showRowToolbar(): boolean { return this._showRowToolbar }
-	set showRowToolbar(value: boolean) {
-		this._showRowToolbar = value
+	get isRowToolbarVisible(): boolean { return this._isRowToolbarVisible }
+	set isRowToolbarVisible(value: boolean) {
+		this._isRowToolbarVisible = value
 		this.requestUpdate()
 	}
 
@@ -527,9 +530,9 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get showShortcutsHelp(): boolean { return this._showShortcutsHelp }
-	set showShortcutsHelp(value: boolean) {
-		this._showShortcutsHelp = value
+	get isShortcutsHelpVisible(): boolean { return this._isShortcutsHelpVisible }
+	set isShortcutsHelpVisible(value: boolean) {
+		this._isShortcutsHelpVisible = value
 		this.requestUpdate()
 	}
 
@@ -607,9 +610,9 @@ export class WebGrid<T = unknown> {
 		this.requestUpdate()
 	}
 
-	get summaryInline(): boolean { return this._summaryInline }
-	set summaryInline(value: boolean) {
-		this._summaryInline = value
+	get isSummaryInline(): boolean { return this._isSummaryInline }
+	set isSummaryInline(value: boolean) {
+		this._isSummaryInline = value
 		this.requestUpdate()
 	}
 
@@ -633,9 +636,9 @@ export class WebGrid<T = unknown> {
 	}
 
 	// Virtual scroll
-	get virtualScroll(): boolean { return this._virtualScroll }
-	set virtualScroll(value: boolean) {
-		this._virtualScroll = value
+	get isVirtualScrollEnabled(): boolean { return this._isVirtualScrollEnabled }
+	set isVirtualScrollEnabled(value: boolean) {
+		this._isVirtualScrollEnabled = value
 		this.requestUpdate()
 	}
 
@@ -658,9 +661,9 @@ export class WebGrid<T = unknown> {
 	}
 
 	// Infinite scroll
-	get infiniteScroll(): boolean { return this._infiniteScroll }
-	set infiniteScroll(value: boolean) {
-		this._infiniteScroll = value
+	get isInfiniteScrollEnabled(): boolean { return this._isInfiniteScrollEnabled }
+	set isInfiniteScrollEnabled(value: boolean) {
+		this._isInfiniteScrollEnabled = value
 		this.requestUpdate()
 	}
 
@@ -677,18 +680,11 @@ export class WebGrid<T = unknown> {
 	 * Check if virtual scroll should be used
 	 */
 	shouldUseVirtualScroll(): boolean {
-		if (this._virtualScroll === false) return false
-		if (this._virtualScroll === true) return true
+		if (this._isVirtualScrollEnabled === false) return false
+		if (this._isVirtualScrollEnabled === true) return true
 		// Auto-enable based on threshold
 		return this.displayItems.length >= this._virtualScrollThreshold
 	}
-
-	// Legacy aliases for backwards compatibility
-	get showRowActions(): boolean { return this._showRowToolbar }
-	set showRowActions(value: boolean) { this.showRowToolbar = value }
-
-	get rowActions(): RowToolbarConfig<T>[] { return this._rowToolbar }
-	set rowActions(value: RowToolbarConfig<T>[]) { this.rowToolbar = value }
 
 	// Callback setters
 	set onrowchange(value: ((detail: RowChangeDetail<T>) => void) | undefined) {
@@ -779,9 +775,9 @@ export class WebGrid<T = unknown> {
 		this._gridName = value
 	}
 
-	get persistColumnWidths(): boolean { return this._persistColumnWidths }
-	set persistColumnWidths(value: boolean) {
-		this._persistColumnWidths = value
+	get shouldPersistColumnWidths(): boolean { return this._shouldPersistColumnWidths }
+	set shouldPersistColumnWidths(value: boolean) {
+		this._shouldPersistColumnWidths = value
 	}
 
 	get oncolumnresize(): ((detail: ColumnResizeDetail) => void) | undefined { return this._oncolumnresize }
@@ -790,14 +786,14 @@ export class WebGrid<T = unknown> {
 	}
 
 	// Column reorder & persistence
-	get allowColumnReorder(): boolean { return this._allowColumnReorder }
-	set allowColumnReorder(value: boolean) {
-		this._allowColumnReorder = value
+	get isColumnReorderAllowed(): boolean { return this._isColumnReorderAllowed }
+	set isColumnReorderAllowed(value: boolean) {
+		this._isColumnReorderAllowed = value
 	}
 
-	get persistColumnOrder(): boolean { return this._persistColumnOrder }
-	set persistColumnOrder(value: boolean) {
-		this._persistColumnOrder = value
+	get shouldPersistColumnOrder(): boolean { return this._shouldPersistColumnOrder }
+	set shouldPersistColumnOrder(value: boolean) {
+		this._shouldPersistColumnOrder = value
 	}
 
 	get oncolumnreorder(): ((detail: ColumnReorderDetail) => void) | undefined { return this._oncolumnreorder }
@@ -811,9 +807,9 @@ export class WebGrid<T = unknown> {
 		this._fillDirection = value
 	}
 
-	get onfilldrag(): ((detail: FillDragDetail) => boolean | void) | undefined { return this._onfilldrag }
-	set onfilldrag(value: ((detail: FillDragDetail) => boolean | void) | undefined) {
-		this._onfilldrag = value
+	get fillDragCallback(): ((detail: FillDragDetail) => boolean | void) | undefined { return this._fillDragCallback }
+	set fillDragCallback(value: ((detail: FillDragDetail) => boolean | void) | undefined) {
+		this._fillDragCallback = value
 	}
 
 	// Row selection
@@ -893,7 +889,7 @@ export class WebGrid<T = unknown> {
 	}
 
 	get filteredItems(): T[] {
-		if (!this._filterable || Object.keys(this._filters).length === 0) {
+		if (!this._isFilterable || Object.keys(this._filters).length === 0) {
 			return this._items
 		}
 
@@ -934,7 +930,7 @@ export class WebGrid<T = unknown> {
 	}
 
 	get paginatedItems(): T[] {
-		if (!this._pageable) return this.sortedItems
+		if (!this._isPageable) return this.sortedItems
 
 		const start = (this._currentPage - 1) * this._pageSize
 		const end = start + this._pageSize
@@ -1003,20 +999,20 @@ export class WebGrid<T = unknown> {
 	protected applyModeDefaults(): void {
 		switch (this._mode) {
 			case "read-only":
-				this._editable = false
+				this._isEditable = false
 				this._dropdownToggleVisibility = "on-focus"
 				break
 			case "excel":
-				this._editable = true
+				this._isEditable = true
 				this._editTrigger = "navigate"
 				this._dropdownToggleVisibility = "always"
-				this._dropdownShowOnFocus = false
+				this._shouldShowDropdownOnFocus = false
 				break
 			case "input-matrix":
-				this._editable = true
+				this._isEditable = true
 				this._editTrigger = "always"
 				this._dropdownToggleVisibility = "always"
-				this._dropdownShowOnFocus = true
+				this._shouldShowDropdownOnFocus = true
 				break
 		}
 	}
@@ -1079,6 +1075,20 @@ export class WebGrid<T = unknown> {
 		if (column.formatCallback) {
 			return column.formatCallback(value, item)
 		}
+
+		// Auto-format date columns using editorOptions.dateFormat when no formatCallback
+		if (column.editor === 'date' && column.editorOptions?.dateFormat && value) {
+			try {
+				const date = value instanceof Date ? value : new Date(value as string | number)
+				if (!isNaN(date.getTime())) {
+					const formatInfo = parseFormat(column.editorOptions.dateFormat)
+					return formatDate(date, formatInfo)
+				}
+			} catch {
+				// Fall through to default string conversion
+			}
+		}
+
 		return String(value ?? "")
 	}
 
@@ -1303,8 +1313,8 @@ export class WebGrid<T = unknown> {
 	 */
 	isCellEditable(column: Column<T>): boolean {
 		// Column must have editable !== false AND (global editable OR column has an editor)
-		if (column.editable === false) return false
-		return this._editable || column.editor !== undefined
+		if (column.isEditable === false) return false
+		return this._isEditable || column.editor !== undefined
 	}
 
 	/**
@@ -1726,10 +1736,10 @@ export class WebGrid<T = unknown> {
 		try {
 			const key = `wg-${this._gridName}-state`
 			const state: GridPersistenceState = {}
-			if (this._persistColumnWidths) {
+			if (this._shouldPersistColumnWidths) {
 				state.columnWidths = this.getColumnWidthsState()
 			}
-			if (this._persistColumnOrder) {
+			if (this._shouldPersistColumnOrder) {
 				state.columnOrder = this.getColumnOrderState()
 			}
 			localStorage.setItem(key, JSON.stringify(state))

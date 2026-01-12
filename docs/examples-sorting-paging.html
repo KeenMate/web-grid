@@ -247,7 +247,7 @@
             </p>
 
             <div class="grid-wrapper">
-                <web-grid id="grid1" striped hoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+                <web-grid id="grid1" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
             </div>
 
             <div style="margin-top: 1rem;">
@@ -266,7 +266,7 @@
             </p>
 
             <div class="grid-wrapper">
-                <web-grid id="grid2" striped hoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
+                <web-grid id="grid2" isStriped isHoverable style="max-width: 100%; max-height: 350px; border: 1px solid #e2e8f0;"></web-grid>
                 <div id="loadingOverlay" class="loading-overlay hidden">Loading...</div>
             </div>
 
@@ -399,7 +399,7 @@ grid.summaryInline = false  // Each on its own row</pre>
         grid1.items = allData.slice(0, 50)  // 50 items for client-side demo
         grid1.columns = columns
         grid1.sortMode = 'multi'
-        grid1.pageable = true
+        grid1.isPageable = true
         grid1.pageSize = 10
         grid1.pageSizes = [5, 10, 25, 50]  // Page size options
         grid1.paginationPosition = 'bottom-right'  // Pagination on the right
@@ -546,7 +546,7 @@ grid.summaryInline = false  // Each on its own row</pre>
 
         grid2.columns = columns
         grid2.sortMode = 'multi'
-        grid2.pageable = true
+        grid2.isPageable = true
         grid2.pageSize = 10
         grid2.pageSizes = [10, 25, 50, 100]  // Page size options
         grid2.paginationPosition = 'bottom-right'  // Right-aligned pagination

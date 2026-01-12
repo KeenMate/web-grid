@@ -120,7 +120,7 @@
                 Try editing cells - locked rows will block editing.
             </p>
 
-            <web-grid id="grid" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="grid" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
 
         <div class="grid-2">
@@ -311,9 +311,9 @@ if (result) {
         ]
 
         const columns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center', editable: false },
-            { field: 'name', title: 'Name', editable: true, editor: 'text' },
-            { field: 'department', title: 'Department', width: '120px', editable: true, editor: 'select',
+            { field: 'id', title: 'ID', width: '60px', align: 'center', isEditable: false },
+            { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
+            { field: 'department', title: 'Department', width: '120px', isEditable: true, editor: 'select',
                 editorOptions: {
                     options: [
                         { value: 'Engineering', label: 'Engineering' },
@@ -323,10 +323,10 @@ if (result) {
                     ]
                 }
             },
-            { field: 'salary', title: 'Salary', width: '100px', align: 'right', editable: true, editor: 'number',
+            { field: 'salary', title: 'Salary', width: '100px', align: 'right', isEditable: true, editor: 'number',
                 formatCallback: (v) => '$' + Number(v).toLocaleString()
             },
-            { field: 'status', title: 'Status', width: '100px', editable: true, editor: 'select',
+            { field: 'status', title: 'Status', width: '100px', isEditable: true, editor: 'select',
                 editorOptions: {
                     options: [
                         { value: 'Active', label: 'Active' },
@@ -352,7 +352,7 @@ if (result) {
         const grid = document.getElementById('grid')
         grid.items = employees
         grid.columns = columns
-        grid.showRowNumbers = true
+        grid.isRowNumbersVisible = true
         grid.mode = 'excel'
 
         // Configure row identification (required for external locks)

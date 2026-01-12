@@ -37,7 +37,7 @@
                     </select>
                 </label>
                 <label>
-                    <input type="checkbox" id="gridEditable" checked> grid.editable
+                    <input type="checkbox" id="gridEditable" checked> grid.isEditable
                 </label>
             </div>
 
@@ -62,13 +62,13 @@
 
         <div class="card">
             <h2>Column-level editable vs Grid-level editable</h2>
-            <p>When <code>grid.editable = true</code>, all columns are editable by default unless <code>column.editable = false</code>.</p>
+            <p>When <code>grid.isEditable = true</code>, all columns are editable by default unless <code>column.isEditable = false</code>.</p>
 
             <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                 <thead>
                     <tr style="background: #f3f4f6;">
                         <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">Column</th>
-                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">column.editable</th>
+                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">column.isEditable</th>
                         <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">column.editor</th>
                         <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">Result</th>
                     </tr>
@@ -130,10 +130,10 @@
             { value: 'inactive', label: 'Inactive' }
         ]
 
-        // Column definitions - NO explicit editable:true on columns
-        // They should inherit from grid.editable = true
+        // Column definitions - NO explicit isEditable:true on columns
+        // They should inherit from grid.isEditable = true
         const columns = [
-            { field: 'id', title: 'ID', width: '60px', editable: false },
+            { field: 'id', title: 'ID', width: '60px', isEditable: false },
             { field: 'name', title: 'Name', width: '150px', editor: 'text' },
             { field: 'email', title: 'Email', width: '180px', editor: 'text', editorOptions: { editStartSelection: 'selectAll' } },
             {
@@ -160,10 +160,10 @@
         const grid = document.getElementById('grid')
         grid.items = sampleData
         grid.columns = columns
-        grid.editable = true
+        grid.isEditable = true
         grid.editTrigger = 'click'
-        grid.striped = true
-        grid.hoverable = true
+        grid.isStriped = true
+        grid.isHoverable = true
 
         // Wire up controls
         document.getElementById('editTrigger').addEventListener('change', (e) => {
@@ -172,8 +172,8 @@
         })
 
         document.getElementById('gridEditable').addEventListener('change', (e) => {
-            grid.editable = e.target.checked
-            console.log('grid.editable changed to:', e.target.checked)
+            grid.isEditable = e.target.checked
+            console.log('grid.isEditable changed to:', e.target.checked)
         })
 
         document.getElementById('editStartSelection').addEventListener('change', (e) => {

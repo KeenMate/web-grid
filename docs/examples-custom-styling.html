@@ -122,6 +122,10 @@
             --sex-snowman-color: #06b6d4;
             --row-inactive-bg: #e5e7eb;
             --row-inactive-color: #6b7280;
+            /* Product group colors (light mode) */
+            --product-electronics-bg: #e3f2fd; --product-electronics-color: #1565c0;
+            --product-clothing-bg: #f3e5f5; --product-clothing-color: #7b1fa2;
+            --product-food-bg: #e8f5e9; --product-food-color: #2e7d32;
         }
 
         /* Dark mode base variables for web-grid */
@@ -168,6 +172,10 @@
             --sex-snowman-color: #22d3ee;
             --row-inactive-bg: #374151;
             --row-inactive-color: #9ca3af;
+            /* Product group colors (dark mode) */
+            --product-electronics-bg: #1565c0; --product-electronics-color: #bbdefb;
+            --product-clothing-bg: #6a1b9a; --product-clothing-color: #e1bee7;
+            --product-food-bg: #1b5e20; --product-food-color: #c8e6c9;
         }
     </style>
 </head>
@@ -248,21 +256,21 @@
 
         // Sample employee data with varied salaries and statuses
         const sampleData = [
-            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, hireDate: '2020-03-15', sex: 'F', status: 'Active', notes: 'Team lead' },
-            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, hireDate: '2019-07-22', sex: 'M', status: 'Active', notes: '' },
-            { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 92000, hireDate: '2018-11-01', sex: 'F', status: 'Active', notes: 'Senior dev' },
-            { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, hireDate: '2021-01-10', sex: 'M', status: 'Inactive', notes: 'On sabbatical' },
-            { id: 5, name: 'Eva Martinez', department: 'HR', salary: 65000, hireDate: '2020-06-20', sex: 'F', status: 'Active', notes: '' },
-            { id: 6, name: 'Frank Lee', department: 'Engineering', salary: 88000, hireDate: '2019-02-14', sex: 'M', status: 'Active', notes: '' },
-            { id: 7, name: 'Grace Kim', department: 'Marketing', salary: 75000, hireDate: '2020-09-05', sex: 'F', status: 'Inactive', notes: 'Parental leave' },
-            { id: 8, name: 'Henry Chen', department: 'Sales', salary: 71000, hireDate: '2021-04-18', sex: 'M', status: 'Active', notes: '' },
-            { id: 9, name: 'Ivy Wang', department: 'Engineering', salary: 98000, hireDate: '2017-08-30', sex: 'F', status: 'Active', notes: 'Architect' },
-            { id: 10, name: 'Jack Davis', department: 'HR', salary: 62000, hireDate: '2022-02-01', sex: 'M', status: 'Active', notes: '' },
-            { id: 11, name: 'Karen Wilson', department: 'Engineering', salary: 89000, hireDate: '2019-05-12', sex: 'F', status: 'Active', notes: '' },
-            { id: 12, name: 'Leo Garcia', department: 'Marketing', salary: 73000, hireDate: '2020-11-25', sex: 'M', status: 'Inactive', notes: 'Transitioning' },
-            { id: 13, name: 'Maria Lopez', department: 'Finance', salary: 85000, hireDate: '2018-04-08', sex: 'F', status: 'Active', notes: 'CFO assistant' },
-            { id: 14, name: 'Frosty McSnowface', department: 'Sales', salary: 67000, hireDate: '2023-12-25', sex: 'snowman', status: 'Active', notes: 'Seasonal' },
-            { id: 15, name: 'Olivia Moore', department: 'Engineering', salary: 102000, hireDate: '2016-03-01', sex: 'F', status: 'Active', notes: 'VP Engineering' },
+            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, hireDate: '2020-03-15', sex: 'F', status: 'Active', product: 'laptop', notes: 'Team lead' },
+            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, hireDate: '2019-07-22', sex: 'M', status: 'Active', product: 'shirt', notes: '' },
+            { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 92000, hireDate: '2018-11-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'Senior dev' },
+            { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, hireDate: '2021-01-10', sex: 'M', status: 'Inactive', product: 'coffee', notes: 'On sabbatical' },
+            { id: 5, name: 'Eva Martinez', department: 'HR', salary: 65000, hireDate: '2020-06-20', sex: 'F', status: 'Active', product: 'jeans', notes: '' },
+            { id: 6, name: 'Frank Lee', department: 'Engineering', salary: 88000, hireDate: '2019-02-14', sex: 'M', status: 'Active', product: 'phone', notes: '' },
+            { id: 7, name: 'Grace Kim', department: 'Marketing', salary: 75000, hireDate: '2020-09-05', sex: 'F', status: 'Inactive', product: 'apple', notes: 'Parental leave' },
+            { id: 8, name: 'Henry Chen', department: 'Sales', salary: 71000, hireDate: '2021-04-18', sex: 'M', status: 'Active', product: 'bread', notes: '' },
+            { id: 9, name: 'Ivy Wang', department: 'Engineering', salary: 98000, hireDate: '2017-08-30', sex: 'F', status: 'Active', product: 'laptop', notes: 'Architect' },
+            { id: 10, name: 'Jack Davis', department: 'HR', salary: 62000, hireDate: '2022-02-01', sex: 'M', status: 'Active', product: 'sneakers', notes: '' },
+            { id: 11, name: 'Karen Wilson', department: 'Engineering', salary: 89000, hireDate: '2019-05-12', sex: 'F', status: 'Active', product: null, notes: '' },
+            { id: 12, name: 'Leo Garcia', department: 'Marketing', salary: 73000, hireDate: '2020-11-25', sex: 'M', status: 'Inactive', product: 'shirt', notes: 'Transitioning' },
+            { id: 13, name: 'Maria Lopez', department: 'Finance', salary: 85000, hireDate: '2018-04-08', sex: 'F', status: 'Active', product: 'coffee', notes: 'CFO assistant' },
+            { id: 14, name: 'Frosty McSnowface', department: 'Sales', salary: 67000, hireDate: '2023-12-25', sex: 'snowman', status: 'Active', product: null, notes: 'Seasonal' },
+            { id: 15, name: 'Olivia Moore', department: 'Engineering', salary: 102000, hireDate: '2016-03-01', sex: 'F', status: 'Active', product: 'headphones', notes: 'VP Engineering' },
         ]
 
         // Helper function to get salary color class (rainbow gradient)
@@ -293,9 +301,21 @@
             { value: 'On Leave', label: 'On Leave' }
         ]
 
+        const productOptions = [
+            { id: 'laptop', name: 'Laptop Pro 15"', group: 'Electronics', icon: '💻' },
+            { id: 'phone', name: 'Smartphone X12', group: 'Electronics', icon: '📱' },
+            { id: 'headphones', name: 'Wireless Headphones', group: 'Electronics', icon: '🎧' },
+            { id: 'shirt', name: 'Cotton T-Shirt', group: 'Clothing', icon: '👔' },
+            { id: 'jeans', name: 'Slim Fit Jeans', group: 'Clothing', icon: '👖' },
+            { id: 'sneakers', name: 'Running Sneakers', group: 'Clothing', icon: '👟' },
+            { id: 'apple', name: 'Organic Apples', group: 'Food', icon: '🍎' },
+            { id: 'bread', name: 'Whole Grain Bread', group: 'Food', icon: '🍞' },
+            { id: 'coffee', name: 'Premium Coffee', group: 'Food', icon: '☕' },
+        ]
+
         // Column definitions
         const columns = [
-            { field: 'id', title: 'ID', width: '60px', align: 'center', editable: false },
+            { field: 'id', title: 'ID', width: '60px', align: 'center', isEditable: false },
             { field: 'name', title: 'Name', width: '180px', editor: 'text' },
             {
                 field: 'department',
@@ -331,7 +351,7 @@
                 title: 'Sex',
                 width: '60px',
                 align: 'center',
-                editable: false,
+                isEditable: false,
                 // Use templateCallback to render Font Awesome icons
                 templateCallback: (row) => {
                     if (row.sex === 'M') return '<i class="fa-solid fa-mars sex-male"></i>'
@@ -348,6 +368,50 @@
                 editor: 'select',
                 editorOptions: {
                     options: statusOptions
+                }
+            },
+            {
+                field: 'product',
+                title: 'Product (auto)',
+                width: '180px',
+                editor: 'autocomplete',
+                // Cell styling based on selected product's group
+                cellClassCallback: (value, row) => {
+                    const product = productOptions.find(p => p.id === value)
+                    if (!product) return null
+                    return `product-${product.group.toLowerCase()}`
+                },
+                editorOptions: {
+                    initialOptions: productOptions,
+                    searchCallback: async (query) => {
+                        await new Promise(r => setTimeout(r, 150)) // Simulate async
+                        return productOptions.filter(p =>
+                            p.name.toLowerCase().includes(query.toLowerCase()) ||
+                            p.group.toLowerCase().includes(query.toLowerCase())
+                        )
+                    },
+                    valueMember: 'id',
+                    displayMember: 'name',
+                    minSearchLength: 0,
+                    debounceMs: 200,
+                    dropdownMinWidth: '220px',  // Wider than 180px cell
+                    editStartSelection: 'selectAll',
+                    // Custom dropdown rendering with group colors
+                    renderOptionCallback: (opt, ctx) => {
+                        const classes = ['wg__dropdown-option']
+                        if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
+                        if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
+                        const groupClass = `product-${opt.group.toLowerCase()}`
+                        return `
+                            <div class="${classes.join(' ')} ${groupClass}" data-index="${ctx.index}" style="display: flex; align-items: center;">
+                                <span style="margin-right: 8px; font-size: 1.2em;">${opt.icon}</span>
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${opt.name}</div>
+                                    <div style="font-size: 0.8em; opacity: 0.7;">${opt.group}</div>
+                                </div>
+                            </div>
+                        `
+                    }
                 }
             },
             {
@@ -427,9 +491,9 @@
         const grid = document.getElementById('grid')
         grid.items = sampleData
         grid.columns = columns
-        grid.striped = false  // Disable striping to better show custom colors
-        grid.hoverable = true
-        grid.editable = true
+        grid.isStriped = false  // Disable striping to better show custom colors
+        grid.isHoverable = true
+        grid.isEditable = true
         grid.sortMode = 'multi'  // Enable multi-column sorting
 
         // Dynamic row styling - gray out inactive employees
@@ -468,11 +532,27 @@
                 background-color: var(--row-inactive-bg) !important;
                 color: var(--row-inactive-color) !important;
             }
+
+            /* Product group styling */
+            .product-electronics {
+                background-color: var(--product-electronics-bg) !important;
+                color: var(--product-electronics-color);
+            }
+            .product-clothing {
+                background-color: var(--product-clothing-bg) !important;
+                color: var(--product-clothing-color);
+            }
+            .product-food {
+                background-color: var(--product-food-bg) !important;
+                color: var(--product-food-color);
+            }
         `
 
         // Theme toggle handler - just toggles the class, CSS variables handle the rest
         const themeToggle = document.getElementById('themeToggle')
         themeToggle.addEventListener('change', () => {
+            // Close any open dropdown/editor before theme switch to avoid state corruption
+            grid.cancelEdit()
             document.documentElement.classList.toggle('dark', themeToggle.checked)
         })
     </script>

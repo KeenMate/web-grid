@@ -77,6 +77,7 @@ export type EditorOptions<T = unknown> = {
 	emptyLabel?: string     // Label for empty option (default: "-- Select --")
 	noOptionsText?: string  // Override "No options" message (falls back to grid.labels.dropdownNoOptions)
 	searchingText?: string  // Override "Searching..." message (falls back to grid.labels.dropdownSearching)
+	dropdownMinWidth?: string  // Minimum width for dropdown (e.g., "300px") - useful when cell is narrow
 
 	// === TEXT ===
 	maxLength?: number
@@ -104,7 +105,7 @@ export type EditorOptions<T = unknown> = {
 
 	// === AUTOCOMPLETE ===
 	initialOptions?: EditorOption[]  // Show before search (popular items)
-	onSearchCallback?: (query: string, row: T, signal?: AbortSignal) => Promise<EditorOption[]>
+	searchCallback?: (query: string, row: T, signal?: AbortSignal) => Promise<EditorOption[]>
 	minSearchLength?: number         // Min chars before search (default: 1)
 	debounceMs?: number              // Debounce search calls (default: 300)
 	multiple?: boolean               // Allow multiple selections
@@ -159,8 +160,8 @@ export type Column<T> = {
 	field: keyof T | string
 	title: string
 	headerInfo?: string  // Info tooltip shown next to header title (displays ⓘ icon)
-	sortable?: boolean
-	filterable?: boolean
+	isSortable?: boolean
+	isFilterable?: boolean
 	width?: string
 	minWidth?: string
 	maxWidth?: string
@@ -173,11 +174,11 @@ export type Column<T> = {
 	// Render callback (replaces Svelte snippet)
 	renderCallback?: CellRenderCallback<T>
 	// Editing props
-	editable?: boolean
+	isEditable?: boolean
 	editor?: EditorType
 	editTrigger?: EditTrigger  // Per-column override
 	dropdownToggleVisibility?: ToggleVisibility  // Per-column override for toggle visibility
-	openDropdownOnEnter?: boolean  // Per-column override: Enter opens dropdown (true) or moves down (false)
+	shouldOpenDropdownOnEnter?: boolean  // Per-column override: Enter opens dropdown (true) or moves down (false)
 	editorOptions?: EditorOptions<T>
 	// Validation - can return error message or null (deprecated, use beforeCommitCallback)
 	validateCallback?: (value: unknown, row: T) => string | null | Promise<string | null>
@@ -186,7 +187,7 @@ export type Column<T> = {
 	// Custom editor callback
 	cellEditCallback?: (context: CustomEditorContext<T>) => void
 	// Show edit button in cell
-	showEditButton?: boolean
+	isEditButtonVisible?: boolean
 	// Tooltip - displayed on cell hover
 	tooltipMember?: string  // Property name in row data containing tooltip text
 	tooltipCallback?: (value: unknown, row: T) => string | null  // Dynamic tooltip (takes priority over tooltipMember)
@@ -196,13 +197,13 @@ export type Column<T> = {
 	// Validation tooltip - return HTML string for rich error display
 	validationTooltipCallback?: (context: ValidationTooltipContext<T>) => string | null
 	// Freeze panes - column sticks to left side during horizontal scroll
-	frozen?: boolean
+	isFrozen?: boolean
 	// Resizable - allow column width to be changed by dragging (default: true)
-	resizable?: boolean
+	isResizable?: boolean
 	// Fill direction - override grid-level fillDirection for this column
 	fillDirection?: FillDirection
 	// Hidden - column is not rendered but kept in columns array for visibility toggling
-	hidden?: boolean
+	isHidden?: boolean
 }
 
 // Context for validation tooltip callback
@@ -411,14 +412,14 @@ export type ParsedKeyCombo = {
 export type QuickGridProps<T> = {
 	items: T[]
 	columns: Column<T>[]
-	filterable?: boolean
-	pageable?: boolean
+	isFilterable?: boolean
+	isPageable?: boolean
 	pageSize?: number
-	striped?: boolean
-	hoverable?: boolean
-	showRowNumbers?: boolean  // Show row number column on the left (default: false)
-	stickyRowNumbers?: boolean  // Make row number column sticky (freeze panes)
-	freezeColumns?: number  // Freeze first N columns (after visual reorder from frozen: true)
+	isStriped?: boolean
+	isHoverable?: boolean
+	isRowNumbersVisible?: boolean  // Show row number column on the left (default: false)
+	isStickyRowNumbers?: boolean  // Make row number column sticky (freeze panes)
+	freezeColumns?: number  // Freeze first N columns (after visual reorder from isFrozen: true)
 	class?: string
 	style?: string
 	customStylesCallback?: () => string  // Callback returning custom CSS to inject into shadow DOM
@@ -437,31 +438,26 @@ export type QuickGridProps<T> = {
 	// Summary
 	summaryPosition?: string  // Position(s): "bottom-left", "top-right|bottom-right", etc.
 	summaryContentCallback?: SummaryContentCallback<T>  // Callback returning HTML content
-	summaryInline?: boolean  // Share row with pagination when in same area (default: true)
+	isSummaryInline?: boolean  // Share row with pagination when in same area (default: true)
 	// Editing props
-	editable?: boolean
+	isEditable?: boolean
 	editTrigger?: EditTrigger
 	editStartSelection?: EditStartSelection  // Default cursor position when entering edit via navigate mode (default: selectAll)
 	mode?: GridMode  // Grid mode - sets sensible defaults (read-only, excel, input-matrix)
 	dropdownToggleVisibility?: ToggleVisibility  // When to show dropdown toggle (always, on-focus)
-	dropdownShowOnFocus?: boolean  // Auto-open dropdown when cell is focused (deprecated, use showOnFocus in editorOptions)
-	openDropdownOnEnter?: boolean  // Enter opens dropdown (true) or moves down (false, default)
-	checkboxAlwaysEditable?: boolean  // Make checkboxes always interactive, even in navigate mode
+	shouldShowDropdownOnFocus?: boolean  // Auto-open dropdown when cell is focused
+	shouldOpenDropdownOnEnter?: boolean  // Enter opens dropdown (true) or moves down (false, default)
+	isCheckboxAlwaysEditable?: boolean  // Make checkboxes always interactive, even in navigate mode
 	// Invalid cells state (for external tracking)
 	invalidCells?: CellValidationState[]
 	// Row toolbar (floating toolbar for row actions)
-	showRowToolbar?: boolean
+	isRowToolbarVisible?: boolean
 	rowToolbar?: RowToolbarConfig<T>[]  // Toolbar items (predefined strings or custom objects)
 	toolbarVerticalAlign?: 'top' | 'center' | 'bottom'  // Vertical alignment for left/right positions: top (rows above), center, bottom (default, rows below)
 	toolbarHorizontalAlign?: 'start' | 'center' | 'end' | 'cursor'  // Horizontal alignment for top position (default: 'center')
 	toolbarTrigger?: 'hover' | 'click' | 'button'  // How to show toolbar
 	toolbarPosition?: ToolbarPosition  // Preferred position: auto (default), left, right, top, or inline
 	inlineActionsTitle?: string  // Header title for inline actions column (when toolbarPosition="inline")
-	// Legacy aliases for backwards compatibility
-	showRowActions?: boolean      // Deprecated: use showRowToolbar
-	rowActions?: RowToolbarConfig<T>[]  // Deprecated: use rowToolbar
-	toolbarAlign?: 'top' | 'center' | 'bottom'  // Deprecated: use toolbarVerticalAlign
-	toolbarTopPosition?: 'start' | 'center' | 'end' | 'cursor'  // Deprecated: use toolbarHorizontalAlign
 	// Context menu (row/cell)
 	contextMenu?: ContextMenuItem<T>[]
 	contextMenuXOffset?: number           // Horizontal offset from click (default: 0)
@@ -472,16 +468,16 @@ export type QuickGridProps<T> = {
 	onheadercontextmenuopen?: (context: HeaderMenuContext<T>) => void
 	// Row keyboard shortcuts
 	rowShortcuts?: RowShortcut<T>[]              // Shortcut definitions
-	showShortcutsHelp?: boolean                   // Show info icon (default: false)
+	isShortcutsHelpVisible?: boolean              // Show info icon (default: false)
 	shortcutsHelpPosition?: 'top-right' | 'top-left'  // Icon position (default: 'top-right')
 	shortcutsHelpContentCallback?: () => string   // Custom HTML to show with shortcuts list
 	// Virtual scroll
-	virtualScroll?: boolean              // Enable virtual scroll (default: false)
+	isVirtualScrollEnabled?: boolean     // Enable virtual scroll (default: false)
 	virtualScrollThreshold?: number      // Auto-enable when items >= threshold (default: 100)
 	virtualScrollRowHeight?: number      // Fixed row height in px (default: 38)
 	virtualScrollBuffer?: number         // Extra rows above/below viewport (default: 10)
 	// Infinite scroll (load more)
-	infiniteScroll?: boolean             // Enable infinite scroll (default: false)
+	isInfiniteScrollEnabled?: boolean    // Enable infinite scroll (default: false)
 	infiniteScrollThreshold?: number     // Distance from bottom to trigger load (default: 100px)
 	hasMoreItems?: boolean               // Set to false when no more data (default: true)
 	// Callbacks
@@ -492,21 +488,20 @@ export type QuickGridProps<T> = {
 	// Validation tooltip - return HTML string for rich error display (column-level overrides this)
 	validationTooltipCallback?: (context: ValidationTooltipContext<T>) => string | null
 	ontoolbarclick?: (detail: ToolbarClickDetail<T>) => void
-	onrowaction?: (detail: RowActionClickDetail<T>) => void  // Deprecated: use ontoolbarclick
 	ondatarequest?: (detail: DataRequestDetail) => void  // Fires when sort/page changes
 	onrowdelete?: (detail: { rowIndex: number; row: T }) => void  // Ctrl+Delete pressed on a row
 	// Column resize & persistence
 	gridName?: string                                    // Unique name for localStorage persistence
-	persistColumnWidths?: boolean                        // Persist column widths to localStorage (requires gridName)
+	shouldPersistColumnWidths?: boolean                  // Persist column widths to localStorage (requires gridName)
 	oncolumnresize?: (detail: ColumnResizeDetail) => void  // Fired when column is resized
 
 	// Column reorder & persistence
-	allowColumnReorder?: boolean                         // Enable drag-to-reorder columns (default: false)
-	persistColumnOrder?: boolean                         // Persist column order to localStorage (requires gridName)
+	isColumnReorderAllowed?: boolean                     // Enable drag-to-reorder columns (default: false)
+	shouldPersistColumnOrder?: boolean                   // Persist column order to localStorage (requires gridName)
 	oncolumnreorder?: (detail: ColumnReorderDetail) => void  // Fired when column is reordered
 
 	// Fill handle (Excel-like autofill)
-	onfilldrag?: (detail: FillDragDetail) => boolean | void  // Return false to cancel fill operation
+	fillDragCallback?: (detail: FillDragDetail) => boolean | void  // Return false to cancel fill operation
 }
 
 // =============================================================================
@@ -725,7 +720,7 @@ export type ColumnReorderDetail = {
 	allOrder: ColumnOrderState[]  // Same format as localStorage - can be sent to server
 }
 
-// Detail passed to onfilldrag callback (Excel-like fill handle)
+// Detail passed to fillDragCallback (Excel-like fill handle)
 export type FillDragDetail = {
 	sourceCell: { rowIndex: number; colIndex: number; field: string; value: unknown }
 	targetCells: Array<{ rowIndex: number; colIndex: number; field: string }>

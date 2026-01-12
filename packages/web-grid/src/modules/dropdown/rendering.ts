@@ -95,8 +95,9 @@ export function renderDropdown<T>(
 			flip({ fallbackPlacements: ['top-start'] }),
 			size({
 				apply({ rects }) {
+					// Use minWidth to allow dropdown to be wider than anchor if needed
 					Object.assign(dropdown.style, {
-						width: `${rects.reference.width}px`
+						minWidth: opts.dropdownMinWidth || `${rects.reference.width}px`
 					})
 				}
 			})

@@ -194,7 +194,7 @@
         }
 
         const columns = [
-            { field: 'id', title: 'ID', width: '50px', editable: false },
+            { field: 'id', title: 'ID', width: '50px', isEditable: false },
             { field: 'name', title: 'Name', width: '150px', editor: 'text' },
             {
                 field: 'department',
@@ -240,7 +240,7 @@
         const grid = document.getElementById('grid')
         grid.items = sampleData
         grid.columns = columns
-        grid.editable = true
+        grid.isEditable = true
         grid.editTrigger = 'navigate'
 
         // Context menu items

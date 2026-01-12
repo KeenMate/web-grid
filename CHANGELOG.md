@@ -5,6 +5,147 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-rc10] - 2026-01-12
+
+### BREAKING CHANGES
+
+This release contains significant API changes to align property naming with sibling components (web-multiselect, web-daterangepicker) and follow consistent naming conventions. Since this is a new library, no backwards compatibility layer is provided.
+
+#### Grid-Level Property Renames
+
+All boolean properties now use `is*` prefix for state properties and `should*` prefix for behavior configuration:
+
+| Old Property | New Property | Description |
+|--------------|--------------|-------------|
+| `filterable` | `isFilterable` | Enable column filtering UI |
+| `pageable` | `isPageable` | Enable pagination |
+| `striped` | `isStriped` | Alternate row background colors |
+| `hoverable` | `isHoverable` | Highlight row on hover |
+| `editable` | `isEditable` | Enable cell editing |
+| `showRowNumbers` | `isRowNumbersVisible` | Show row number column |
+| `stickyRowNumbers` | `isStickyRowNumbers` | Pin row numbers when scrolling horizontally |
+| `showRowToolbar` | `isRowToolbarVisible` | Show row toolbar on hover |
+| `showShortcutsHelp` | `isShortcutsHelpVisible` | Show keyboard shortcuts info icon |
+| `virtualScroll` | `isVirtualScrollEnabled` | Enable virtual scrolling for large datasets |
+| `infiniteScroll` | `isInfiniteScrollEnabled` | Enable infinite scroll loading |
+| `persistColumnWidths` | `shouldPersistColumnWidths` | Save column widths to localStorage |
+| `persistColumnOrder` | `shouldPersistColumnOrder` | Save column order to localStorage |
+| `allowColumnReorder` | `isColumnReorderAllowed` | Allow drag-to-reorder columns |
+| `checkboxAlwaysEditable` | `isCheckboxAlwaysEditable` | Checkboxes toggle without entering edit mode |
+| `dropdownShowOnFocus` | `shouldShowDropdownOnFocus` | Open dropdown when cell receives focus |
+| `openDropdownOnEnter` | `shouldOpenDropdownOnEnter` | Open dropdown on Enter key |
+| `summaryInline` | `isSummaryInline` | Show summary row inline vs footer |
+
+**Migration example:**
+```javascript
+// Before
+grid.editable = true
+grid.showRowNumbers = true
+grid.virtualScroll = true
+
+// After
+grid.isEditable = true
+grid.isRowNumbersVisible = true
+grid.isVirtualScrollEnabled = true
+```
+
+#### Column-Level Property Renames
+
+| Old Property | New Property | Description |
+|--------------|--------------|-------------|
+| `sortable` | `isSortable` | Column can be sorted |
+| `filterable` | `isFilterable` | Column can be filtered |
+| `editable` | `isEditable` | Column cells can be edited |
+| `frozen` | `isFrozen` | Column stays fixed when scrolling |
+| `resizable` | `isResizable` | Column width can be resized |
+| `hidden` | `isHidden` | Column is hidden from view |
+| `showEditButton` | `isEditButtonVisible` | Show edit button in cell |
+| `openDropdownOnEnter` | `shouldOpenDropdownOnEnter` | Open dropdown on Enter key |
+
+**Migration example:**
+```javascript
+// Before
+const columns = [
+  { field: 'id', title: 'ID', editable: false, frozen: true },
+  { field: 'name', title: 'Name', sortable: true },
+  { field: 'status', title: 'Status', hidden: true }
+]
+
+// After
+const columns = [
+  { field: 'id', title: 'ID', isEditable: false, isFrozen: true },
+  { field: 'name', title: 'Name', isSortable: true },
+  { field: 'status', title: 'Status', isHidden: true }
+]
+```
+
+#### Callback Renames
+
+Per naming convention: Events (`on*`) = fire-and-forget, Callbacks (`*Callback`) = return value affects behavior.
+
+| Old Name | New Name | Reason |
+|----------|----------|--------|
+| `onfilldrag` | `fillDragCallback` | Returns `false` to cancel fill operation |
+| `onSearchCallback` (in editorOptions) | `searchCallback` | Returns search results array |
+
+**Migration example:**
+```javascript
+// Before
+grid.onfilldrag = (detail) => {
+  if (detail.targetCells.length > 10) return false
+}
+
+// After
+grid.fillDragCallback = (detail) => {
+  if (detail.targetCells.length > 10) return false
+}
+
+// Before (in column editorOptions)
+editorOptions: {
+  onSearchCallback: async (query) => searchAPI(query)
+}
+
+// After
+editorOptions: {
+  searchCallback: async (query) => searchAPI(query)
+}
+```
+
+### Added
+
+- **Component-Specific CSS Variables** - New granular CSS variables following the pattern `--wg-{component}-{property}`:
+
+  **Dropdown Menu:**
+  - `--wg-dropdown-option-gap` - Gap between option icon and text
+  - `--wg-dropdown-option-padding` - Padding inside dropdown options
+  - `--wg-dropdown-empty-padding` - Padding for "No options" message
+
+  **Inline Actions:**
+  - `--wg-inline-actions-padding` - Padding around inline action buttons
+  - `--wg-inline-actions-gap` - Gap between action buttons
+
+  **Toolbar:**
+  - `--wg-toolbar-row-gap` - Gap between toolbar rows
+  - `--wg-toolbar-row-padding` - Padding inside toolbar rows
+  - `--wg-toolbar-label-font-size` - Font size for toolbar button labels
+  - `--wg-toolbar-btn-gap` - Gap between toolbar buttons
+
+  **Tooltip:**
+  - `--wg-tooltip-padding` - Padding inside tooltips
+  - `--wg-tooltip-shadow` - Box shadow for tooltip popups
+
+### Changed
+
+- **CSS Variable References** - Internal CSS now uses component-specific variables instead of generic spacing variables, making customization more targeted and predictable
+- **Internal Method Names** - Grid class internal methods renamed to match new property names (e.g., `getEffectiveOpenDropdownOnEnter` → `getEffectiveShouldOpenDropdownOnEnter`)
+
+### Fixed
+
+- **Consistent API Surface** - All boolean properties now follow consistent `is*`/`should*` naming pattern across grid and column levels
+- **TypeScript Types** - All type definitions updated to reflect new property names
+
+---
+
 ## [1.0.0-rc09] - 2026-01-11 (Published)
 
 ### Changed

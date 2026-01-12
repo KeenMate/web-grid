@@ -106,7 +106,7 @@
                     <td>Must be <code>"navigate"</code> for cell focus (and fill handle) to work.</td>
                 </tr>
                 <tr>
-                    <td><code>editable</code></td>
+                    <td><code>isEditable</code></td>
                     <td>Grid must be editable for fill to work. Non-editable columns are skipped.</td>
                 </tr>
                 <tr>
@@ -192,7 +192,7 @@
 
         // Columns with all editor types
         const columns = [
-            { field: 'id', title: 'ID', width: '70px', editable: false },
+            { field: 'id', title: 'ID', width: '70px', isEditable: false },
             { field: 'name', title: 'Name (text)', width: '120px', editor: 'text' },
             { field: 'salary', title: 'Salary (number)', width: '110px', editor: 'number', formatCallback: v => '$' + v?.toLocaleString() },
             { field: 'startDate', title: 'Start Date', width: '120px', editor: 'date' },
@@ -217,7 +217,7 @@
                 editor: 'autocomplete',
                 editorOptions: {
                     options: priorityOptions,
-                    onSearchCallback: async (query) => {
+                    searchCallback: async (query) => {
                         // Simulate async search
                         await new Promise(r => setTimeout(r, 100))
                         return priorityOptions.filter(o =>
@@ -268,10 +268,10 @@
         const grid = document.getElementById('grid')
         grid.items = JSON.parse(JSON.stringify(sampleData))
         grid.columns = columns
-        grid.showRowNumbers = true
-        grid.editable = true
+        grid.isRowNumbersVisible = true
+        grid.isEditable = true
         grid.editTrigger = 'navigate'  // Required for cell focus
-        grid.hoverable = true
+        grid.isHoverable = true
 
         grid.onfilldrag = (detail) => {
             const log = document.getElementById('fillLog')
@@ -313,12 +313,12 @@
             description: `Row ${i + 1}`
         }))
         gridVertical.columns = [
-            { field: 'description', title: 'Row', width: '80px', editable: false },
+            { field: 'description', title: 'Row', width: '80px', isEditable: false },
             { field: 'value', title: 'Value (drag down)', width: '150px' }
         ]
-        gridVertical.editable = true
+        gridVertical.isEditable = true
         gridVertical.editTrigger = 'navigate'
-        gridVertical.hoverable = true
+        gridVertical.isHoverable = true
 
         // Grid 4 - Horizontal fill demo
         const gridHorizontal = document.getElementById('gridHorizontal')
@@ -327,15 +327,15 @@
             { label: 'Numbers', col1: 42, col2: '', col3: '', col4: '' }
         ]
         gridHorizontal.columns = [
-            { field: 'label', title: 'Type', width: '80px', editable: false },
+            { field: 'label', title: 'Type', width: '80px', isEditable: false },
             { field: 'col1', title: 'A', width: '80px' },
             { field: 'col2', title: 'B', width: '80px' },
             { field: 'col3', title: 'C', width: '80px' },
             { field: 'col4', title: 'D', width: '80px' }
         ]
-        gridHorizontal.editable = true
+        gridHorizontal.isEditable = true
         gridHorizontal.editTrigger = 'navigate'
-        gridHorizontal.hoverable = true
+        gridHorizontal.isHoverable = true
     </script>
 </body>
 </html>

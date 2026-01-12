@@ -5,13 +5,13 @@
   position: fixed;
   z-index: var(--wg-z-tooltip);
   max-width: 300px;
-  padding: 6px 10px;
+  padding: var(--wg-tooltip-padding);
   background: var(--wg-tooltip-bg, #333);
   color: var(--wg-tooltip-color, #fff);
   font-size: var(--wg-font-size-sm);
   line-height: 1.4;
   border-radius: var(--wg-border-radius-sm);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--wg-tooltip-shadow);
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--wg-transition-fast);

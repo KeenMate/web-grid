@@ -136,8 +136,8 @@
 .wg__dropdown-option {
   display: flex;
   align-items: center;
-  gap: var(--wg-spacing-sm);
-  padding: 6px 12px;
+  gap: var(--wg-dropdown-option-gap);
+  padding: var(--wg-dropdown-option-padding);
   cursor: pointer;
   color: var(--wg-text-color-1);
 }
@@ -145,6 +145,7 @@
 .wg__dropdown-option:hover,
 .wg__dropdown-option--highlighted {
   background: var(--wg-hover-bg, #f0f0f0);
+  box-shadow: inset 0 0 0 2px var(--wg-accent-color, #0078d4);
 }
 
 .wg__dropdown-option--selected {
@@ -186,7 +187,7 @@
 }
 
 .wg__dropdown-empty {
-  padding: 8px 12px;
+  padding: var(--wg-dropdown-empty-padding);
   color: var(--wg-text-color-2);
   font-style: italic;
   text-align: center;

@@ -77,6 +77,7 @@ import {
 	focusCellElement,
 	updateFocusVisual,
 	clearEditingVisual,
+	restoreEditingCellToDisplayMode,
 	handleCellFocus,
 	moveFocus,
 	tryStartEdit,
@@ -219,6 +220,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	isUserFiltering = false
 	justSelected = false
 	isOpeningDropdown = false  // Flag to skip scroll events during dropdown opening
+	isClosingViaToggle = false  // Flag to prevent blur from canceling when closing via toggle
 	private isProgrammaticScroll = false  // Flag to skip handleVirtualScroll during keyboard nav
 
 	// Autocomplete async state
@@ -284,7 +286,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	connectedCallback(): void {
 		// Load persisted column widths before initial render
-		if (this.grid.gridName && this.grid.persistColumnWidths) {
+		if (this.grid.gridName && this.grid.shouldPersistColumnWidths) {
 			this.grid.loadPersistedWidths()
 		}
 		this.render()
@@ -327,11 +329,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get columns(): Column<T>[] { return this.grid.columns }
 	set columns(value: Column<T>[]) { this.grid.columns = value }
 
-	get filterable(): boolean { return this.grid.filterable }
-	set filterable(value: boolean) { this.grid.filterable = value }
+	get isFilterable(): boolean { return this.grid.isFilterable }
+	set isFilterable(value: boolean) { this.grid.isFilterable = value }
 
-	get pageable(): boolean { return this.grid.pageable }
-	set pageable(value: boolean) { this.grid.pageable = value }
+	get isPageable(): boolean { return this.grid.isPageable }
+	set isPageable(value: boolean) { this.grid.isPageable = value }
 
 	get pageSize(): number { return this.grid.pageSize }
 	set pageSize(value: number) { this.grid.pageSize = value }
@@ -339,14 +341,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get pageSizes(): number[] { return this.grid.pageSizes }
 	set pageSizes(value: number[]) { this.grid.pageSizes = value }
 
-	get striped(): boolean { return this.grid.striped }
-	set striped(value: boolean) { this.grid.striped = value }
+	get isStriped(): boolean { return this.grid.isStriped }
+	set isStriped(value: boolean) { this.grid.isStriped = value }
 
-	get hoverable(): boolean { return this.grid.hoverable }
-	set hoverable(value: boolean) { this.grid.hoverable = value }
+	get isHoverable(): boolean { return this.grid.isHoverable }
+	set isHoverable(value: boolean) { this.grid.isHoverable = value }
 
-	get editable(): boolean { return this.grid.editable }
-	set editable(value: boolean) { this.grid.editable = value }
+	get isEditable(): boolean { return this.grid.isEditable }
+	set isEditable(value: boolean) { this.grid.isEditable = value }
 
 	get editTrigger(): EditTrigger { return this.grid.editTrigger }
 	set editTrigger(value: EditTrigger) { this.grid.editTrigger = value }
@@ -360,20 +362,20 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get dropdownToggleVisibility(): ToggleVisibility { return this.grid.dropdownToggleVisibility }
 	set dropdownToggleVisibility(value: ToggleVisibility) { this.grid.dropdownToggleVisibility = value }
 
-	get dropdownShowOnFocus(): boolean { return this.grid.dropdownShowOnFocus }
-	set dropdownShowOnFocus(value: boolean) { this.grid.dropdownShowOnFocus = value }
+	get shouldShowDropdownOnFocus(): boolean { return this.grid.shouldShowDropdownOnFocus }
+	set shouldShowDropdownOnFocus(value: boolean) { this.grid.shouldShowDropdownOnFocus = value }
 
-	get openDropdownOnEnter(): boolean { return this.grid.openDropdownOnEnter }
-	set openDropdownOnEnter(value: boolean) { this.grid.openDropdownOnEnter = value }
+	get shouldOpenDropdownOnEnter(): boolean { return this.grid.shouldOpenDropdownOnEnter }
+	set shouldOpenDropdownOnEnter(value: boolean) { this.grid.shouldOpenDropdownOnEnter = value }
 
-	get checkboxAlwaysEditable(): boolean { return this.grid.checkboxAlwaysEditable }
-	set checkboxAlwaysEditable(value: boolean) { this.grid.checkboxAlwaysEditable = value }
+	get isCheckboxAlwaysEditable(): boolean { return this.grid.isCheckboxAlwaysEditable }
+	set isCheckboxAlwaysEditable(value: boolean) { this.grid.isCheckboxAlwaysEditable = value }
 
-	get showRowNumbers(): boolean { return this.grid.showRowNumbers }
-	set showRowNumbers(value: boolean) { this.grid.showRowNumbers = value }
+	get isRowNumbersVisible(): boolean { return this.grid.isRowNumbersVisible }
+	set isRowNumbersVisible(value: boolean) { this.grid.isRowNumbersVisible = value }
 
-	get stickyRowNumbers(): boolean { return this.grid.stickyRowNumbers }
-	set stickyRowNumbers(value: boolean) { this.grid.stickyRowNumbers = value }
+	get isStickyRowNumbers(): boolean { return this.grid.isStickyRowNumbers }
+	set isStickyRowNumbers(value: boolean) { this.grid.isStickyRowNumbers = value }
 
 	get freezeColumns(): number { return this.grid.freezeColumns }
 	set freezeColumns(value: number) { this.grid.freezeColumns = value }
@@ -381,8 +383,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get invalidCells(): CellValidationState[] { return this.grid.invalidCells }
 	set invalidCells(value: CellValidationState[]) { this.grid.invalidCells = value }
 
-	get showRowToolbar(): boolean { return this.grid.showRowToolbar }
-	set showRowToolbar(value: boolean) { this.grid.showRowToolbar = value }
+	get isRowToolbarVisible(): boolean { return this.grid.isRowToolbarVisible }
+	set isRowToolbarVisible(value: boolean) { this.grid.isRowToolbarVisible = value }
 
 	get rowToolbar(): RowToolbarConfig<T>[] { return this.grid.rowToolbar }
 	set rowToolbar(value: RowToolbarConfig<T>[]) { this.grid.rowToolbar = value }
@@ -442,21 +444,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	isRowSelected(rowIndex: number): boolean { return this.grid.isRowSelected(rowIndex) }
 	getSelectedRowsData(): T[] { return this.grid.getSelectedRowsData() }
 
-	get showShortcutsHelp(): boolean { return this.grid.showShortcutsHelp }
-	set showShortcutsHelp(value: boolean) { this.grid.showShortcutsHelp = value }
+	get isShortcutsHelpVisible(): boolean { return this.grid.isShortcutsHelpVisible }
+	set isShortcutsHelpVisible(value: boolean) { this.grid.isShortcutsHelpVisible = value }
 
 	get shortcutsHelpPosition(): 'top-right' | 'top-left' { return this.grid.shortcutsHelpPosition }
 	set shortcutsHelpPosition(value: 'top-right' | 'top-left') { this.grid.shortcutsHelpPosition = value }
 
 	get shortcutsHelpContentCallback(): (() => string) | undefined { return this.grid.shortcutsHelpContentCallback }
 	set shortcutsHelpContentCallback(value: (() => string) | undefined) { this.grid.shortcutsHelpContentCallback = value }
-
-	// Legacy aliases
-	get showRowActions(): boolean { return this.grid.showRowActions }
-	set showRowActions(value: boolean) { this.grid.showRowActions = value }
-
-	get rowActions(): RowToolbarConfig<T>[] { return this.grid.rowActions }
-	set rowActions(value: RowToolbarConfig<T>[]) { this.grid.rowActions = value }
 
 	// Callback setters
 	set onrowchange(value: ((detail: RowChangeDetail<T>) => void) | undefined) {
@@ -554,8 +549,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get summaryMetadata(): unknown { return this.grid.summaryMetadata }
 	set summaryMetadata(value: unknown) { this.grid.summaryMetadata = value }
 
-	get summaryInline(): boolean { return this.grid.summaryInline }
-	set summaryInline(value: boolean) { this.grid.summaryInline = value }
+	get isSummaryInline(): boolean { return this.grid.isSummaryInline }
+	set isSummaryInline(value: boolean) { this.grid.isSummaryInline = value }
 
 	// Row identification
 	get idValueMember(): keyof T | undefined { return this.grid.idValueMember }
@@ -579,18 +574,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		this.tryLoadPersistedWidths()
 	}
 
-	get persistColumnWidths(): boolean { return this.grid.persistColumnWidths }
-	set persistColumnWidths(value: boolean) {
-		this.grid.persistColumnWidths = value
+	get shouldPersistColumnWidths(): boolean { return this.grid.shouldPersistColumnWidths }
+	set shouldPersistColumnWidths(value: boolean) {
+		this.grid.shouldPersistColumnWidths = value
 		this.tryLoadPersistedState()
 	}
 
-	get allowColumnReorder(): boolean { return this.grid.allowColumnReorder }
-	set allowColumnReorder(value: boolean) { this.grid.allowColumnReorder = value }
+	get isColumnReorderAllowed(): boolean { return this.grid.isColumnReorderAllowed }
+	set isColumnReorderAllowed(value: boolean) { this.grid.isColumnReorderAllowed = value }
 
-	get persistColumnOrder(): boolean { return this.grid.persistColumnOrder }
-	set persistColumnOrder(value: boolean) {
-		this.grid.persistColumnOrder = value
+	get shouldPersistColumnOrder(): boolean { return this.grid.shouldPersistColumnOrder }
+	set shouldPersistColumnOrder(value: boolean) {
+		this.grid.shouldPersistColumnOrder = value
 		this.tryLoadPersistedState()
 	}
 
@@ -598,7 +593,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Try to load persisted state (widths/order) if conditions are met
 	 */
 	private tryLoadPersistedState(): void {
-		if (this.grid.gridName && (this.grid.persistColumnWidths || this.grid.persistColumnOrder)) {
+		if (this.grid.gridName && (this.grid.shouldPersistColumnWidths || this.grid.shouldPersistColumnOrder)) {
 			this.grid.loadPersistedState()
 			// Re-render if we're connected to DOM
 			if (this.isConnected) {
@@ -619,12 +614,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	set oncolumnreorder(value: ((detail: ColumnReorderDetail) => void) | undefined) { this.grid.oncolumnreorder = value }
 
 	// Fill handle callback
-	get onfilldrag(): ((detail: FillDragDetail) => boolean | void) | undefined { return this.grid.onfilldrag }
-	set onfilldrag(value: ((detail: FillDragDetail) => boolean | void) | undefined) { this.grid.onfilldrag = value }
+	get fillDragCallback(): ((detail: FillDragDetail) => boolean | void) | undefined { return this.grid.fillDragCallback }
+	set fillDragCallback(value: ((detail: FillDragDetail) => boolean | void) | undefined) { this.grid.fillDragCallback = value }
 
 	// Virtual scroll
-	get virtualScroll(): boolean { return this.grid.virtualScroll }
-	set virtualScroll(value: boolean) { this.grid.virtualScroll = value }
+	get isVirtualScrollEnabled(): boolean { return this.grid.isVirtualScrollEnabled }
+	set isVirtualScrollEnabled(value: boolean) { this.grid.isVirtualScrollEnabled = value }
 
 	get virtualScrollThreshold(): number { return this.grid.virtualScrollThreshold }
 	set virtualScrollThreshold(value: number) { this.grid.virtualScrollThreshold = value }
@@ -636,8 +631,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	set virtualScrollBuffer(value: number) { this.grid.virtualScrollBuffer = value }
 
 	// Infinite scroll
-	get infiniteScroll(): boolean { return this.grid.infiniteScroll }
-	set infiniteScroll(value: boolean) { this.grid.infiniteScroll = value }
+	get isInfiniteScrollEnabled(): boolean { return this.grid.isInfiniteScrollEnabled }
+	set isInfiniteScrollEnabled(value: boolean) { this.grid.isInfiniteScrollEnabled = value }
 
 	get infiniteScrollThreshold(): number { return this.grid.infiniteScrollThreshold }
 	set infiniteScrollThreshold(value: number) { this.grid.infiniteScrollThreshold = value }
@@ -1062,7 +1057,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const column = columns[colIndex]
 				const isDropdownColumn = column?.editor === 'select' || column?.editor === 'combobox' || column?.editor === 'autocomplete'
 
-				if (isDropdownColumn && this.grid.getEffectiveOpenDropdownOnEnter(column)) {
+				if (isDropdownColumn && this.grid.getEffectiveShouldOpenDropdownOnEnter(column)) {
 					tryStartEdit(this, rowIndex, colIndex)
 					requestAnimationFrame(() => {
 						if (!this.dropdownOpen) {
@@ -1221,7 +1216,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const colIndex = this.grid.columns.findIndex(c => c.field === field)
 			const editableCols = this.grid.columns
 				.map((c, i) => ({ index: i, column: c }))
-				.filter(ec => ec.column.editable !== false)
+				.filter(ec => ec.column.isEditable !== false)
 			const currentEditableIdx = editableCols.findIndex(ec => ec.index === colIndex)
 			const displayItems = this.grid.displayItems
 
@@ -1628,6 +1623,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const editorContainer = target.closest('.wg__editor--select, .wg__editor--combobox, .wg__editor--autocomplete') as HTMLElement
 
 				if (editorContainer) {
+					// Set flag if closing to prevent blur from canceling edit
+					if (this.dropdownOpen) {
+						this.isClosingViaToggle = true
+					}
 					toggleDropdown(this)
 				} else if (displayContainer) {
 					const rowIndex = parseInt(displayContainer.dataset.row || '0', 10)
@@ -1725,7 +1724,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 
 			// Column reorder: start drag when clicking on a non-frozen header (if enabled)
-			if (this.grid.allowColumnReorder) {
+			if (this.grid.isColumnReorderAllowed) {
 				const header = target.closest('.wg__header') as HTMLElement
 				if (header && !header.classList.contains('wg__header--frozen') && !header.classList.contains('wg__row-number-header')) {
 					const field = header.dataset.field
@@ -1796,13 +1795,34 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 			}
 			if (target.matches('.wg__select-trigger')) {
+				// Check if we're closing via toggle - skip canceling in that case
+				if (this.isClosingViaToggle) {
+					this.isClosingViaToggle = false
+					return
+				}
 				if (!this.isCommittingFromKeyboard && !this.isTransitioningCells && !this.dropdownOpen && !this.isOpeningDropdown) {
+					// Capture cell info BEFORE cancelEdit clears it
+					const editingCell = this.grid.editingCell
+					const colIndex = editingCell
+						? this.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+						: -1
+
 					removeDropdown(this)
 					clearEditingVisual(this)
 					this.grid.cancelEdit()
+
+					// Re-render cell to restore display mode HTML
+					if (editingCell && colIndex >= 0) {
+						renderCell(this, editingCell.rowIndex, colIndex)
+					}
 				}
 			}
 			if (target.matches('.wg__combobox-input, .wg__autocomplete-input')) {
+				// Check if we're closing via toggle - skip committing in that case
+				if (this.isClosingViaToggle) {
+					this.isClosingViaToggle = false
+					return
+				}
 				if (this.isCommittingFromKeyboard || this.isTransitioningCells) {
 					return
 				}
@@ -1904,7 +1924,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 
 				// Infinite scroll: detect when near bottom
-				if (this.grid.infiniteScroll && this.grid.hasMoreItems && !this.isLoadingMoreItems) {
+				if (this.grid.isInfiniteScrollEnabled && this.grid.hasMoreItems && !this.isLoadingMoreItems) {
 					this.handleInfiniteScroll(container)
 				}
 
@@ -2295,7 +2315,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Render the shortcuts help icon and overlay
 	 */
 	private renderShortcutsHelpIcon(): string {
-		if (!this.grid.showShortcutsHelp || !this.grid.rowShortcuts?.length) {
+		if (!this.grid.isShortcutsHelpVisible || !this.grid.rowShortcuts?.length) {
 			return ''
 		}
 
@@ -2376,7 +2396,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			if (!areaHasPagination && !areaHasSummary) return ''
 
 			// If both exist in this area and summaryInline is true, combine into single footer
-			if (areaHasSummary && areaHasPagination && this.grid.summaryInline) {
+			if (areaHasSummary && areaHasPagination && this.grid.isSummaryInline) {
 				const topClass = isTop ? ' wg__footer--top' : ''
 				return `<div class="wg__footer${topClass}">
 					${renderSummary(this, areaSummaryPositions[0])}
@@ -2631,10 +2651,22 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				this.handleDatePickerSelect(input, date, direction)
 			},
 			onClose: () => {
+				// Capture editing cell info BEFORE canceling (cancelEdit clears it)
+				const editingCell = this.grid.editingCell
+				const colIndex = editingCell
+					? this.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+					: -1
+				const rowIndex = editingCell?.rowIndex ?? -1
+
 				this.datepicker = null
 				// Cancel edit mode (Escape or click outside without selecting)
 				clearEditingVisual(this)
 				this.grid.cancelEdit()
+
+				// Re-render the cell to restore display mode content
+				if (rowIndex >= 0 && colIndex >= 0) {
+					restoreEditingCellToDisplayMode(this, rowIndex, colIndex)
+				}
 			}
 		})
 
@@ -3047,7 +3079,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// Handle "Show all" columns action
 				if (itemId === 'show-all-columns') {
 					this.grid.columns.forEach(col => {
-						col.hidden = false
+						col.isHidden = false
 					})
 					this.grid.columns = [...this.grid.columns]
 					return
@@ -3058,7 +3090,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					const field = itemId.replace('toggle-col-', '')
 					const col = this.grid.columns.find(c => String(c.field) === field)
 					if (col) {
-						col.hidden = !col.hidden
+						col.isHidden = !col.isHidden
 						this.grid.columns = [...this.grid.columns]
 					}
 					return  // Don't search for onclick - handled here
@@ -3152,7 +3184,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// Handle "Show all" columns action
 				if (itemId === 'show-all-columns') {
 					this.grid.columns.forEach(col => {
-						col.hidden = false
+						col.isHidden = false
 					})
 					this.grid.columns = [...this.grid.columns]
 					return
@@ -3163,7 +3195,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					const field = itemId.replace('toggle-col-', '')
 					const col = this.grid.columns.find(c => String(c.field) === field)
 					if (col) {
-						col.hidden = !col.hidden
+						col.isHidden = !col.isHidden
 						this.grid.columns = [...this.grid.columns]
 					}
 					return
@@ -3349,7 +3381,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			return
 		}
 
-		if (!this.grid.showRowToolbar || !this.grid.rowToolbar.length) {
+		if (!this.grid.isRowToolbarVisible || !this.grid.rowToolbar.length) {
 			return
 		}
 

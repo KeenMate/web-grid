@@ -314,9 +314,9 @@
         const grid = document.getElementById('grid')
         grid.items = sampleData
         grid.columns = columns
-        grid.showRowNumbers = true
-        grid.striped = true
-        grid.hoverable = true
+        grid.isRowNumbersVisible = true
+        grid.isStriped = true
+        grid.isHoverable = true
         grid.allowColumnReorder = true
         grid.sortMode = 'multi'
 
@@ -399,11 +399,11 @@
         const gridFrozen = document.getElementById('gridFrozen')
         gridFrozen.items = wideData
         gridFrozen.columns = wideColumns
-        gridFrozen.showRowNumbers = true
-        gridFrozen.stickyRowNumbers = true
+        gridFrozen.isRowNumbersVisible = true
+        gridFrozen.isStickyRowNumbers = true
         gridFrozen.freezeColumns = 2
-        gridFrozen.striped = true
-        gridFrozen.hoverable = true
+        gridFrozen.isStriped = true
+        gridFrozen.isHoverable = true
         gridFrozen.allowColumnReorder = true
 
         // Controls for frozen grid
@@ -412,7 +412,7 @@
         })
 
         document.getElementById('stickyRowNumbers').addEventListener('change', e => {
-            gridFrozen.stickyRowNumbers = e.target.checked
+            gridFrozen.isStickyRowNumbers = e.target.checked
         })
 
         // Grid 5 - Column reorder
@@ -430,11 +430,11 @@
         const gridReorder = document.getElementById('gridReorder')
         gridReorder.items = wideData.slice(0, 20)
         gridReorder.columns = reorderColumns
-        gridReorder.showRowNumbers = true
-        gridReorder.stickyRowNumbers = true
+        gridReorder.isRowNumbersVisible = true
+        gridReorder.isStickyRowNumbers = true
         gridReorder.freezeColumns = 2  // First 2 columns are frozen
-        gridReorder.striped = true
-        gridReorder.hoverable = true
+        gridReorder.isStriped = true
+        gridReorder.isHoverable = true
         gridReorder.gridName = 'reorder-demo-grid'
         gridReorder.allowColumnReorder = true
         gridReorder.persistColumnOrder = true
@@ -489,12 +489,12 @@
         const gridVirtual = document.getElementById('gridVirtual')
         gridVirtual.items = virtualData
         gridVirtual.columns = virtualColumns
-        gridVirtual.showRowNumbers = true
-        gridVirtual.stickyRowNumbers = true
+        gridVirtual.isRowNumbersVisible = true
+        gridVirtual.isStickyRowNumbers = true
         gridVirtual.freezeColumns = 1
-        gridVirtual.striped = true
-        gridVirtual.hoverable = true
-        gridVirtual.virtualScroll = true
+        gridVirtual.isStriped = true
+        gridVirtual.isHoverable = true
+        gridVirtual.isVirtualScrollEnabled = true
         gridVirtual.allowColumnReorder = true
 
         // Grid 7 - Header Context Menu
@@ -510,9 +510,9 @@
         const gridHeaderMenu = document.getElementById('gridHeaderMenu')
         gridHeaderMenu.items = sampleData
         gridHeaderMenu.columns = headerMenuColumns
-        gridHeaderMenu.showRowNumbers = true
-        gridHeaderMenu.striped = true
-        gridHeaderMenu.hoverable = true
+        gridHeaderMenu.isRowNumbersVisible = true
+        gridHeaderMenu.isStriped = true
+        gridHeaderMenu.isHoverable = true
         gridHeaderMenu.sortMode = 'multi'
 
         // Store original columns for reset

@@ -74,7 +74,7 @@ function isValueCompatible<T>(sourceValue: unknown, targetColumn: Column<T>): bo
 		case 'custom':
 		default:
 			// Text, autocomplete, checkbox, and custom editors allow any value
-			// Programmer can validate via onfilldrag callback
+			// Programmer can validate via fillDragCallback
 			return true
 	}
 }
@@ -451,7 +451,7 @@ async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
 			if (!rowData) continue
 
 			// Check column-level editable
-			const isEditable = column.editable !== false && ctx.grid.editable
+			const isEditable = column.isEditable !== false && ctx.grid.isEditable
 
 			// Skip non-editable cells
 			if (!isEditable) continue
@@ -478,9 +478,9 @@ async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
 		direction
 	}
 
-	// Call onfilldrag callback - if it returns false, cancel
-	if (ctx.grid.onfilldrag) {
-		const result = ctx.grid.onfilldrag(detail)
+	// Call fillDragCallback - if it returns false, cancel
+	if (ctx.grid.fillDragCallback) {
+		const result = ctx.grid.fillDragCallback(detail)
 		if (result === false) return
 	}
 

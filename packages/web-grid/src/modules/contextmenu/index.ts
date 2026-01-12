@@ -400,7 +400,7 @@ export function normalizeHeaderMenuItems<T>(
 
 			if (item === 'sortAsc' || item === 'sortDesc') {
 				// Hide sort options if column is not sortable
-				visible = (ctx) => ctx.column.sortable !== false
+				visible = (ctx) => ctx.column.isSortable !== false
 			} else if (item === 'clearSort') {
 				// Only show clear sort if column is currently sorted
 				visible = (ctx) => ctx.sortDirection !== null
@@ -417,7 +417,7 @@ export function normalizeHeaderMenuItems<T>(
 			if (item === 'columnVisibility') {
 				submenu = (ctx) => {
 					// Check if all columns are visible
-					const allVisible = ctx.allColumns.every(col => !col.hidden)
+					const allVisible = ctx.allColumns.every(col => !col.isHidden)
 					const items: HeaderMenuItem<T>[] = [
 						// "Show all" option at the top - checked only if all columns are visible
 						{
@@ -426,7 +426,7 @@ export function normalizeHeaderMenuItems<T>(
 							label: ctx.labels.contextMenu.showAll,
 							onclick: () => {
 								ctx.allColumns.forEach(col => {
-									col.hidden = false
+									col.isHidden = false
 								})
 							}
 						}
@@ -435,10 +435,10 @@ export function normalizeHeaderMenuItems<T>(
 					ctx.allColumns.forEach(col => {
 						items.push({
 							id: `toggle-col-${String(col.field)}`,
-							icon: col.hidden ? '☐' : '☑',
+							icon: col.isHidden ? '☐' : '☑',
 							label: col.title || String(col.field),
 							onclick: () => {
-								col.hidden = !col.hidden
+								col.isHidden = !col.isHidden
 							}
 						})
 					})
@@ -585,10 +585,10 @@ export function executeHeaderMenuAction<T>(
 			ctx.grid.sort = ctx.grid.sort.filter(s => s.column !== field)
 			break
 		case 'hideColumn': {
-			// Hide the column by setting hidden property (keeps it in array for Column Visibility)
+			// Hide the column by setting isHidden property (keeps it in array for Column Visibility)
 			const col = ctx.grid.columns.find(c => String(c.field) === field)
 			if (col) {
-				col.hidden = true
+				col.isHidden = true
 				ctx.grid.columns = [...ctx.grid.columns]  // Trigger update
 			}
 			break

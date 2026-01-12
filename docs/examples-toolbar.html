@@ -104,7 +104,7 @@
             <h2>Tasks List with Row Actions</h2>
             <p>Hover over a row to see the toolbar. Press <kbd>D</kbd> to duplicate, <kbd>Delete</kbd> to delete, or <kbd>↑</kbd>/<kbd>↓</kbd> to move.</p>
 
-            <web-grid id="grid" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="grid" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
         </div>
 
         <div class="grid-2">
@@ -134,7 +134,7 @@
                 <h2>Usage</h2>
                 <div class="code-block">
                     <pre>// Enable toolbar with predefined actions
-grid.showRowToolbar = true
+grid.isRowToolbarVisible = true
 grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
 grid.toolbarTrigger = 'hover' // or 'click', 'button'
 
@@ -256,7 +256,7 @@ grid.rowShortcuts = [
         <div class="card">
             <h2>Multi-Row Toolbar with Groups</h2>
             <p>Use <code>row</code> and <code>group</code> properties to organize toolbar buttons into multiple rows and groups:</p>
-            <web-grid id="grid2" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="grid2" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             <div class="code-block" style="margin-top: 1rem;">
                 <pre>// Row 1: Move actions (group 1) | CRUD actions (group 2)
 // Row 2: Custom actions with labels
@@ -279,9 +279,9 @@ grid.rowToolbar = [
             <p>Use <code>toolbarPosition="inline"</code> to render toolbar buttons as a fixed column instead of a floating popup.
                Buttons are always visible, with support for <code>disabled</code> and <code>hidden</code> callbacks per row.
                Keyboard shortcuts via <code>rowShortcuts</code> work when hovering over a row (try <kbd>Delete</kbd> or <kbd>A</kbd>).</p>
-            <web-grid id="grid3" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="grid3" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             <div class="code-block" style="margin-top: 1rem;">
-                <pre>grid.showRowToolbar = true
+                <pre>grid.isRowToolbarVisible = true
 grid.toolbarPosition = 'inline'  // Renders as column
 grid.inlineActionsTitle = 'Actions'  // Optional header
 
@@ -362,8 +362,8 @@ grid.rowToolbar = [
 
         const columns = [
             { field: 'id', title: 'ID', width: '60px', align: 'center' },
-            { field: 'title', title: 'Task', sortable: true },
-            { field: 'priority', title: 'Priority', width: '100px', sortable: true },
+            { field: 'title', title: 'Task', isSortable: true },
+            { field: 'priority', title: 'Priority', width: '100px', isSortable: true },
             { field: 'status', title: 'Status', width: '120px' },
             { field: 'assignee', title: 'Assignee', width: '100px' }
         ]
@@ -381,7 +381,7 @@ grid.rowToolbar = [
         const grid = document.getElementById('grid')
         grid.items = tasks
         grid.columns = columns
-        grid.showRowToolbar = true
+        grid.isRowToolbarVisible = true
         // Use explicit groups to show dividers between move and CRUD actions
         // Tooltips show description + keyboard shortcut (auto-detected from rowShortcuts)
         grid.rowToolbar = [

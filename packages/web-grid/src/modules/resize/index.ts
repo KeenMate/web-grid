@@ -60,7 +60,7 @@ export function handleResizeStart<T>(ctx: GridContext<T>, e: MouseEvent, field: 
 	if (!column) return
 
 	// Check if column is resizable
-	if (column.resizable === false) return
+	if (column.isResizable === false) return
 
 	// Get current width
 	const computedWidth = headerCell.getBoundingClientRect().width
@@ -125,7 +125,7 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 	updateAllColumnCells(activeContext, resizeState.field, `${newWidth}px`)
 
 	// Update frozen column offsets if we have frozen columns
-	if (activeContext.grid.freezeColumns > 0 || activeContext.grid.stickyRowNumbers) {
+	if (activeContext.grid.freezeColumns > 0 || activeContext.grid.isStickyRowNumbers) {
 		updateFrozenColumnOffsets(activeContext)
 	}
 }
@@ -177,7 +177,7 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	}
 
 	// Persist to localStorage if enabled
-	if (ctx.grid.persistColumnWidths && ctx.grid.gridName) {
+	if (ctx.grid.shouldPersistColumnWidths && ctx.grid.gridName) {
 		ctx.grid.savePersistedWidths()
 	}
 
@@ -218,7 +218,7 @@ const ROW_NUMBER_COLUMN_WIDTH = 40
  */
 function updateFrozenColumnOffsets<T>(ctx: GridContext<T>): void {
 	const frozenCount = ctx.grid.freezeColumns
-	const hasRowNumbers = ctx.grid.showRowNumbers && ctx.grid.stickyRowNumbers
+	const hasRowNumbers = ctx.grid.isRowNumbersVisible && ctx.grid.isStickyRowNumbers
 	let offset = hasRowNumbers ? ROW_NUMBER_COLUMN_WIDTH : 0
 
 	// Get visual columns (already sorted with frozen first)

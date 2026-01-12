@@ -64,7 +64,7 @@
                 Click on any cell to focus it (navigate mode), then use the keyboard shortcuts below.
                 Press F2 or Enter to edit. Hover over the <strong>ⓘ</strong> icon to see available shortcuts.
             </p>
-            <web-grid id="grid1" striped hoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+            <web-grid id="grid1" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
             <div id="actionLog" class="action-log"></div>
         </div>
 
@@ -103,7 +103,7 @@
                 <h2>Configuration</h2>
                 <div class="code-block">
                     <pre>// Enable navigate mode for cell focus
-grid.editable = true
+grid.isEditable = true
 grid.editTrigger = 'navigate'
 
 grid.rowShortcuts = [
@@ -129,7 +129,7 @@ grid.rowShortcuts = [
 ]
 
 // Show help icon
-grid.showShortcutsHelp = true</pre>
+grid.isShortcutsHelpVisible = true</pre>
                 </div>
             </div>
         </div>
@@ -197,8 +197,8 @@ grid.showShortcutsHelp = true</pre>
 
         const columns = [
             { field: 'id', title: 'ID', width: '60px', align: 'center' },
-            { field: 'name', title: 'Product Name', editable: true, editor: 'text' },
-            { field: 'category', title: 'Category', width: '120px', editable: true, editor: 'select',
+            { field: 'name', title: 'Product Name', isEditable: true, editor: 'text' },
+            { field: 'category', title: 'Category', width: '120px', isEditable: true, editor: 'select',
               editorOptions: {
                 options: [
                   { value: 'Electronics', label: 'Electronics' },
@@ -207,9 +207,9 @@ grid.showShortcutsHelp = true</pre>
                 ]
               }
             },
-            { field: 'price', title: 'Price', width: '100px', align: 'right', editable: true, editor: 'number',
+            { field: 'price', title: 'Price', width: '100px', align: 'right', isEditable: true, editor: 'number',
               formatCallback: (v) => `$${v.toFixed(2)}` },
-            { field: 'stock', title: 'Stock', width: '80px', align: 'center', editable: true, editor: 'number' }
+            { field: 'stock', title: 'Stock', width: '80px', align: 'center', isEditable: true, editor: 'number' }
         ]
 
         function logAction(action, ctx) {
@@ -220,7 +220,7 @@ grid.showShortcutsHelp = true</pre>
         const grid = document.getElementById('grid1')
         grid.items = items
         grid.columns = columns
-        grid.editable = true
+        grid.isEditable = true
         grid.editTrigger = 'navigate'  // Enable navigate mode for keyboard focus
 
         // Define keyboard shortcuts
@@ -299,7 +299,7 @@ grid.showShortcutsHelp = true</pre>
         ]
 
         // Show shortcuts help icon
-        grid.showShortcutsHelp = true
+        grid.isShortcutsHelpVisible = true
         grid.shortcutsHelpPosition = 'top-right'
         grid.shortcutsHelpContentCallback = () => '<p style="margin:0;font-size:12px;color:#666;">Click a cell to focus, then use shortcuts</p>'
 

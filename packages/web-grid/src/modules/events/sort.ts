@@ -57,7 +57,7 @@ export function handleSortClick<T>(ctx: GridContext<T>, e: MouseEvent): void {
 	ctx.grid.sort = currentSort
 
 	// Reset to page 1 on sort change
-	if (ctx.grid.pageable) {
+	if (ctx.grid.isPageable) {
 		ctx.grid.currentPage = 1
 	}
 

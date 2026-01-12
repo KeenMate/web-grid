@@ -21,11 +21,11 @@
 
 .wg__toolbar-row {
 	display: flex;
-	gap: 2px;
+	gap: var(--wg-toolbar-row-gap);
 	align-items: center;
 	/* Match grid row height: vertical padding (design-unit * 2 * 2) + line-height (~21px) */
 	height: var(--wg-toolbar-row-height);
-	padding: 0 4px;
+	padding: var(--wg-toolbar-row-padding);
 }
 
 .wg__toolbar-row + .wg__toolbar-row {
@@ -51,7 +51,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 4px;
+	gap: var(--wg-toolbar-btn-gap);
 	font-family: inherit; /* Form elements don't inherit font by default */
 	font-size: var(--wg-font-size-base);
 	font-weight: 500;
@@ -82,7 +82,7 @@
 }
 
 .wg__toolbar-label {
-	font-size: 12px;
+	font-size: var(--wg-toolbar-label-font-size);
 	white-space: nowrap;
 }
 
@@ -149,7 +149,7 @@
 	width: 1%;  /* Shrink to content */
 	white-space: nowrap;
 	text-align: center;
-	padding: var(--wg-spacing-xs) var(--wg-spacing-sm);
+	padding: var(--wg-inline-actions-padding);
 }
 
 .wg__inline-actions-header {
@@ -159,13 +159,13 @@
 .wg__inline-actions-wrap {
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
+	gap: var(--wg-inline-actions-gap);
 	align-items: center;
 }
 
 .wg__inline-actions-row {
 	display: flex;
-	gap: 2px;
+	gap: var(--wg-inline-actions-gap);
 	align-items: center;
 	justify-content: center;
 }
