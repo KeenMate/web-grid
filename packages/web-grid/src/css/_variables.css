@@ -299,7 +299,7 @@
      FILL HANDLE (Excel-like autofill)
      ========================================================================== */
   --wg-fill-handle-size: 8px;
-  --wg-fill-handle-bg: var(--wg-background);
+  --wg-fill-handle-bg: var(--wg-surface-1);
   --wg-fill-handle-border-color: var(--wg-accent-color);
   --wg-fill-handle-border-width: 2px;
   --wg-fill-range-bg: color-mix(in srgb, var(--wg-accent-color) 15%, transparent);

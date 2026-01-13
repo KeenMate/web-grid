@@ -66,8 +66,8 @@
    SCROLL-AWARE FROZEN COLUMN INDICATOR
    ========================================================================== */
 
-/* Last frozen column needs overflow:visible for ::after to show outside cell */
-/* Higher specificity to override .wg__cell { overflow: hidden } */
+/* Last frozen column needs overflow:visible for ::after shadow to extend outside */
+/* Text ellipsis is handled by the inner .wg__cell-text element */
 .wg__header.wg__header--frozen-last,
 .wg__cell.wg__cell--frozen-last {
   overflow: visible;

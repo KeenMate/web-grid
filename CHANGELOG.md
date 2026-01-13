@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0-rc10] - 2026-01-12
+## [1.0.0-rc10] - 2026-01-13 (Published)
 
 ### BREAKING CHANGES
 
@@ -113,6 +113,18 @@ editorOptions: {
 
 ### Added
 
+- **Column `maxLines` Property** - Limit visible text lines with CSS line-clamp. When `textOverflow: 'wrap'` is set, use `maxLines: 3` to show at most 3 lines with ellipsis for overflow.
+
+- **`horizontalAlign: 'justify'`** - New alignment option for justified text in cells and headers.
+
+- **Header Vertical Alignment** - Header text now properly respects `verticalAlign` column property (`top`, `middle`, `bottom`) via flexbox alignment classes.
+
+- **`--wg-row-max-height` CSS Variable** - Cap row height globally. Useful with `textOverflow: 'wrap'` to prevent rows from expanding too much.
+
+- **`--wg-header-min-height` CSS Variable** - Control minimum header row height.
+
+- **Escape Key Cancels Fill Drag** - Press Escape while dragging the fill handle to cancel the operation without applying values to cells.
+
 - **Component-Specific CSS Variables** - New granular CSS variables following the pattern `--wg-{component}-{property}`:
 
   **Dropdown Menu:**
@@ -141,8 +153,13 @@ editorOptions: {
 
 ### Fixed
 
+- **Frozen Column Text Overflow** - Resizing frozen columns to narrow widths now properly shows ellipsis instead of text spilling out. The shadow scroll indicator still appears correctly when scrolling horizontally.
+
+- **Fill Handle Focus State** - Fill handle now properly removed when clicking outside the grid. Fixed issue where multiple cells could appear focused when rapidly clicking between cells.
+
 - **Consistent API Surface** - All boolean properties now follow consistent `is*`/`should*` naming pattern across grid and column levels
 - **TypeScript Types** - All type definitions updated to reflect new property names
+- **Example Files** - Fixed incorrect property names in example HTML files (`persistColumnWidths` → `shouldPersistColumnWidths`, `allowColumnReorder` → `isColumnReorderAllowed`, `showRowToolbar` → `isRowToolbarVisible`, etc.)
 
 ---
 

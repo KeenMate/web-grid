@@ -52,7 +52,7 @@
                 <div class="note-title">Configuration</div>
                 <ul>
                     <li><code>gridName: "my-grid"</code> - Unique name for localStorage key</li>
-                    <li><code>persistColumnWidths: true</code> - Enable automatic persistence</li>
+                    <li><code>shouldPersistColumnWidths: true</code> - Enable automatic persistence</li>
                     <li><code>oncolumnresize</code> - Callback fired after resize with all column widths</li>
                 </ul>
             </div>
@@ -175,15 +175,15 @@
                             <td>Unique identifier for localStorage key</td>
                         </tr>
                         <tr>
-                            <td><code>persistColumnWidths</code></td>
+                            <td><code>shouldPersistColumnWidths</code></td>
                             <td>Enable automatic width persistence</td>
                         </tr>
                         <tr>
-                            <td><code>allowColumnReorder</code></td>
+                            <td><code>isColumnReorderAllowed</code></td>
                             <td>Enable drag-to-reorder columns</td>
                         </tr>
                         <tr>
-                            <td><code>persistColumnOrder</code></td>
+                            <td><code>shouldPersistColumnOrder</code></td>
                             <td>Enable automatic order persistence</td>
                         </tr>
                         <tr>
@@ -317,20 +317,20 @@
         grid.isRowNumbersVisible = true
         grid.isStriped = true
         grid.isHoverable = true
-        grid.allowColumnReorder = true
+        grid.isColumnReorderAllowed = true
         grid.sortMode = 'multi'
 
         // Grid 2 - With persistence
         const grid2 = document.getElementById('grid2')
         grid2.items = sampleData.slice(0, 15)
         grid2.columns = columns
-        grid2.showRowNumbers = true
-        grid2.striped = true
-        grid2.hoverable = true
+        grid2.isRowNumbersVisible = true
+        grid2.isStriped = true
+        grid2.isHoverable = true
         grid2.gridName = 'resize-demo-grid'
-        grid2.persistColumnWidths = true
-        grid2.allowColumnReorder = true
-        grid2.persistColumnOrder = true
+        grid2.shouldPersistColumnWidths = true
+        grid2.isColumnReorderAllowed = true
+        grid2.shouldPersistColumnOrder = true
 
         // Callback to show resize data
         grid2.oncolumnresize = (detail) => {
@@ -341,7 +341,7 @@
 
         // Toggle persistence
         document.getElementById('persistWidths').addEventListener('change', e => {
-            grid2.persistColumnWidths = e.target.checked
+            grid2.shouldPersistColumnWidths = e.target.checked
         })
 
         // Clear storage button
@@ -360,10 +360,10 @@
             { field: 'status', title: 'Status (not resizable)', width: '80px', resizable: false },
             { field: 'phone', title: 'Phone', width: '120px' }
         ]
-        grid3.showRowNumbers = true
-        grid3.striped = true
-        grid3.hoverable = true
-        grid3.allowColumnReorder = true
+        grid3.isRowNumbersVisible = true
+        grid3.isStriped = true
+        grid3.isHoverable = true
+        grid3.isColumnReorderAllowed = true
 
         // Grid 4 - Frozen panes + resizable columns
         const wideData = Array.from({ length: 50 }, (_, i) => ({
@@ -404,7 +404,7 @@
         gridFrozen.freezeColumns = 2
         gridFrozen.isStriped = true
         gridFrozen.isHoverable = true
-        gridFrozen.allowColumnReorder = true
+        gridFrozen.isColumnReorderAllowed = true
 
         // Controls for frozen grid
         document.getElementById('freezeColumns').addEventListener('change', e => {
@@ -436,8 +436,8 @@
         gridReorder.isStriped = true
         gridReorder.isHoverable = true
         gridReorder.gridName = 'reorder-demo-grid'
-        gridReorder.allowColumnReorder = true
-        gridReorder.persistColumnOrder = true
+        gridReorder.isColumnReorderAllowed = true
+        gridReorder.shouldPersistColumnOrder = true
 
         // Callback to show reorder data
         gridReorder.oncolumnreorder = (detail) => {
@@ -448,7 +448,7 @@
 
         // Toggle persistence
         document.getElementById('persistOrder').addEventListener('change', e => {
-            gridReorder.persistColumnOrder = e.target.checked
+            gridReorder.shouldPersistColumnOrder = e.target.checked
         })
 
         // Clear storage button
@@ -495,7 +495,7 @@
         gridVirtual.isStriped = true
         gridVirtual.isHoverable = true
         gridVirtual.isVirtualScrollEnabled = true
-        gridVirtual.allowColumnReorder = true
+        gridVirtual.isColumnReorderAllowed = true
 
         // Grid 7 - Header Context Menu
         const headerMenuColumns = [

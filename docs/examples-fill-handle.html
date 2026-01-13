@@ -38,7 +38,7 @@
 
         <div class="card">
             <h2>With Cancellation</h2>
-            <p>The <code>onfilldrag</code> callback can return <code>false</code> to cancel the fill operation. Try filling the "Status" column - it will be blocked.</p>
+            <p>The <code>fillDragCallback</code> callback can return <code>false</code> to cancel the fill operation. Try filling the "Status" column - it will be blocked.</p>
 
             <web-grid id="grid2" style="max-width: 100%; max-height: 300px;"></web-grid>
 
@@ -48,7 +48,7 @@
 
             <div class="note" style="margin-top: 1rem;">
                 <div class="note-title">Cancellation Example</div>
-                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>grid.onfilldrag = (detail) => {
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>grid.fillDragCallback = (detail) => {
     // Block filling the "status" column
     if (detail.sourceCell.field === 'status') {
         alert('Cannot fill the Status column!')
@@ -78,7 +78,7 @@
 
         <div class="card">
             <h2>Callback Data Structure</h2>
-            <p>The <code>onfilldrag</code> callback receives detailed information about the fill operation:</p>
+            <p>The <code>fillDragCallback</code> callback receives detailed information about the fill operation:</p>
 
             <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;"><code>{
     sourceCell: {
@@ -95,7 +95,7 @@
     direction: "down"         // "up" | "down" | "left" | "right"
 }</code></pre>
 
-            <p style="margin-top: 1rem;">After <code>onfilldrag</code> completes (unless cancelled), <code>onrowchange</code> is fired for each modified cell.</p>
+            <p style="margin-top: 1rem;">After <code>fillDragCallback</code> completes (unless cancelled), <code>onrowchange</code> is fired for each modified cell.</p>
         </div>
 
         <div class="card">
@@ -110,7 +110,7 @@
                     <td>Grid must be editable for fill to work. Non-editable columns are skipped.</td>
                 </tr>
                 <tr>
-                    <td><code>onfilldrag</code></td>
+                    <td><code>fillDragCallback</code></td>
                     <td>Callback fired before fill is applied. Return <code>false</code> to cancel.</td>
                 </tr>
                 <tr>
@@ -273,7 +273,7 @@
         grid.editTrigger = 'navigate'  // Required for cell focus
         grid.isHoverable = true
 
-        grid.onfilldrag = (detail) => {
+        grid.fillDragCallback = (detail) => {
             const log = document.getElementById('fillLog')
             log.innerHTML = `<strong>Fill operation:</strong><br>
                 Source: [${detail.sourceCell.rowIndex}, ${detail.sourceCell.colIndex}] "${detail.sourceCell.field}" = ${JSON.stringify(detail.sourceCell.value)}<br>
@@ -289,12 +289,12 @@
         const grid2 = document.getElementById('grid2')
         grid2.items = JSON.parse(JSON.stringify(sampleData))
         grid2.columns = columns
-        grid2.showRowNumbers = true
-        grid2.editable = true
+        grid2.isRowNumbersVisible = true
+        grid2.isEditable = true
         grid2.editTrigger = 'navigate'
-        grid2.hoverable = true
+        grid2.isHoverable = true
 
-        grid2.onfilldrag = (detail) => {
+        grid2.fillDragCallback = (detail) => {
             const log = document.getElementById('fillLog2')
 
             // Block filling the status column

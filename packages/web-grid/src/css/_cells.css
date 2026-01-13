@@ -24,8 +24,10 @@
   user-select: none;
 }
 
-/* Text overflow ellipsis */
-.wg__cell--ellipsis {
+/* Text overflow ellipsis - applied to inner text element */
+/* This allows the cell itself to have overflow:visible for frozen column shadows */
+.wg__cell--ellipsis .wg__cell-text {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

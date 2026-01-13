@@ -7,6 +7,7 @@ import type { FocusedCell } from '../../types.js'
 import type { GridContext } from '../types.js'
 import { renderCell } from '../rendering/index.js'
 import { removeDropdown } from '../dropdown/rendering.js'
+import { removeFillHandle } from '../fill-handle/index.js'
 
 /**
  * Focus a cell element in the DOM
@@ -189,10 +190,6 @@ export function restoreEditingCellToDisplayMode<T>(
 	renderCell(ctx, rowIndex, colIndex)
 }
 
-// Track last focus update to debounce rapid changes during double-click
-let lastFocusUpdate = 0
-const FOCUS_DEBOUNCE_MS = 50
-
 /**
  * Handle cell focus event
  */
@@ -203,17 +200,13 @@ export function handleCellFocus<T>(
 ): void {
 	if (!ctx.grid.isNavigateMode) return
 
-	// Debounce rapid focus changes (happens during double-click)
-	const now = Date.now()
-	if (now - lastFocusUpdate < FOCUS_DEBOUNCE_MS) {
-		// Still update state, but skip visual update
-		ctx.grid.setFocusedCell(rowIndex, colIndex)
-		return
-	}
-	lastFocusUpdate = now
-
 	const oldFocus = ctx.grid.focusedCell
 	const newFocus = { rowIndex, colIndex }
+
+	// Skip if already focused on this cell
+	if (oldFocus?.rowIndex === rowIndex && oldFocus?.colIndex === colIndex) {
+		return
+	}
 
 	ctx.grid.setFocusedCell(rowIndex, colIndex)  // Just updates state (no re-render)
 	updateFocusVisual(ctx, oldFocus, newFocus)     // Updates DOM directly
@@ -351,5 +344,6 @@ export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void
 		const oldFocus = ctx.grid.focusedCell
 		ctx.grid.clearFocusedCell()
 		updateFocusVisual(ctx, oldFocus, null)
+		removeFillHandle()
 	}
 }

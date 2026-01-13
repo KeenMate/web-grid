@@ -41,7 +41,7 @@ npm install @keenmate/web-grid
   import '@keenmate/web-grid'
 </script>
 
-<web-grid id="grid" striped hoverable></web-grid>
+<web-grid id="grid"></web-grid>
 ```
 
 ### With JavaScript/TypeScript
@@ -63,7 +63,7 @@ grid.columns = [
       ]
     }
   },
-  { field: 'salary', title: 'Salary', align: 'right', editor: 'number',
+  { field: 'salary', title: 'Salary', horizontalAlign: 'right', editor: 'number',
     formatCallback: (val) => `$${val.toLocaleString()}`
   }
 ]
@@ -75,10 +75,10 @@ grid.items = [
 ]
 
 // Configure behavior
-grid.editable = true
+grid.isEditable = true
 grid.editTrigger = 'navigate'
 grid.sortMode = 'multi'
-grid.pageable = true
+grid.isPageable = true
 grid.pageSize = 25
 
 // Listen for changes
@@ -91,16 +91,16 @@ grid.onrowchange = (detail) => {
 
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `striped` | boolean | `false` | Alternating row colors |
-| `hoverable` | boolean | `false` | Highlight row on hover |
+| `is-striped` | boolean | `false` | Alternating row colors |
+| `is-hoverable` | boolean | `false` | Highlight row on hover |
 | `sort-mode` | `'none' \| 'single' \| 'multi'` | `'none'` | Sorting mode |
-| `filterable` | boolean | `false` | Show column filters |
-| `pageable` | boolean | `false` | Enable pagination |
+| `is-filterable` | boolean | `false` | Show column filters |
+| `is-pageable` | boolean | `false` | Enable pagination |
 | `page-size` | number | `10` | Rows per page |
-| `editable` | boolean | `false` | Enable inline editing |
+| `is-editable` | boolean | `false` | Enable inline editing |
 | `edit-trigger` | `'click' \| 'dblclick' \| 'navigate'` | `'dblclick'` | How to start editing |
-| `show-row-numbers` | boolean | `false` | Show row number column |
-| `virtual-scroll` | boolean | `false` | Enable virtual scrolling |
+| `is-row-numbers-visible` | boolean | `false` | Show row number column |
+| `is-virtual-scroll-enabled` | boolean | `false` | Enable virtual scrolling |
 | `virtual-scroll-threshold` | number | `100` | Auto-enable when items >= threshold |
 
 ## Properties
@@ -115,19 +115,19 @@ grid.sortMode = 'multi';      // 'none' | 'single' | 'multi'
 grid.sort = [{ column: 'name', direction: 'asc' }];  // Current sort state
 
 // Pagination
-grid.pageable = true;
+grid.isPageable = true;
 grid.pageSize = 25;
 grid.currentPage = 1;
 grid.totalItems = 1000;       // For server-side pagination
 grid.pageSizes = [10, 25, 50, 100];
 
 // Editing
-grid.editable = true;
+grid.isEditable = true;
 grid.editTrigger = 'navigate';
 grid.dropdownToggleVisibility = 'on-focus';  // 'always' | 'on-focus'
 
 // Row toolbar
-grid.showRowToolbar = true;
+grid.isRowToolbarVisible = true;
 grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown'];
 grid.toolbarPosition = 'right';  // 'auto' | 'left' | 'right' | 'top' | 'inline'
 grid.toolbarTrigger = 'hover';   // 'hover' | 'click' | 'button'
@@ -140,7 +140,7 @@ grid.headerContextMenu = [...];  // Right-click on column headers
 // Keyboard shortcuts
 grid.rowShortcuts = [...];
 grid.rangeShortcuts = [...];  // Shortcuts for selected rows
-grid.showShortcutsHelp = true;
+grid.isShortcutsHelpVisible = true;
 
 // Row selection
 grid.selectedRows;            // Array of selected row indices (read-only)
@@ -151,12 +151,12 @@ grid.isRowSelected(index);
 grid.getSelectedRowsData();
 
 // Virtual scroll
-grid.virtualScroll = true;
+grid.isVirtualScrollEnabled = true;
 grid.virtualScrollRowHeight = 38;
 grid.virtualScrollBuffer = 10;
 
 // Infinite scroll
-grid.infiniteScroll = true;
+grid.isInfiniteScrollEnabled = true;
 grid.hasMoreItems = true;
 
 // Labels/i18n
@@ -186,12 +186,12 @@ grid.rowLocking = {
   title: 'Full Name',         // Header text (required)
   width: '150px',             // Fixed width
   minWidth: '100px',          // Minimum width
-  align: 'left',              // 'left' | 'center' | 'right'
+  horizontalAlign: 'left',    // 'left' | 'center' | 'right' | 'justify'
   textOverflow: 'ellipsis',   // 'wrap' | 'ellipsis'
 
   // Sorting & filtering
-  sortable: true,
-  filterable: true,
+  isSortable: true,
+  isFilterable: true,
 
   // Display
   headerInfo: 'Tooltip text', // Info icon in header
@@ -201,7 +201,7 @@ grid.rowLocking = {
   cellClassCallback: (value, row) => value > 100 ? 'high' : null,
 
   // Editing
-  editable: true,
+  isEditable: true,
   editor: 'text',             // 'text' | 'number' | 'date' | 'select' | 'combobox' | 'autocomplete' | 'checkbox' | 'custom'
   editorOptions: { ... },
   validateCallback: (value, row) => value ? null : 'Required',
@@ -346,7 +346,7 @@ grid.rowLocking = {
 ### Row Toolbar
 
 ```javascript
-grid.showRowToolbar = true
+grid.isRowToolbarVisible = true
 grid.toolbarPosition = 'right'
 grid.toolbarTrigger = 'hover'
 
@@ -374,7 +374,7 @@ grid.rowToolbar = [
 Render toolbar buttons as a fixed table column instead of floating popup:
 
 ```javascript
-grid.showRowToolbar = true
+grid.isRowToolbarVisible = true
 grid.toolbarPosition = 'inline'
 grid.inlineActionsTitle = 'Actions'
 
@@ -462,7 +462,7 @@ grid.rowShortcuts = [
   }
 ]
 
-grid.showShortcutsHelp = true
+grid.isShortcutsHelpVisible = true
 ```
 
 ### Row Selection
@@ -471,7 +471,7 @@ Select multiple rows by clicking row numbers, then perform batch operations:
 
 ```javascript
 // Enable row numbers (required for selection)
-grid.showRowNumbers = true
+grid.isRowNumbersVisible = true
 
 // Selection interactions:
 // - Click row number → select (clears others)
@@ -539,7 +539,7 @@ grid.labels = {
 ### Virtual Scrolling
 
 ```javascript
-grid.virtualScroll = true
+grid.isVirtualScrollEnabled = true
 grid.virtualScrollRowHeight = 38
 grid.virtualScrollBuffer = 10
 grid.virtualScrollThreshold = 100  // Auto-enable when items >= 100
@@ -625,7 +625,7 @@ socket.on('row-updated', ({ id, data }) => {
 
 **Visual indicators:**
 - Row shows muted styling with `--wg-row-locked-bg` background
-- Lock icon (🔒) replaces row number when `showRowNumbers` is enabled
+- Lock icon (🔒) replaces row number when `isRowNumbersVisible` is enabled
 - Tooltip shows who locked the row (via Floating UI)
 
 **Edit behavior** - Control what happens when editing locked rows:

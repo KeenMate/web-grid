@@ -226,6 +226,7 @@ function handleFillStart<T>(ctx: GridContext<T>, e: MouseEvent): void {
 	// Attach document-level listeners
 	document.addEventListener('mousemove', handleDocumentMouseMove)
 	document.addEventListener('mouseup', handleDocumentMouseUp)
+	document.addEventListener('keydown', handleDocumentKeyDown)
 }
 
 /**
@@ -356,6 +357,16 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 
 	// Cleanup
 	cleanup(ctx)
+}
+
+/**
+ * Handle keydown - Escape cancels fill operation
+ */
+function handleDocumentKeyDown(e: KeyboardEvent): void {
+	if (e.key === 'Escape' && activeContext) {
+		e.preventDefault()
+		cleanup(activeContext)
+	}
 }
 
 /**
@@ -509,6 +520,7 @@ function cleanup<T>(ctx: GridContext<T>): void {
 	// Remove document listeners
 	document.removeEventListener('mousemove', handleDocumentMouseMove)
 	document.removeEventListener('mouseup', handleDocumentMouseUp)
+	document.removeEventListener('keydown', handleDocumentKeyDown)
 
 	// Reset state (keep handle element)
 	const handleElement = fillState.handleElement
