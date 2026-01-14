@@ -135,7 +135,6 @@
   --wg-cell-padding-block: var(--wg-spacing-sm);
   --wg-cell-padding-inline: var(--wg-spacing-sm);
   --wg-row-min-height: auto;  /* Set to e.g. 40px for consistent row heights */
-  --wg-row-max-height: none;  /* Set to e.g. 100px to cap row height (overflow hidden) */
   --wg-cell-color: var(--wg-text-color-1);
   --wg-cell-border: 1px solid var(--wg-border-color);
   --wg-cell-bg-hover: var(--wg-hover-bg);

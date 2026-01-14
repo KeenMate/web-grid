@@ -145,6 +145,8 @@ import { handleSortClick, handlePaginationClick, handlePageSizeChange } from './
 import { handleResizeStart } from './modules/resize/index.js'
 import { handleReorderStart, isReordering } from './modules/reorder/index.js'
 import { updateFillHandle, removeFillHandle } from './modules/fill-handle/index.js'
+import { createScrollEventManager, type ScrollEventManager } from './modules/scroll-events/index.js'
+import { createFocusEventManager, type FocusEventManager } from './modules/focus-events/index.js'
 
 import {
 	handleRowNumberMouseDown,
@@ -192,14 +194,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Flag to prevent blur from cancelling edit when switching between dropdown cells
 	private isTransitioningCells = false
 
-	// Flag to track if wheel listener has been added (prevent duplicates)
-	private wheelListenerAdded = false
-
 	// Flag to track if toolbar outside click listener has been added
 	private toolbarOutsideClickAdded = false
-
-	// Flag to track if toolbar scroll listener has been added
-	private toolbarScrollListenerAdded = false
 
 	// Flag to prevent mouseleave from closing toolbar during move actions
 	private toolbarMoveInProgress = false
@@ -255,13 +251,28 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Virtual scroll state
 	private virtualScrollStart = 0
 	private virtualScrollEnd = 0
-	private scrollListenerAdded = false
 	private isLoadingMoreItems = false
+
+	// Scroll event manager (pub/sub for scroll events)
+	readonly scrollEvents: ScrollEventManager
+
+	// Focus event manager (pub/sub for blur/focusout events)
+	readonly focusEvents: FocusEventManager
 
 	constructor() {
 		super()
 		this.shadow = this.attachShadow({ mode: 'open' })
 		this.grid = new WebGrid<T>()
+		this.scrollEvents = createScrollEventManager()
+		this.focusEvents = createFocusEventManager(
+			() => ({
+				isCommittingFromKeyboard: this.isCommittingFromKeyboard,
+				isTransitioningCells: this.isTransitioningCells,
+				isClosingViaToggle: this.isClosingViaToggle,
+				isOpeningDropdown: this.isOpeningDropdown
+			}),
+			() => { this.isClosingViaToggle = false }
+		)
 
 		// Inject styles immediately to prevent FOUC
 		this.styleElement = document.createElement('style')
@@ -295,6 +306,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	disconnectedCallback(): void {
+		// Cleanup event managers
+		this.scrollEvents.destroy()
+		this.focusEvents.destroy()
+
 		// Cleanup event listeners, observers, etc.
 		this.removeEventListener('paste', this.handlePaste as EventListener)
 		if (this.datepicker) {
@@ -1445,9 +1460,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Focus out
-		table.addEventListener('focusout', (e: Event) => {
-			handleTableFocusOut(this, e as FocusEvent)
+		// Initialize focus event manager on table
+		this.focusEvents.init(table as HTMLElement)
+
+		// Focus out - subscribe to focusout events
+		this.focusEvents.subscribe('focusout', (_target, relatedTarget) => {
+			if (!relatedTarget || !table.contains(relatedTarget)) {
+				handleTableFocusOut(this, { relatedTarget } as unknown as FocusEvent)
+			}
 		})
 
 		// Double-click to edit
@@ -1782,69 +1802,30 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Blur events (use capture: blur doesn't bubble)
-		table.addEventListener('blur', (e: Event) => {
-			const target = e.target as HTMLElement
+		// Blur events - subscribe to blur events (capture phase handled internally)
+		this.focusEvents.subscribe('blur', (target, _relatedTarget) => {
+			// Use unified guard check
+			if (this.focusEvents.shouldSkipBlur()) return
+
+			// Text/number editors
 			if (target.matches('.wg__editor--text, .wg__editor--number')) {
 				handleEditorBlur(this, target as HTMLInputElement)
 			}
 			// Date input blur - commit if datepicker is not open
-			if (target.matches('.wg__date-input')) {
-				if (!this.datepicker && !this.isCommittingFromKeyboard && !this.isTransitioningCells) {
+			else if (target.matches('.wg__date-input')) {
+				if (!this.datepicker) {
 					this.commitDateEditor(target as HTMLInputElement)
 				}
 			}
-			if (target.matches('.wg__select-trigger')) {
-				// Check if we're closing via toggle - skip canceling in that case
-				if (this.isClosingViaToggle) {
-					this.isClosingViaToggle = false
-					return
-				}
-				if (!this.isCommittingFromKeyboard && !this.isTransitioningCells && !this.dropdownOpen && !this.isOpeningDropdown) {
-					// Capture cell info BEFORE cancelEdit clears it
-					const editingCell = this.grid.editingCell
-					const colIndex = editingCell
-						? this.grid.columns.findIndex(c => String(c.field) === editingCell.field)
-						: -1
-
-					removeDropdown(this)
-					clearEditingVisual(this)
-					this.grid.cancelEdit()
-
-					// Re-render cell to restore display mode HTML
-					if (editingCell && colIndex >= 0) {
-						renderCell(this, editingCell.rowIndex, colIndex)
-					}
-				}
+			// Select trigger
+			else if (target.matches('.wg__select-trigger')) {
+				this.handleSelectBlur()
 			}
-			if (target.matches('.wg__combobox-input, .wg__autocomplete-input')) {
-				// Check if we're closing via toggle - skip committing in that case
-				if (this.isClosingViaToggle) {
-					this.isClosingViaToggle = false
-					return
-				}
-				if (this.isCommittingFromKeyboard || this.isTransitioningCells) {
-					return
-				}
-				removeDropdown(this)
-				if (this.grid.editingCell) {
-					const input = target as HTMLInputElement
-					const column = this.getCurrentEditingColumn()
-					if (column) {
-						const opts = column.editorOptions || {}
-						const allOptions = opts.options || opts.initialOptions || []
-						const matchedOpt = allOptions.find(opt =>
-							getOptionLabel(opt, opts).toLowerCase() === input.value.toLowerCase()
-						)
-						if (matchedOpt) {
-							this.grid.commitEdit(this.grid.editingCell.rowIndex, this.grid.editingCell.field, getOptionValue(matchedOpt, opts))
-						} else {
-							this.grid.commitEdit(this.grid.editingCell.rowIndex, this.grid.editingCell.field, input.value)
-						}
-					}
-				}
+			// Combobox/autocomplete
+			else if (target.matches('.wg__combobox-input, .wg__autocomplete-input')) {
+				this.handleComboboxBlur(target as HTMLInputElement)
 			}
-		}, true)
+		})
 
 		// Scroll events - close dropdown + virtual scroll + infinite scroll + connector update
 		const container = this.shadow.querySelector('.wg') as HTMLElement
@@ -1895,27 +1876,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 			})
 
-			container.addEventListener('scroll', () => {
+			// Initialize scroll event manager and subscribe to scroll events
+			this.scrollEvents.init(container)
+
+			// Container scroll handler
+			this.scrollEvents.subscribe('container', () => {
 				// Toggle horizontal scroll indicator for frozen column shadow
 				const isScrolledHorizontally = container.scrollLeft > 0
 				container.classList.toggle('wg--scrolled-horizontal', isScrolledHorizontally)
 
 				// Close dropdown on scroll
 				if (this.dropdownOpen && !this.isTransitioningCells && !this.isOpeningDropdown) {
-					// Save editing cell info BEFORE cancelEdit clears it
-					const oldEditingCell = this.grid.editingCell
-					const oldColIndex = oldEditingCell
-						? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
-						: -1
-
-					removeDropdown(this)
-					clearEditingVisual(this)
-					this.grid.cancelEdit()
-
-					// Re-render old cell to remove editor HTML (toggle, etc.)
-					if (oldEditingCell && oldColIndex >= 0) {
-						renderCell(this, oldEditingCell.rowIndex, oldColIndex)
-					}
+					this.handleScrollCloseDropdown()
 				}
 
 				// Virtual scroll: recalculate visible range
@@ -1937,28 +1909,16 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// Update fill handle position on scroll
 				updateFillHandle(this)
 			})
-		}
 
-		if (!this.wheelListenerAdded) {
-			this.wheelListenerAdded = true
-			window.addEventListener('scroll', () => {
+			// Window scroll handler - close overlays
+			this.scrollEvents.subscribe('window', () => {
 				if (this.dropdownOpen && !this.isTransitioningCells) {
-					// Save editing cell info BEFORE cancelEdit clears it
-					const oldEditingCell = this.grid.editingCell
-					const oldColIndex = oldEditingCell
-						? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
-						: -1
-
-					removeDropdown(this)
-					clearEditingVisual(this)
-					this.grid.cancelEdit()
-
-					// Re-render old cell to remove editor HTML (toggle, etc.)
-					if (oldEditingCell && oldColIndex >= 0) {
-						renderCell(this, oldEditingCell.rowIndex, oldColIndex)
-					}
+					this.handleScrollCloseDropdown()
 				}
-			}, { passive: true, capture: true })
+				if (getActiveToolbarRowIndex() !== null) {
+					this.closeToolbarAndReset()
+				}
+			})
 		}
 
 		// Tooltip events
@@ -2148,17 +2108,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					// No render() needed - closeToolbar() surgically removes toolbar
 				}
 			})
-		}
-
-		// Close toolbar on any scroll (window or container)
-		if (!this.toolbarScrollListenerAdded) {
-			this.toolbarScrollListenerAdded = true
-			window.addEventListener('scroll', () => {
-				if (getActiveToolbarRowIndex() !== null) {
-					this.closeToolbarAndReset()
-					// No render() needed - closeToolbar() surgically removes toolbar
-				}
-			}, true)  // Use capture to catch all scroll events
 		}
 
 		// =========================================================================
@@ -3480,6 +3429,69 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.toolbarShortcutHandler = null
 		}
 		closeToolbar()
+	}
+
+	/**
+	 * Close dropdown on scroll - shared logic for container and window scroll
+	 */
+	private handleScrollCloseDropdown(): void {
+		// Save editing cell info BEFORE cancelEdit clears it
+		const oldEditingCell = this.grid.editingCell
+		const oldColIndex = oldEditingCell
+			? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+			: -1
+
+		removeDropdown(this)
+		clearEditingVisual(this)
+		this.grid.cancelEdit()
+
+		// Re-render old cell to remove editor HTML (toggle, etc.)
+		if (oldEditingCell && oldColIndex >= 0) {
+			renderCell(this, oldEditingCell.rowIndex, oldColIndex)
+		}
+	}
+
+	/**
+	 * Handle select trigger blur - cancel edit and restore display mode
+	 */
+	private handleSelectBlur(): void {
+		// Only cancel if dropdown is not open (and not opening)
+		if (this.dropdownOpen || this.isOpeningDropdown) return
+
+		// Capture cell info BEFORE cancelEdit clears it
+		const editingCell = this.grid.editingCell
+		const colIndex = editingCell
+			? this.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+			: -1
+
+		removeDropdown(this)
+		clearEditingVisual(this)
+		this.grid.cancelEdit()
+
+		// Re-render cell to restore display mode HTML
+		if (editingCell && colIndex >= 0) {
+			renderCell(this, editingCell.rowIndex, colIndex)
+		}
+	}
+
+	/**
+	 * Handle combobox/autocomplete blur - commit matched option or raw text
+	 */
+	private handleComboboxBlur(input: HTMLInputElement): void {
+		removeDropdown(this)
+
+		if (this.grid.editingCell) {
+			const column = this.getCurrentEditingColumn()
+			if (column) {
+				const opts = column.editorOptions || {}
+				const allOptions = opts.options || opts.initialOptions || []
+				const matchedOpt = allOptions.find(opt =>
+					getOptionLabel(opt, opts).toLowerCase() === input.value.toLowerCase()
+				)
+				const value = matchedOpt ? getOptionValue(matchedOpt, opts) : input.value
+				this.grid.commitEdit(this.grid.editingCell.rowIndex, this.grid.editingCell.field, value)
+			}
+		}
 	}
 
 	/**

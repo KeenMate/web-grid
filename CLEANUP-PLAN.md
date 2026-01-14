@@ -3,18 +3,18 @@
 ## Overview
 Clean up property names, CSS variables, and event/callback naming to align with web-multiselect and web-daterangepicker patterns.
 
-**Status:** In Progress
+**Status:** Complete (Published as 1.0.0-rc10)
 **Scope:** Breaking changes (new library, no backwards compatibility needed)
 
 ---
 
 ## Progress Tracking
 
-- [ ] **Phase 1:** CSS Variable Cleanup
-- [ ] **Phase 2:** Event/Callback Renames
-- [ ] **Phase 3:** Boolean Property Renames
-- [ ] **Phase 4:** Update Examples/Docs
-- [ ] **Phase 5:** Verification
+- [x] **Phase 1:** CSS Variable Cleanup
+- [x] **Phase 2:** Event/Callback Renames
+- [x] **Phase 3:** Boolean Property Renames
+- [x] **Phase 4:** Update Examples/Docs
+- [x] **Phase 5:** Verification
 
 ---
 
@@ -24,11 +24,11 @@ Per CLAUDE.md: Events (`on*`) = fire-and-forget, Callbacks (`*Callback`) = retur
 
 ### Tasks
 
-- [ ] `onfilldrag` → `fillDragCallback` (returns boolean to cancel fill)
+- [x] `onfilldrag` → `fillDragCallback` (returns boolean to cancel fill)
   - types.ts:509
   - grid.ts
   - fill-handle module
-- [ ] `onSearchCallback` → `searchCallback` (returns results, remove `on` prefix)
+- [x] `onSearchCallback` → `searchCallback` (returns results, remove `on` prefix)
   - types.ts:107
   - dropdown modules
 
@@ -40,35 +40,35 @@ Per web-multiselect pattern: Boolean properties use `is*` prefix.
 
 ### Grid-Level Properties
 
-- [ ] `filterable` → `isFilterable`
-- [ ] `pageable` → `isPageable`
-- [ ] `striped` → `isStriped`
-- [ ] `hoverable` → `isHoverable`
-- [ ] `editable` → `isEditable`
-- [ ] `showRowNumbers` → `isRowNumbersVisible`
-- [ ] `stickyRowNumbers` → `isStickyRowNumbers`
-- [ ] `showRowToolbar` → `isRowToolbarVisible`
-- [ ] `showShortcutsHelp` → `isShortcutsHelpVisible`
-- [ ] `virtualScroll` → `isVirtualScrollEnabled`
-- [ ] `infiniteScroll` → `isInfiniteScrollEnabled`
-- [ ] `persistColumnWidths` → `shouldPersistColumnWidths`
-- [ ] `persistColumnOrder` → `shouldPersistColumnOrder`
-- [ ] `allowColumnReorder` → `isColumnReorderAllowed`
-- [ ] `checkboxAlwaysEditable` → `isCheckboxAlwaysEditable`
-- [ ] `dropdownShowOnFocus` → `shouldShowDropdownOnFocus`
-- [ ] `openDropdownOnEnter` → `shouldOpenDropdownOnEnter`
-- [ ] `summaryInline` → `isSummaryInline`
+- [x] `filterable` → `isFilterable`
+- [x] `pageable` → `isPageable`
+- [x] `striped` → `isStriped`
+- [x] `hoverable` → `isHoverable`
+- [x] `editable` → `isEditable`
+- [x] `showRowNumbers` → `isRowNumbersVisible`
+- [x] `stickyRowNumbers` → `isStickyRowNumbers`
+- [x] `showRowToolbar` → `isRowToolbarVisible`
+- [x] `showShortcutsHelp` → `isShortcutsHelpVisible`
+- [x] `virtualScroll` → `isVirtualScrollEnabled`
+- [x] `infiniteScroll` → `isInfiniteScrollEnabled`
+- [x] `persistColumnWidths` → `shouldPersistColumnWidths`
+- [x] `persistColumnOrder` → `shouldPersistColumnOrder`
+- [x] `allowColumnReorder` → `isColumnReorderAllowed`
+- [x] `checkboxAlwaysEditable` → `isCheckboxAlwaysEditable`
+- [x] `dropdownShowOnFocus` → `shouldShowDropdownOnFocus`
+- [x] `openDropdownOnEnter` → `shouldOpenDropdownOnEnter`
+- [x] `summaryInline` → `isSummaryInline`
 
 ### Column-Level Properties
 
-- [ ] `sortable` → `isSortable`
-- [ ] `filterable` → `isFilterable`
-- [ ] `editable` → `isEditable`
-- [ ] `frozen` → `isFrozen`
-- [ ] `resizable` → `isResizable`
-- [ ] `hidden` → `isHidden`
-- [ ] `showEditButton` → `isEditButtonVisible`
-- [ ] `openDropdownOnEnter` → `shouldOpenDropdownOnEnter`
+- [x] `sortable` → `isSortable`
+- [x] `filterable` → `isFilterable`
+- [x] `editable` → `isEditable`
+- [x] `frozen` → `isFrozen`
+- [x] `resizable` → `isResizable`
+- [x] `hidden` → `isHidden`
+- [x] `showEditButton` → `isEditButtonVisible`
+- [x] `openDropdownOnEnter` → `shouldOpenDropdownOnEnter`
 
 ---
 
@@ -76,7 +76,7 @@ Per web-multiselect pattern: Boolean properties use `is*` prefix.
 
 ### 3.1 Add Component-Specific Variables
 
-- [ ] Add to `_variables.css`:
+- [x] Add to `_variables.css`:
   ```css
   /* Dropdown */
   --wg-dropdown-option-gap: var(--wg-spacing-sm);
@@ -97,9 +97,9 @@ Per web-multiselect pattern: Boolean properties use `is*` prefix.
 
 ### 3.2 Replace Hardcoded Values
 
-- [ ] `_dropdown.css`: Replace generic spacing with component-specific variables
-- [ ] `_toolbar.css`: Replace hardcoded gap and font-size
-- [ ] `_dialogs.css`: Replace hardcoded padding and box-shadow
+- [x] `_dropdown.css`: Replace generic spacing with component-specific variables
+- [x] `_toolbar.css`: Replace hardcoded gap and font-size
+- [x] `_dialogs.css`: Replace hardcoded padding and box-shadow
 
 ---
 
@@ -128,15 +128,15 @@ Per web-multiselect pattern: Boolean properties use `is*` prefix.
 
 ## 5. Verification Checklist
 
-- [ ] Run `make build` - no TypeScript errors
-- [ ] Run `make dev` and test:
-  - [ ] Filtering with `isFilterable`
-  - [ ] Pagination with `isPageable`
-  - [ ] Fill handle with `fillDragCallback`
-  - [ ] Autocomplete search with `searchCallback`
-  - [ ] Column sorting with `isSortable`
-  - [ ] Row toolbar with `isRowToolbarVisible`
-- [ ] Test all example pages
+- [x] Run `make build` - no TypeScript errors
+- [x] Run `make dev` and test:
+  - [x] Filtering with `isFilterable`
+  - [x] Pagination with `isPageable`
+  - [x] Fill handle with `fillDragCallback`
+  - [x] Autocomplete search with `searchCallback`
+  - [x] Column sorting with `isSortable`
+  - [x] Row toolbar with `isRowToolbarVisible`
+- [x] Test all example pages
 
 ---
 

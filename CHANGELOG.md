@@ -119,8 +119,6 @@ editorOptions: {
 
 - **Header Vertical Alignment** - Header text now properly respects `verticalAlign` column property (`top`, `middle`, `bottom`) via flexbox alignment classes.
 
-- **`--wg-row-max-height` CSS Variable** - Cap row height globally. Useful with `textOverflow: 'wrap'` to prevent rows from expanding too much.
-
 - **`--wg-header-min-height` CSS Variable** - Control minimum header row height.
 
 - **Escape Key Cancels Fill Drag** - Press Escape while dragging the fill handle to cancel the operation without applying values to cells.

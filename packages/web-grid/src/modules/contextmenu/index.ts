@@ -268,10 +268,24 @@ export function openContextMenu<T>(
 		}
 	})
 
+	// Subscribe to scroll events via the scroll event manager
+	const scrollSubscription = ctx.scrollEvents.subscribe('window', () => {
+		cleanup()
+		onClose()
+	})
+
+	// Cleanup function to remove all listeners and close menu
+	const cleanup = () => {
+		scrollSubscription.unsubscribe()
+		document.removeEventListener('mousedown', handleOutsideClick)
+		document.removeEventListener('keydown', handleKeyDown)
+		container.remove()
+	}
+
 	// Handle close on outside click
 	const handleOutsideClick = (e: MouseEvent) => {
 		if (!container.contains(e.target as Node)) {
-			closeContextMenu(container, handleOutsideClick, handleKeyDown)
+			cleanup()
 			onClose()
 		}
 	}
@@ -280,7 +294,7 @@ export function openContextMenu<T>(
 	const handleKeyDown = (e: KeyboardEvent) => {
 		if (e.key === 'Escape') {
 			e.preventDefault()
-			closeContextMenu(container, handleOutsideClick, handleKeyDown)
+			cleanup()
 			onClose()
 			return
 		}
@@ -302,7 +316,7 @@ export function openContextMenu<T>(
 				e.preventDefault()
 				const itemId = menuItem.dataset.itemId || ''
 				onItemClick(itemId)
-				closeContextMenu(container, handleOutsideClick, handleKeyDown)
+				cleanup()
 				onClose()
 				return
 			}
@@ -315,8 +329,8 @@ export function openContextMenu<T>(
 		document.addEventListener('keydown', handleKeyDown)
 	}, 0)
 
-	// Store cleanup functions on container for later removal
-	;(container as any)._cleanup = { handleOutsideClick, handleKeyDown }
+	// Store cleanup function on container for later removal
+	;(container as any)._cleanup = cleanup
 
 	return container
 }
@@ -329,22 +343,19 @@ export function closeContextMenu(
 	handleOutsideClick?: (e: MouseEvent) => void,
 	handleKeyDown?: (e: KeyboardEvent) => void
 ): void {
+	// Check for stored cleanup function (new style)
+	const cleanup = (container as any)._cleanup
+	if (typeof cleanup === 'function') {
+		cleanup()
+		return
+	}
+
+	// Legacy cleanup (old style with separate handlers)
 	if (handleOutsideClick) {
 		document.removeEventListener('mousedown', handleOutsideClick)
 	}
 	if (handleKeyDown) {
 		document.removeEventListener('keydown', handleKeyDown)
-	}
-
-	// Also check for stored cleanup functions
-	const cleanup = (container as any)._cleanup
-	if (cleanup) {
-		if (cleanup.handleOutsideClick) {
-			document.removeEventListener('mousedown', cleanup.handleOutsideClick)
-		}
-		if (cleanup.handleKeyDown) {
-			document.removeEventListener('keydown', cleanup.handleKeyDown)
-		}
 	}
 
 	container.remove()
@@ -697,11 +708,17 @@ export function openHeaderContextMenu<T>(
 		onItemClick(itemId, false, ctrlKey)
 	})
 
+	// Subscribe to scroll events via the scroll event manager
+	const scrollSubscription = ctx.scrollEvents.subscribe('window', () => {
+		cleanup()
+		onClose()
+	})
+
 	// Cleanup function to remove all listeners and close menu
 	const cleanup = () => {
+		scrollSubscription.unsubscribe()
 		document.removeEventListener('mousedown', handleOutsideClick)
 		document.removeEventListener('keydown', handleKeyDown)
-		window.removeEventListener('scroll', handleScroll, true)
 		container.remove()
 	}
 
@@ -711,12 +728,6 @@ export function openHeaderContextMenu<T>(
 			cleanup()
 			onClose()
 		}
-	}
-
-	// Handle close on scroll
-	const handleScroll = () => {
-		cleanup()
-		onClose()
 	}
 
 	// Handle close on Escape and shortcut keys
@@ -756,7 +767,6 @@ export function openHeaderContextMenu<T>(
 	setTimeout(() => {
 		document.addEventListener('mousedown', handleOutsideClick)
 		document.addEventListener('keydown', handleKeyDown)
-		window.addEventListener('scroll', handleScroll, true)  // capture phase to catch all scrolls
 	}, 0)
 
 	// Store cleanup function on container for later removal

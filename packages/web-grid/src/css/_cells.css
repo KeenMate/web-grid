@@ -8,7 +8,6 @@
   padding: var(--wg-cell-padding);
   color: var(--wg-cell-color);
   height: var(--wg-row-min-height);  /* In table layout, height acts as min-height */
-  max-height: var(--wg-row-max-height);  /* Cap row height when set */
   box-sizing: border-box;  /* Include padding in width calculation */
   /* Account for sticky header when scrolling into view */
   scroll-margin-top: 3rem;
@@ -18,6 +17,7 @@
   /* Prevent child content from extending beyond cell boundary */
   overflow: hidden;
 }
+
 
 /* Cell text - prevent selection flash on double-click */
 .wg__cell-text {

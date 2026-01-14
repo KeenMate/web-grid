@@ -134,8 +134,8 @@ export function isFillPending(): boolean {
 export function updateFillHandle<T>(ctx: GridContext<T>): void {
 	const focusedCell = ctx.grid.focusedCell
 
-	// Remove existing handle if no focused cell or in edit mode
-	if (!focusedCell || ctx.grid.editingCell) {
+	// Remove existing handle if no focused cell, in edit mode, or dropdown is open
+	if (!focusedCell || ctx.grid.editingCell || ctx.dropdownOpen) {
 		removeFillHandle()
 		return
 	}
@@ -155,7 +155,17 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
 	if (!container) return
 
-	// Create handle if it doesn't exist
+	// Measure BEFORE creating handle to avoid layout interference
+	const containerRect = container.getBoundingClientRect()
+	const cellRect = cellElement.getBoundingClientRect()
+	const scrollLeft = container.scrollLeft
+	const scrollTop = container.scrollTop
+	const handleSize = 8
+
+	const x = cellRect.right - containerRect.left + scrollLeft - handleSize / 2
+	const y = cellRect.bottom - containerRect.top + scrollTop - handleSize / 2
+
+	// Create handle AFTER measuring (to avoid layout interference)
 	if (!fillState.handleElement) {
 		const handle = document.createElement('div')
 		handle.className = 'wg__fill-handle'
@@ -165,18 +175,6 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 		// Attach mousedown listener
 		handle.addEventListener('mousedown', (e) => handleFillStart(ctx, e))
 	}
-
-	// Position the handle at bottom-right corner of the cell
-	const containerRect = container.getBoundingClientRect()
-	const cellRect = cellElement.getBoundingClientRect()
-
-	// Account for scroll position
-	const scrollLeft = container.scrollLeft
-	const scrollTop = container.scrollTop
-
-	const handleSize = 8 // --wg-fill-handle-size
-	const x = cellRect.right - containerRect.left + scrollLeft - handleSize / 2
-	const y = cellRect.bottom - containerRect.top + scrollTop - handleSize / 2
 
 	fillState.handleElement.style.left = `${x}px`
 	fillState.handleElement.style.top = `${y}px`

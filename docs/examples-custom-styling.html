@@ -224,11 +224,6 @@
                     <span id="rowHeightValue" style="min-width: 45px;">32px</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
-                    Row Max Height:
-                    <input type="range" id="rowMaxHeightRange" min="0" max="150" value="0" style="width: 100px;">
-                    <span id="rowMaxHeightValue" style="min-width: 45px;">none</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
                     Bio Max Lines:
                     <input type="range" id="maxLinesRange" min="0" max="10" value="3" style="width: 100px;">
                     <span id="maxLinesValue" style="min-width: 45px;">3</span>
@@ -605,20 +600,6 @@
             const value = rowHeightRange.value + 'px'
             rowHeightValue.textContent = value
             grid.style.setProperty('--wg-row-min-height', value)
-        })
-
-        // Row max height control
-        const rowMaxHeightRange = document.getElementById('rowMaxHeightRange')
-        const rowMaxHeightValue = document.getElementById('rowMaxHeightValue')
-        rowMaxHeightRange.addEventListener('input', () => {
-            const val = parseInt(rowMaxHeightRange.value)
-            if (val === 0) {
-                rowMaxHeightValue.textContent = 'none'
-                grid.style.setProperty('--wg-row-max-height', 'none')
-            } else {
-                rowMaxHeightValue.textContent = val + 'px'
-                grid.style.setProperty('--wg-row-max-height', val + 'px')
-            }
         })
 
         // Bio max lines control

@@ -49,13 +49,21 @@ export function renderCell<T>(
 	const isEditable = ctx.grid.isCellEditable(column)
 	const isInvalid = ctx.grid.isCellInvalid(rowIndex, field)
 
+	// Find visual index for frozen column checks
+	const visualIndex = ctx.grid.visualColumns.findIndex(vc => vc.originalIndex === colIndex)
+	const isFrozen = visualIndex >= 0 && ctx.grid.isColumnFrozen(visualIndex)
+	const isLastFrozen = isFrozen && visualIndex === ctx.grid.totalFrozenColumns - 1
+
 	// Build class list
 	const classes = ['wg__cell']
 	if (isEditable) classes.push('wg__cell--editable')
 	if (isFocused && !isEditing) classes.push('wg__cell--focused')
 	if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
+	if (column.maxLines) classes.push('wg__cell--line-clamp')
 	if (isEditing) classes.push('wg__cell--editing')
 	if (isInvalid) classes.push('wg__cell--invalid')
+	if (isFrozen) classes.push('wg__cell--frozen')
+	if (isLastFrozen) classes.push('wg__cell--frozen-last')
 	if (column.cellClass) classes.push(column.cellClass)
 	if (column.cellClassCallback) {
 		const rawValue = ctx.grid.getCellRawValue(item, rowIndex, field)

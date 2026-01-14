@@ -7,6 +7,7 @@ import { computePosition, flip, offset, size } from '@floating-ui/dom'
 import type { EditorOption, EditorOptions, OptionRenderContext } from '../../types.js'
 import type { GridContext } from '../types.js'
 import { getOptionLabel, getOptionValue, getOptionIcon, getOptionSubtitle, isOptionDisabled } from './options.js'
+import { removeFillHandle } from '../fill-handle/index.js'
 
 /**
  * Render dropdown overlay using Floating UI for positioning
@@ -88,6 +89,7 @@ export function renderDropdown<T>(
 	// Append to shadow DOM
 	ctx.shadow.appendChild(dropdown)
 	ctx.dropdownOpen = true
+	removeFillHandle()  // Hide fill handle when dropdown opens
 
 	// Use Floating UI to position the dropdown
 	computePosition(anchor, dropdown, {

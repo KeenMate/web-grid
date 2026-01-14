@@ -4,6 +4,8 @@
 
 import type { WebGrid } from '../grid.js'
 import type { Column, EditorOption, EditorOptions } from '../types.js'
+import type { ScrollEventManager } from './scroll-events/index.js'
+import type { FocusEventManager } from './focus-events/index.js'
 
 /**
  * GridElement context interface for module functions
@@ -49,4 +51,10 @@ export interface GridContext<T = unknown> {
 
 	// Focus/navigation methods
 	moveFocusAfterCommit(rowIndex: number, field: string, direction: 'down' | 'up' | 'next' | 'prev'): void
+
+	// Scroll event manager (pub/sub for scroll events)
+	readonly scrollEvents: ScrollEventManager
+
+	// Focus event manager (pub/sub for blur/focusout events)
+	readonly focusEvents: FocusEventManager
 }
