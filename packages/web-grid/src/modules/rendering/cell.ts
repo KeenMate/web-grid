@@ -62,6 +62,7 @@ export function renderCell<T>(
 	if (column.maxLines) classes.push('wg__cell--line-clamp')
 	if (isEditing) classes.push('wg__cell--editing')
 	if (isInvalid) classes.push('wg__cell--invalid')
+	if (visualIndex >= 0 && ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
 	if (isFrozen) classes.push('wg__cell--frozen')
 	if (isLastFrozen) classes.push('wg__cell--frozen-last')
 	if (column.cellClass) classes.push(column.cellClass)

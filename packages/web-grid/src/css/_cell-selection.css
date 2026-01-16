@@ -1,0 +1,58 @@
+/* =============================================================================
+   CELL RANGE SELECTION STYLES
+   Excel-like cell range selection with visual feedback
+   ============================================================================= */
+
+/* Selected cells background */
+.wg__cell--in-range {
+  background: var(--wg-cell-selection-bg) !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Don't highlight when cell is editing */
+.wg__cell--editing.wg__cell--in-range {
+  background: var(--wg-input-bg) !important;
+}
+
+/* Prevent hover background from overriding selection background */
+.wg__cell--editable.wg__cell--in-range:hover {
+  background: var(--wg-cell-selection-bg) !important;
+}
+
+/* Prevent hover border from showing on selected cells */
+.wg__cell--editable.wg__cell--in-range:hover::after {
+  display: none;
+}
+
+/* Range border - thick blue border around entire range
+   Shown during drag AND after selection completes */
+.wg__cell-range-border {
+  position: absolute;
+  border: var(--wg-cell-selection-border-width) solid var(--wg-cell-selection-border);
+  pointer-events: none;
+  z-index: 3;
+  box-sizing: border-box;
+  border-radius: 1px;
+}
+
+/* Container state during cell selection drag */
+.wg--selecting-cells {
+  cursor: crosshair !important;
+  user-select: none;
+}
+
+.wg--selecting-cells * {
+  cursor: crosshair !important;
+  user-select: none;
+}
+
+/* Override cell cursors during selection drag */
+.wg--selecting-cells .wg__cell {
+  cursor: crosshair !important;
+}
+
+/* Hide fill handle when cell range is selected (per requirement) */
+.wg:has(.wg__cell-range-border) .wg__fill-handle {
+  display: none;
+}

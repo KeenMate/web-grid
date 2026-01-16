@@ -4,6 +4,7 @@
 // =============================================================================
 
 import type { GridContext } from '../types.js'
+import { removeRangeBorder } from '../cell-selection/index.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -54,14 +55,22 @@ export function handleRowNumberMouseDown<T>(ctx: GridContext<T>, rowIndex: numbe
 	event.preventDefault()
 	event.stopPropagation()
 
+	// Clear cell range selection when selecting rows
+	if (ctx.grid.selectedCellRange) {
+		ctx.grid.clearCellSelection()
+		removeRangeBorder()
+	}
+
 	// Determine selection mode based on modifier keys
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection
 		ctx.grid.selectRow(rowIndex, 'toggle')
-		// Delay focus until after render completes, re-query container
+		// Use double RAF for reliable focus after all callbacks
 		requestAnimationFrame(() => {
-			const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
-			container?.focus()
+			requestAnimationFrame(() => {
+				const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
+				container?.focus({ preventScroll: true })
+			})
 		})
 		return
 	}
@@ -69,10 +78,12 @@ export function handleRowNumberMouseDown<T>(ctx: GridContext<T>, rowIndex: numbe
 	if (event.shiftKey) {
 		// Shift+Click: Range selection from last selected
 		ctx.grid.selectRow(rowIndex, 'range')
-		// Delay focus until after render completes, re-query container
+		// Use double RAF for reliable focus after all callbacks
 		requestAnimationFrame(() => {
-			const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
-			container?.focus()
+			requestAnimationFrame(() => {
+				const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
+				container?.focus({ preventScroll: true })
+			})
 		})
 		return
 	}
@@ -91,6 +102,15 @@ export function handleRowNumberMouseDown<T>(ctx: GridContext<T>, rowIndex: numbe
 
 	// Select the row immediately (replace mode)
 	ctx.grid.selectRow(rowIndex, 'replace')
+
+	// Focus the container so keyboard shortcuts work
+	// Use double RAF to ensure focus happens after all other callbacks
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
+			container?.focus({ preventScroll: true })
+		})
+	})
 
 	// Attach document-level listeners for drag
 	document.addEventListener('mousemove', handleDocumentMouseMove)
@@ -151,10 +171,13 @@ function handleDocumentMouseUp(): void {
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
 	container?.classList.remove('wg--selecting')
 
-	// Focus the container so keyboard shortcuts work (delay until after render)
+	// Focus the container so keyboard shortcuts work
+	// Use double RAF for reliable focus after all callbacks
 	requestAnimationFrame(() => {
-		const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
-		container?.focus()
+		requestAnimationFrame(() => {
+			const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
+			container?.focus({ preventScroll: true })
+		})
 	})
 
 	// Remove document listeners

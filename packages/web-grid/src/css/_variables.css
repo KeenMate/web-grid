@@ -312,6 +312,13 @@
   --wg-selection-row-number-color: var(--base-text-inverted, #fff);
 
   /* ==========================================================================
+     CELL RANGE SELECTION
+     ========================================================================== */
+  --wg-cell-selection-bg: color-mix(in srgb, var(--wg-accent-color) 10%, transparent);
+  --wg-cell-selection-border: var(--wg-accent-color);
+  --wg-cell-selection-border-width: 2px;
+
+  /* ==========================================================================
      DROPDOWN MENU (Component-Specific)
      ========================================================================== */
   --wg-dropdown-option-gap: var(--wg-spacing-sm);

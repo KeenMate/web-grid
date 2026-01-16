@@ -43,7 +43,10 @@ import type {
 	FillDirection,
 	GridPersistenceState,
 	RangeShortcut,
-	RangeShortcutContext
+	RangeShortcutContext,
+	CellSelectionMode,
+	CellRange,
+	CellSelectionChangeDetail
 } from './types.js'
 
 // Date formatting utilities for auto-formatting date columns
@@ -236,6 +239,13 @@ export class WebGrid<T = unknown> {
 	protected _lastSelectedRowIndex: number | null = null  // For Shift+Click range selection
 	protected _rangeShortcuts: RangeShortcut<T>[] = []
 
+	// Cell range selection state
+	protected _cellSelectionMode: CellSelectionMode = 'click'
+	protected _selectedCellRange: CellRange | null = null
+	protected _lastClickedCell: { rowIndex: number, colIndex: number } | null = null
+	protected _shouldCopyWithHeaders: boolean = false
+	protected _oncellselectionchange: ((detail: CellSelectionChangeDetail) => void) | null = null
+
 	// ==========================================================================
 	// Public API - Getters/Setters
 	// ==========================================================================
@@ -303,6 +313,7 @@ export class WebGrid<T = unknown> {
 	get editTrigger(): EditTrigger { return this._editTrigger }
 	set editTrigger(value: EditTrigger) {
 		this._editTrigger = value
+		this.checkSelectionConflicts()
 		this.requestUpdate()
 	}
 
@@ -827,6 +838,11 @@ export class WebGrid<T = unknown> {
 	}
 
 	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
+		// Clear cell selection when selecting rows
+		if (this._selectedCellRange) {
+			this._selectedCellRange = null
+		}
+
 		switch (mode) {
 			case 'replace':
 				this._selectedRows.clear()
@@ -878,6 +894,211 @@ export class WebGrid<T = unknown> {
 
 	getSelectedRowsData(): T[] {
 		return this.selectedRows.map(idx => this.displayItems[idx]).filter(Boolean)
+	}
+
+	/**
+	 * Copy selected rows to clipboard in TSV format (Excel-compatible)
+	 * @returns true if copy was successful, false if no selection or clipboard failed
+	 */
+	async copySelectedRowsToClipboard(): Promise<boolean> {
+		const selectedIndices = this.selectedRows
+		if (selectedIndices.length === 0) return false
+
+		const rows: string[] = []
+
+		// Add header row if configured
+		if (this._shouldCopyWithHeaders) {
+			const headerCells: string[] = []
+			for (const vc of this.visualColumns) {
+				const title = vc.column.title ?? vc.column.field ?? ''
+				headerCells.push(String(title))
+			}
+			rows.push(headerCells.join('\t'))
+		}
+
+		// Add data rows
+		for (const rowIndex of selectedIndices) {
+			const rowData = this.displayItems[rowIndex]
+			if (!rowData) continue
+
+			const rowCells: string[] = []
+			for (const vc of this.visualColumns) {
+				const field = String(vc.column.field)
+				const value = (rowData as Record<string, unknown>)[field]
+				const cellText = value == null ? '' : String(value)
+				rowCells.push(cellText)
+			}
+			rows.push(rowCells.join('\t'))
+		}
+
+		const tsv = rows.join('\n')
+
+		try {
+			await navigator.clipboard.writeText(tsv)
+			return true
+		} catch {
+			return false
+		}
+	}
+
+	// Cell range selection
+	get cellSelectionMode(): CellSelectionMode { return this._cellSelectionMode }
+	set cellSelectionMode(value: CellSelectionMode) {
+		this._cellSelectionMode = value
+		this.checkSelectionConflicts()
+		this.requestUpdate()
+	}
+
+	get shouldCopyWithHeaders(): boolean { return this._shouldCopyWithHeaders }
+	set shouldCopyWithHeaders(value: boolean) { this._shouldCopyWithHeaders = value }
+
+	get selectedCellRange(): CellRange | null { return this._selectedCellRange }
+
+	get lastClickedCell(): { rowIndex: number, colIndex: number } | null {
+		return this._lastClickedCell
+	}
+	set lastClickedCell(value: { rowIndex: number, colIndex: number } | null) {
+		this._lastClickedCell = value
+	}
+
+	get oncellselectionchange(): ((detail: CellSelectionChangeDetail) => void) | null {
+		return this._oncellselectionchange
+	}
+	set oncellselectionchange(value: ((detail: CellSelectionChangeDetail) => void) | null) {
+		this._oncellselectionchange = value
+	}
+
+	selectCellRange(range: CellRange): void {
+		// Clear row selection when selecting cells
+		if (this._selectedRows.size > 0) {
+			this._selectedRows.clear()
+			this._lastSelectedRowIndex = null
+		}
+
+		this._selectedCellRange = range
+		this.requestUpdate()
+
+		// Fire oncellselectionchange event
+		if (this._oncellselectionchange) {
+			const cells = this.getSelectedCells()
+			this._oncellselectionchange({
+				range,
+				cellCount: cells.length
+			})
+		}
+	}
+
+	clearCellSelection(): void {
+		if (this._selectedCellRange) {
+			this._selectedCellRange = null
+			this.requestUpdate()
+
+			// Fire event
+			if (this._oncellselectionchange) {
+				this._oncellselectionchange({ range: null, cellCount: 0 })
+			}
+		}
+	}
+
+	getSelectedCells(): Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }> {
+		if (!this._selectedCellRange) return []
+
+		const { startRowIndex, endRowIndex, startColIndex, endColIndex } = this._selectedCellRange
+		const minRow = Math.min(startRowIndex, endRowIndex)
+		const maxRow = Math.max(startRowIndex, endRowIndex)
+		const minCol = Math.min(startColIndex, endColIndex)
+		const maxCol = Math.max(startColIndex, endColIndex)
+
+		const cells = []
+		for (let row = minRow; row <= maxRow; row++) {
+			for (let col = minCol; col <= maxCol; col++) {
+				const column = this.visualColumns[col]?.column
+				if (!column) continue
+
+				const rowData = this.displayItems[row]
+				if (!rowData) continue
+
+				const field = String(column.field)
+				const value = (rowData as Record<string, unknown>)[field]
+
+				cells.push({ row: rowData, rowIndex: row, colIndex: col, field, value })
+			}
+		}
+
+		return cells
+	}
+
+	/**
+	 * Check if a cell is in the selected cell range
+	 */
+	isCellInSelectedRange(rowIndex: number, colIndex: number): boolean {
+		if (!this._selectedCellRange) return false
+
+		const { startRowIndex, endRowIndex, startColIndex, endColIndex } = this._selectedCellRange
+		const minRow = Math.min(startRowIndex, endRowIndex)
+		const maxRow = Math.max(startRowIndex, endRowIndex)
+		const minCol = Math.min(startColIndex, endColIndex)
+		const maxCol = Math.max(startColIndex, endColIndex)
+
+		return rowIndex >= minRow && rowIndex <= maxRow && colIndex >= minCol && colIndex <= maxCol
+	}
+
+	/**
+	 * Copy selected cell range to clipboard in TSV format (Excel-compatible)
+	 * @returns true if copy was successful, false if no selection or clipboard failed
+	 */
+	async copyCellSelectionToClipboard(): Promise<boolean> {
+		if (!this._selectedCellRange) return false
+
+		const { startRowIndex, endRowIndex, startColIndex, endColIndex } = this._selectedCellRange
+		const minRow = Math.min(startRowIndex, endRowIndex)
+		const maxRow = Math.max(startRowIndex, endRowIndex)
+		const minCol = Math.min(startColIndex, endColIndex)
+		const maxCol = Math.max(startColIndex, endColIndex)
+
+		const rows: string[] = []
+
+		// Add header row if configured
+		if (this._shouldCopyWithHeaders) {
+			const headerCells: string[] = []
+			for (let col = minCol; col <= maxCol; col++) {
+				const column = this.visualColumns[col]?.column
+				const title = column?.title ?? column?.field ?? ''
+				headerCells.push(String(title))
+			}
+			rows.push(headerCells.join('\t'))
+		}
+
+		// Add data rows
+		for (let row = minRow; row <= maxRow; row++) {
+			const rowData = this.displayItems[row]
+			if (!rowData) continue
+
+			const rowCells: string[] = []
+			for (let col = minCol; col <= maxCol; col++) {
+				const column = this.visualColumns[col]?.column
+				if (!column) {
+					rowCells.push('')
+					continue
+				}
+
+				const field = String(column.field)
+				const value = (rowData as Record<string, unknown>)[field]
+				// Convert value to string, handle null/undefined
+				const cellText = value == null ? '' : String(value)
+				rowCells.push(cellText)
+			}
+			rows.push(rowCells.join('\t'))
+		}
+
+		const tsv = rows.join('\n')
+
+		try {
+			await navigator.clipboard.writeText(tsv)
+			return true
+		} catch {
+			return false
+		}
 	}
 
 	// ==========================================================================
@@ -1001,19 +1222,35 @@ export class WebGrid<T = unknown> {
 			case "read-only":
 				this._isEditable = false
 				this._dropdownToggleVisibility = "on-focus"
+				this._cellSelectionMode = "click"  // No editing, click to select cells
 				break
 			case "excel":
 				this._isEditable = true
 				this._editTrigger = "navigate"
 				this._dropdownToggleVisibility = "always"
 				this._shouldShowDropdownOnFocus = false
+				this._cellSelectionMode = "click"  // Excel-like: click+drag to select
 				break
 			case "input-matrix":
 				this._isEditable = true
 				this._editTrigger = "always"
 				this._dropdownToggleVisibility = "always"
 				this._shouldShowDropdownOnFocus = true
+				this._cellSelectionMode = "shift"  // Avoid conflict with always-editing cells
 				break
+		}
+	}
+
+	/**
+	 * Check for configuration conflicts and warn user
+	 */
+	protected checkSelectionConflicts(): void {
+		if (this._cellSelectionMode === 'click' && this._editTrigger === 'click') {
+			console.warn(
+				'WebGrid: cellSelectionMode="click" conflicts with editTrigger="click". ' +
+				'Cell range selection takes priority. Use Shift+click to enter edit mode, ' +
+				'or change to cellSelectionMode="shift" to avoid confusion.'
+			)
 		}
 	}
 

@@ -1,0 +1,538 @@
+// =============================================================================
+// Cell Range Selection Module
+// Excel-like cell range selection via click+drag or shift+click
+// =============================================================================
+
+import type { GridContext } from '../types.js'
+import type { CellRange, Column } from '../../types.js'
+
+/** Minimum distance (px) mouse must move before drag starts */
+const DRAG_THRESHOLD = 5
+
+/**
+ * State for tracking cell selection drag operation
+ */
+interface CellSelectionState {
+	isPending: boolean      // Mouse is down but threshold not yet exceeded
+	isDragging: boolean     // Actually dragging (threshold exceeded)
+	startRowIndex: number
+	startColIndex: number
+	startX: number
+	startY: number
+	currentRowIndex: number
+	currentColIndex: number
+	rangeBorder: HTMLElement | null  // Border shown during drag and after
+}
+
+// Module-level state
+let selectionState: CellSelectionState = {
+	isPending: false,
+	isDragging: false,
+	startRowIndex: -1,
+	startColIndex: -1,
+	startX: 0,
+	startY: 0,
+	currentRowIndex: -1,
+	currentColIndex: -1,
+	rangeBorder: null
+}
+
+// Store the current context for document-level handlers
+let activeContext: GridContext | null = null
+
+/**
+ * Check if cell selection drag is in progress
+ */
+export function isCellSelecting(): boolean {
+	return selectionState.isDragging
+}
+
+/**
+ * Check if cell selection drag is pending (mouse down but not dragging yet)
+ */
+export function isCellSelectionPending(): boolean {
+	return selectionState.isPending
+}
+
+/**
+ * Handle mousedown on a cell to start selection
+ */
+export function handleCellMouseDown<T>(ctx: GridContext<T>, rowIndex: number, colIndex: number, event: MouseEvent): void {
+	// DON'T preventDefault() immediately - let the cell get focus first
+	// We'll preventDefault() later if/when drag threshold is exceeded
+	
+	// Clear any existing selection before starting new one (unless extending with Shift)
+	const isExtendingSelection = event.shiftKey && ctx.grid.cellSelectionMode === 'shift'
+	if (ctx.grid.selectedCellRange && !isExtendingSelection) {
+		ctx.grid.clearCellSelection()
+		removeRangeBorder()
+	}
+
+	const visualCols = ctx.grid.visualColumns
+	const column = visualCols[colIndex]?.column
+	if (!column) return
+
+	// Set up pending state
+	selectionState = {
+		...selectionState,
+		isPending: true,
+		isDragging: false,
+		startRowIndex: rowIndex,
+		startColIndex: colIndex,
+		startX: event.clientX,
+		startY: event.clientY,
+		currentRowIndex: rowIndex,
+		currentColIndex: colIndex
+	}
+
+	activeContext = ctx as GridContext
+
+	// Attach document-level listeners
+	document.addEventListener('mousemove', handleDocumentMouseMove)
+	document.addEventListener('mouseup', handleDocumentMouseUp)
+	document.addEventListener('keydown', handleDocumentKeyDown)
+}
+
+/**
+ * Handle Shift+Click to extend/create range to clicked cell
+ */
+export function handleCellShiftClick<T>(ctx: GridContext<T>, rowIndex: number, colIndex: number): void {
+	// Clear existing border before creating new range
+	removeRangeBorder()
+
+	// If there's a last clicked cell, create range from it to current cell
+	if (ctx.grid.lastClickedCell) {
+		const { rowIndex: startRow, colIndex: startCol } = ctx.grid.lastClickedCell
+		const visualCols = ctx.grid.visualColumns
+		const startColumn = visualCols[startCol]?.column
+		const endColumn = visualCols[colIndex]?.column
+
+		if (startColumn && endColumn) {
+			const range: CellRange = {
+				startRowIndex: startRow,
+				startColIndex: startCol,
+				endRowIndex: rowIndex,
+				endColIndex: colIndex,
+				startField: String(startColumn.field),
+				endField: String(endColumn.field)
+			}
+			// Clear focused cell when creating selection (avoid visual conflict)
+			ctx.grid.clearFocusedCell()
+			ctx.grid.selectCellRange(range)
+			createRangeBorder(ctx)
+
+			// Focus the container so keyboard shortcuts work
+			// Use double RAF for reliable focus after all callbacks
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
+					container?.focus({ preventScroll: true })
+				})
+			})
+		}
+	} else {
+		// First shift+click, just remember this cell
+		ctx.grid.lastClickedCell = { rowIndex, colIndex }
+	}
+}
+
+/**
+ * Handle mouse move during selection drag
+ */
+function handleDocumentMouseMove(e: MouseEvent): void {
+	if (!activeContext) return
+
+	// If pending, check if threshold exceeded
+	if (selectionState.isPending) {
+		const dx = e.clientX - selectionState.startX
+		const dy = e.clientY - selectionState.startY
+		const distance = Math.sqrt(dx * dx + dy * dy)
+
+		if (distance >= DRAG_THRESHOLD) {
+			startActualDrag(activeContext)
+		}
+		return
+	}
+
+	// If not actually dragging, nothing to do
+	if (!selectionState.isDragging) return
+
+	// Find which cell the mouse is over
+	const cellInfo = findCellAtPoint(activeContext, e.clientX, e.clientY)
+	if (cellInfo && (cellInfo.rowIndex !== selectionState.currentRowIndex || cellInfo.colIndex !== selectionState.currentColIndex)) {
+		selectionState.currentRowIndex = cellInfo.rowIndex
+		selectionState.currentColIndex = cellInfo.colIndex
+		
+		// Update both cell highlighting and border
+		updateCellHighlighting(activeContext)
+		updateRangeBorderDuringDrag(activeContext)
+	}
+}
+
+/**
+ * Start the actual drag operation (after threshold exceeded)
+ */
+function startActualDrag<T>(ctx: GridContext<T>): void {
+	selectionState.isPending = false
+	selectionState.isDragging = true
+
+	// Add selecting class to container
+	const container = ctx.shadow.querySelector('.wg')
+	container?.classList.add('wg--selecting-cells')
+
+	// Hide focus border on starting cell during drag (visual only, focus state remains)
+	const startCell = ctx.shadow.querySelector(
+		`[data-row="${selectionState.startRowIndex}"][data-col="${selectionState.startColIndex}"]`
+	) as HTMLElement
+	if (startCell) {
+		startCell.classList.add('wg__cell--dragging-from')
+	}
+
+	// Apply cell highlighting immediately
+	updateCellHighlighting(ctx)
+	
+	// Create range border (shown during drag, not just after)
+	createRangeBorderDuringDrag(ctx)
+}
+
+/**
+ * Add/remove .wg__cell--in-range class to cells as range changes during drag
+ */
+function updateCellHighlighting<T>(ctx: GridContext<T>): void {
+	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = selectionState
+
+	// Calculate current range
+	const minRow = Math.min(startRowIndex, currentRowIndex)
+	const maxRow = Math.max(startRowIndex, currentRowIndex)
+	const minCol = Math.min(startColIndex, currentColIndex)
+	const maxCol = Math.max(startColIndex, currentColIndex)
+
+	// Remove class from all cells first
+	const allCells = ctx.shadow.querySelectorAll('.wg__cell--in-range')
+	allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
+
+	// Add class to cells in current range
+	for (let row = minRow; row <= maxRow; row++) {
+		for (let col = minCol; col <= maxCol; col++) {
+			const cell = ctx.shadow.querySelector(
+				`[data-row="${row}"][data-col="${col}"]`
+			) as HTMLElement
+			if (cell) {
+				cell.classList.add('wg__cell--in-range')
+			}
+		}
+	}
+}
+
+/**
+ * Handle mouse up - apply selection and cleanup
+ */
+function handleDocumentMouseUp(e: MouseEvent): void {
+	if (!activeContext) return
+
+	const ctx = activeContext
+
+	// If still pending (no drag) in shift mode, create range from last clicked cell
+	if (selectionState.isPending) {
+		const isShiftMode = e.shiftKey && ctx.grid.cellSelectionMode === 'shift'
+		
+		if (isShiftMode && ctx.grid.lastClickedCell) {
+			// Shift+click without drag - create range from last clicked cell
+			handleCellShiftClick(ctx, selectionState.startRowIndex, selectionState.startColIndex)
+		} else {
+			// Regular click - just remember the clicked cell for future shift+click
+			ctx.grid.lastClickedCell = {
+				rowIndex: selectionState.startRowIndex,
+				colIndex: selectionState.startColIndex
+			}
+		}
+		cleanup(ctx)
+		return
+	}
+
+	// If not dragging, nothing to do
+	if (!selectionState.isDragging) return
+
+	// Remove dragging-from class from starting cell
+	const startCell = ctx.shadow.querySelector(
+		`[data-row="${selectionState.startRowIndex}"][data-col="${selectionState.startColIndex}"]`
+	) as HTMLElement
+	if (startCell) {
+		startCell.classList.remove('wg__cell--dragging-from')
+	}
+
+	// Check if user returned to starting cell (no actual selection made)
+	const returnedToStart = 
+		selectionState.startRowIndex === selectionState.currentRowIndex &&
+		selectionState.startColIndex === selectionState.currentColIndex
+
+	if (returnedToStart) {
+		// User canceled selection by returning to start - keep focus, clear highlighting
+		const allCells = ctx.shadow.querySelectorAll('.wg__cell--in-range')
+		allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
+		removeRangeBorder()
+		cleanup(ctx)
+	} else {
+		// Actual multi-cell selection made - apply it (this clears focus)
+		applySelection(ctx)
+		cleanup(ctx)
+
+		// Focus the container so keyboard shortcuts work
+		// Use double RAF for reliable focus after all callbacks
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
+				container?.focus({ preventScroll: true })
+			})
+		})
+	}
+}
+
+/**
+ * Handle keydown - Escape cancels selection operation
+ */
+function handleDocumentKeyDown(e: KeyboardEvent): void {
+	if (e.key === 'Escape' && activeContext) {
+		e.preventDefault()
+		cleanup(activeContext)
+	}
+}
+
+/**
+ * Find which cell is at a given point
+ */
+function findCellAtPoint<T>(ctx: GridContext<T>, x: number, y: number): { rowIndex: number; colIndex: number } | null {
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!container) return null
+
+	// Get all cells and find which one contains the point
+	const cells = ctx.shadow.querySelectorAll('.wg__cell[data-row][data-col]')
+
+	for (const cell of cells) {
+		const rect = (cell as HTMLElement).getBoundingClientRect()
+		if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+			const rowIndex = parseInt((cell as HTMLElement).dataset.row || '-1', 10)
+			const colIndex = parseInt((cell as HTMLElement).dataset.col || '-1', 10)
+			if (rowIndex >= 0 && colIndex >= 0) {
+				return { rowIndex, colIndex }
+			}
+		}
+	}
+
+	return null
+}
+
+/**
+ * Apply the cell range selection
+ */
+function applySelection<T>(ctx: GridContext<T>): void {
+	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = selectionState
+
+	// Get the columns
+	const visualCols = ctx.grid.visualColumns
+	const startColumn = visualCols[startColIndex]?.column
+	const endColumn = visualCols[currentColIndex]?.column
+
+	if (!startColumn || !endColumn) return
+
+	// Create the range
+	const range: CellRange = {
+		startRowIndex,
+		startColIndex,
+		endRowIndex: currentRowIndex,
+		endColIndex: currentColIndex,
+		startField: String(startColumn.field),
+		endField: String(endColumn.field)
+	}
+
+	// Clear focused cell when creating selection (avoid visual conflict)
+	ctx.grid.clearFocusedCell()
+
+	// Apply to grid
+	ctx.grid.selectCellRange(range)
+
+	// Create persistent border
+	createRangeBorder(ctx)
+}
+
+/**
+ * Create/update range border during drag using selectionState
+ */
+function createRangeBorderDuringDrag<T>(ctx: GridContext<T>): void {
+	// Remove existing border
+	removeRangeBorder()
+
+	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = selectionState
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!container) return
+
+	const minRow = Math.min(startRowIndex, currentRowIndex)
+	const maxRow = Math.max(startRowIndex, currentRowIndex)
+	const minCol = Math.min(startColIndex, currentColIndex)
+	const maxCol = Math.max(startColIndex, currentColIndex)
+
+	// Find the bounding cells
+	const startCell = ctx.shadow.querySelector(
+		`[data-row="${minRow}"][data-col="${minCol}"]`
+	) as HTMLElement
+	const endCell = ctx.shadow.querySelector(
+		`[data-row="${maxRow}"][data-col="${maxCol}"]`
+	) as HTMLElement
+
+	if (!startCell || !endCell) return
+
+	const containerRect = container.getBoundingClientRect()
+	const startRect = startCell.getBoundingClientRect()
+	const endRect = endCell.getBoundingClientRect()
+
+	// Account for scroll and container border
+	// getBoundingClientRect measures from border edge, but position:absolute is from padding edge
+	const scrollLeft = container.scrollLeft
+	const scrollTop = container.scrollTop
+
+	const left = startRect.left - containerRect.left + scrollLeft - container.clientLeft
+	const top = startRect.top - containerRect.top + scrollTop - container.clientTop
+	const width = endRect.right - startRect.left
+	const height = endRect.bottom - startRect.top
+
+	// Create border
+	const border = document.createElement('div')
+	border.className = 'wg__cell-range-border'
+	border.style.left = `${left}px`
+	border.style.top = `${top}px`
+	border.style.width = `${width}px`
+	border.style.height = `${height}px`
+	container.appendChild(border)
+
+	selectionState.rangeBorder = border
+}
+
+/**
+ * Update range border during drag (alias for consistency)
+ */
+function updateRangeBorderDuringDrag<T>(ctx: GridContext<T>): void {
+	createRangeBorderDuringDrag(ctx)
+}
+
+/**
+ * Create persistent range border (after selection complete)
+ */
+export function createRangeBorder<T>(ctx: GridContext<T>): void {
+	// Remove existing border
+	removeRangeBorder()
+
+	const range = ctx.grid.selectedCellRange
+	if (!range) return
+
+	const container = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!container) return
+
+	const { startRowIndex, endRowIndex, startColIndex, endColIndex } = range
+	const minRow = Math.min(startRowIndex, endRowIndex)
+	const maxRow = Math.max(startRowIndex, endRowIndex)
+	const minCol = Math.min(startColIndex, endColIndex)
+	const maxCol = Math.max(startColIndex, endColIndex)
+
+	// Find the bounding cells
+	const startCell = ctx.shadow.querySelector(
+		`[data-row="${minRow}"][data-col="${minCol}"]`
+	) as HTMLElement
+	const endCell = ctx.shadow.querySelector(
+		`[data-row="${maxRow}"][data-col="${maxCol}"]`
+	) as HTMLElement
+
+	if (!startCell || !endCell) return
+
+	const containerRect = container.getBoundingClientRect()
+	const startRect = startCell.getBoundingClientRect()
+	const endRect = endCell.getBoundingClientRect()
+
+	// Account for scroll and container border
+	// getBoundingClientRect measures from border edge, but position:absolute is from padding edge
+	const scrollLeft = container.scrollLeft
+	const scrollTop = container.scrollTop
+
+	const left = startRect.left - containerRect.left + scrollLeft - container.clientLeft
+	const top = startRect.top - containerRect.top + scrollTop - container.clientTop
+	const width = endRect.right - startRect.left
+	const height = endRect.bottom - startRect.top
+
+	// Create border
+	const border = document.createElement('div')
+	border.className = 'wg__cell-range-border'
+	border.style.left = `${left}px`
+	border.style.top = `${top}px`
+	border.style.width = `${width}px`
+	border.style.height = `${height}px`
+	container.appendChild(border)
+
+	selectionState.rangeBorder = border
+}
+
+/**
+ * Update range border position (e.g., on scroll)
+ */
+export function updateRangeBorder<T>(ctx: GridContext<T>): void {
+	if (!selectionState.rangeBorder) return
+	// Remove and recreate (simpler than recalculating)
+	removeRangeBorder()
+	
+	// If dragging, use drag state; otherwise use saved range
+	if (selectionState.isDragging) {
+		createRangeBorderDuringDrag(ctx)
+	} else {
+		createRangeBorder(ctx)
+	}
+}
+
+/**
+ * Remove the persistent range border
+ */
+export function removeRangeBorder(): void {
+	if (selectionState.rangeBorder) {
+		selectionState.rangeBorder.remove()
+		selectionState.rangeBorder = null
+	}
+}
+
+/**
+ * Cleanup after selection operation
+ */
+function cleanup<T>(ctx: GridContext<T>): void {
+	// Remove cell highlighting classes (keep for final selection)
+	// Classes will remain on cells for the final selected range
+	
+	// Remove selecting class
+	const container = ctx.shadow.querySelector('.wg')
+	container?.classList.remove('wg--selecting-cells')
+
+	// Safety: Remove dragging-from class from starting cell (in case not already removed)
+	if (selectionState.startRowIndex >= 0 && selectionState.startColIndex >= 0) {
+		const startCell = ctx.shadow.querySelector(
+			`[data-row="${selectionState.startRowIndex}"][data-col="${selectionState.startColIndex}"]`
+		) as HTMLElement
+		if (startCell) {
+			startCell.classList.remove('wg__cell--dragging-from')
+		}
+	}
+
+	// Remove document listeners
+	document.removeEventListener('mousemove', handleDocumentMouseMove)
+	document.removeEventListener('mouseup', handleDocumentMouseUp)
+	document.removeEventListener('keydown', handleDocumentKeyDown)
+
+	// Reset state (keep border for final selection)
+	const rangeBorder = selectionState.rangeBorder
+	selectionState = {
+		isPending: false,
+		isDragging: false,
+		startRowIndex: -1,
+		startColIndex: -1,
+		startX: 0,
+		startY: 0,
+		currentRowIndex: -1,
+		currentColIndex: -1,
+		rangeBorder
+	}
+	activeContext = null
+}

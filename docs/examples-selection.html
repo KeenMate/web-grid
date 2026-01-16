@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGrid - Selection</title>
+    <link rel="stylesheet" href="examples-shared.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">← Back to Examples</a>
+            <h1>Selection</h1>
+            <p class="subtitle">Multi-row and cell range selection with keyboard shortcuts</p>
+        </header>
+
+        <!-- EXAMPLE 1: Row Selection -->
+        <div class="card">
+            <h2>Row Selection</h2>
+            <p>Click row numbers to select entire rows. Use Ctrl+Click to toggle, Shift+Click for range, or drag to select multiple.</p>
+
+            <web-grid id="grid-row-selection" style="max-width: 100%; max-height: 400px;"></web-grid>
+
+            <div id="rowSelectionLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                Click row numbers to select rows...
+            </div>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Row Selection Controls</div>
+                <ul>
+                    <li><strong>Click</strong> row number - Select single row (clears others)</li>
+                    <li><strong>Ctrl+Click</strong> - Toggle row in selection</li>
+                    <li><strong>Shift+Click</strong> - Select range from last selected</li>
+                    <li><strong>Click+Drag</strong> on row numbers - Select range while dragging</li>
+                    <li><strong>Escape</strong> - Clear selection</li>
+                    <li><strong>Delete</strong> - Delete selected rows</li>
+                    <li><strong>Ctrl+C</strong> - Copy selected rows to clipboard</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- EXAMPLE 2: Cell Range Selection (Click Mode) -->
+        <div class="card">
+            <h2>Cell Range Selection (Click+Drag)</h2>
+            <p>Click and drag on cells to select a rectangular range. Works in navigate mode or when editTrigger is not "click".</p>
+
+            <div class="controls">
+                <label>
+                    Mode:
+                    <select id="clickMode">
+                        <option value="read-only">read-only</option>
+                        <option value="excel" selected>excel</option>
+                        <option value="input-matrix">input-matrix</option>
+                    </select>
+                </label>
+                <label>
+                    Cell Selection Mode:
+                    <select id="clickCellSelectionMode">
+                        <option value="disabled">disabled</option>
+                        <option value="click" selected>click</option>
+                        <option value="shift">shift</option>
+                    </select>
+                </label>
+                <label>
+                    Edit Trigger:
+                    <select id="clickEditTrigger">
+                        <option value="click">click</option>
+                        <option value="dblclick">dblclick</option>
+                        <option value="navigate" selected>navigate</option>
+                        <option value="always">always</option>
+                    </select>
+                </label>
+                <label>
+                    <input type="checkbox" id="clickIsEditable" checked> isEditable
+                </label>
+                <label>
+                    <input type="checkbox" id="clickIsHoverable" checked> isHoverable
+                </label>
+                <label>
+                    <input type="checkbox" id="clickCopyWithHeaders"> Copy with headers
+                </label>
+            </div>
+
+            <web-grid id="grid-cell-range-click" style="max-width: 100%; max-height: 400px;"></web-grid>
+
+            <div id="cellRangeClickLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                Click and drag on cells to select a range...
+            </div>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Cell Range Selection (Click Mode)</div>
+                <ul>
+                    <li><strong>Click+Drag</strong> on cells - Select rectangular range</li>
+                    <li><strong>Shift+Click</strong> - Extend range to clicked cell</li>
+                    <li><strong>Escape</strong> - Clear selection</li>
+                    <li><strong>Delete</strong> - Clear all values in range</li>
+                    <li><strong>Ctrl+C</strong> - Copy to clipboard (Excel-compatible TSV)</li>
+                </ul>
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>cellSelectionMode: 'click'  // Default
+shouldCopyWithHeaders: false  // Include headers when copying</code></pre>
+            </div>
+        </div>
+
+        <!-- EXAMPLE 3: Cell Range Selection (Shift Mode) -->
+        <div class="card">
+            <h2>Cell Range Selection (Shift+Drag)</h2>
+            <p>Use Shift+Click and drag to select cell ranges. This mode works with editTrigger="click" to avoid conflicts.</p>
+
+            <web-grid id="grid-cell-range-shift" style="max-width: 100%; max-height: 400px;"></web-grid>
+
+            <div id="cellRangeShiftLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                Hold Shift and drag to select cells...
+            </div>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Cell Range Selection (Shift Mode)</div>
+                <ul>
+                    <li><strong>Click</strong> on cell - Enters edit mode (editTrigger="click")</li>
+                    <li><strong>Shift+Click+Drag</strong> - Select rectangular range</li>
+                    <li><strong>Shift+Click</strong> twice - Select range from first to second cell</li>
+                    <li><strong>Escape</strong> - Clear selection</li>
+                    <li><strong>Delete</strong> - Clear all values in range</li>
+                    <li><strong>Ctrl+C</strong> - Copy to clipboard (Excel-compatible TSV)</li>
+                </ul>
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>editTrigger: 'click'
+cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
+            </div>
+        </div>
+
+        <!-- EXAMPLE 4: Unified Range Shortcuts -->
+        <div class="card">
+            <h2>Range Shortcuts (Works with Both)</h2>
+            <p>Range shortcuts work with both row selection and cell range selection. The context automatically adapts.</p>
+
+            <web-grid id="grid-range-shortcuts" style="max-width: 100%; max-height: 400px;"></web-grid>
+
+            <div id="rangeShortcutsLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                Try selecting rows or cell ranges and using shortcuts...
+            </div>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Range Shortcuts Example</div>
+                <ul>
+                    <li><strong>Ctrl+C</strong> - Copy selected rows OR cells to clipboard</li>
+                    <li><strong>Delete</strong> - Delete selected rows OR clear selected cells</li>
+                    <li><strong>Ctrl+Alt+E</strong> - Export selected rows OR cells</li>
+                    <li><strong>Ctrl+Alt+S</strong> - Sum values in selected cells (cell range only)</li>
+                </ul>
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>grid.rangeShortcuts = [{
+    key: 'Delete',
+    id: 'delete-or-clear',
+    label: 'Delete rows or clear cells',
+    action: ({ rows, cells, cellRange }) => {
+        if (cellRange) {
+            // Cell range mode - clear values
+            cells.forEach(({ row, field }) => {
+                row[field] = null
+            })
+        } else {
+            // Row selection mode - delete rows
+            for (const idx of rowIndices.reverse()) {
+                grid.items.splice(idx, 1)
+            }
+        }
+    }
+}]</code></pre>
+            </div>
+        </div>
+
+        <!-- EXAMPLE 5: API Reference -->
+        <div class="card">
+            <h2>API Reference</h2>
+            
+            <h3 style="margin-top: 0; color: #667eea;">Row Selection API</h3>
+            <table class="props-table">
+                <tr>
+                    <td><code>selectedRows</code></td>
+                    <td>Array of selected row indices (read-only, sorted ascending)</td>
+                </tr>
+                <tr>
+                    <td><code>selectRow(idx, mode)</code></td>
+                    <td>Select a row. Mode: 'replace', 'toggle', or 'range'</td>
+                </tr>
+                <tr>
+                    <td><code>clearSelection()</code></td>
+                    <td>Clear all selected rows</td>
+                </tr>
+                <tr>
+                    <td><code>getSelectedRowsData()</code></td>
+                    <td>Get the data objects for selected rows</td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top: 2rem; color: #667eea;">Cell Range Selection API</h3>
+            <table class="props-table">
+                <tr>
+                    <td><code>cellSelectionMode</code></td>
+                    <td>Selection mode: 'disabled', 'click' (default), or 'shift'</td>
+                </tr>
+                <tr>
+                    <td><code>selectedCellRange</code></td>
+                    <td>Current cell range (read-only), null if none</td>
+                </tr>
+                <tr>
+                    <td><code>selectCellRange(range)</code></td>
+                    <td>Select a cell range programmatically</td>
+                </tr>
+                <tr>
+                    <td><code>clearCellSelection()</code></td>
+                    <td>Clear cell range selection</td>
+                </tr>
+                <tr>
+                    <td><code>getSelectedCells()</code></td>
+                    <td>Get array of {row, rowIndex, colIndex, field, value} objects</td>
+                </tr>
+                <tr>
+                    <td><code>oncellselectionchange</code></td>
+                    <td>Event fired when cell selection changes</td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top: 2rem; color: #667eea;">Range Shortcuts (Works with Both)</h3>
+            <table class="props-table">
+                <tr>
+                    <td><code>rangeShortcuts</code></td>
+                    <td>Array of shortcuts that operate on selected rows or cells</td>
+                </tr>
+                <tr>
+                    <td><code>RangeShortcutContext</code></td>
+                    <td>Context passed to shortcuts: { rows, rowIndices, cells?, cellRange? }</td>
+                </tr>
+            </table>
+        </div>
+
+        <footer>
+            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
+        </footer>
+    </div>
+
+    <style>
+        .props-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .props-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .props-table td:first-child {
+            width: 35%;
+            font-family: monospace;
+            color: #6366f1;
+        }
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+    </style>
+
+    <script type="module">
+        import '@keenmate/web-grid'
+
+        // Sample data generator
+        const createSampleData = () => Array.from({ length: 15 }, (_, i) => ({
+            id: 1000 + i,
+            name: ['Alice', 'Bob', 'Carol', 'David', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack', 'Kate', 'Leo', 'Mia', 'Noah', 'Olivia'][i],
+            department: ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance'][i % 5],
+            salary: 50000 + (i * 5000),
+            hours: 20 + (i * 2),
+            status: i % 3 === 0 ? 'Active' : 'Pending'
+        }))
+
+        const columns = [
+            { field: 'id', title: 'ID', width: '80px' },
+            { field: 'name', title: 'Name', width: '120px', isEditable: true },
+            { field: 'department', title: 'Department', width: '120px', isEditable: true },
+            { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString(), isEditable: true, editor: 'number' },
+            { field: 'hours', title: 'Hours', width: '80px', editor: 'number', isEditable: true },
+            { field: 'status', title: 'Status', width: '100px' }
+        ]
+
+        // =================================================================
+        // EXAMPLE 1: Row Selection
+        // =================================================================
+        const gridRowSelection = document.getElementById('grid-row-selection')
+        gridRowSelection.items = createSampleData()
+        gridRowSelection.columns = columns
+        gridRowSelection.isRowNumbersVisible = true
+        gridRowSelection.isHoverable = true
+        gridRowSelection.mode = 'navigate'
+
+        gridRowSelection.rangeShortcuts = [
+            {
+                key: 'Delete',
+                id: 'delete-rows',
+                label: 'Delete selected rows',
+                action: ({ rows, rowIndices }) => {
+                    const log = document.getElementById('rowSelectionLog')
+                    log.innerHTML = `<span style="color: #dc2626;"><strong>DELETED:</strong> ${rows.length} row(s) - ${rows.map(r => r.name).join(', ')}</span>`
+                    for (const idx of [...rowIndices].reverse()) {
+                        gridRowSelection.items.splice(idx, 1)
+                    }
+                    gridRowSelection.items = [...gridRowSelection.items]
+                    gridRowSelection.clearSelection()
+                }
+            },
+            {
+                key: 'Ctrl+C',
+                id: 'copy-rows',
+                label: 'Copy to clipboard',
+                action: async ({ rows }) => {
+                    const log = document.getElementById('rowSelectionLog')
+                    const success = await gridRowSelection.copySelectedRowsToClipboard()
+                    if (success) {
+                        log.innerHTML = `<span style="color: #16a34a;"><strong>COPIED:</strong> ${rows.length} row(s) to clipboard</span>`
+                    } else {
+                        log.innerHTML = `<span style="color: #dc2626;"><strong>FAILED:</strong> Could not copy to clipboard</span>`
+                    }
+                }
+            }
+        ]
+
+        setInterval(() => {
+            const log = document.getElementById('rowSelectionLog')
+            const selected = gridRowSelection.selectedRows
+            if (selected.length === 0) {
+                log.textContent = 'No rows selected'
+            } else {
+                const names = selected.map(idx => gridRowSelection.items[idx]?.name).filter(Boolean)
+                log.innerHTML = `<strong>Selected ${selected.length} row(s):</strong> ${names.join(', ')}`
+            }
+        }, 100)
+
+        // =================================================================
+        // EXAMPLE 2: Cell Range Selection (Click Mode)
+        // =================================================================
+        const gridCellRangeClick = document.getElementById('grid-cell-range-click')
+        gridCellRangeClick.items = createSampleData()
+        gridCellRangeClick.columns = columns
+        gridCellRangeClick.isRowNumbersVisible = true
+
+        // LocalStorage key for this example
+        const STORAGE_KEY = 'webgrid-cell-range-example-settings'
+
+        // Default settings
+        const defaultSettings = {
+            mode: 'excel',
+            cellSelectionMode: 'click',
+            editTrigger: 'navigate',
+            isEditable: true,
+            isHoverable: true
+        }
+
+        // Load settings from localStorage or use defaults
+        const loadSettings = () => {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY)
+                return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings
+            } catch {
+                return defaultSettings
+            }
+        }
+
+        // Save settings to localStorage
+        const saveSettings = (settings) => {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+            } catch (e) {
+                console.warn('Failed to save settings to localStorage:', e)
+            }
+        }
+
+        // Apply settings to grid and controls
+        const applySettings = (settings) => {
+            // Apply to grid
+            gridCellRangeClick.isHoverable = settings.isHoverable
+            gridCellRangeClick.isEditable = settings.isEditable
+            gridCellRangeClick.editTrigger = settings.editTrigger
+            gridCellRangeClick.cellSelectionMode = settings.cellSelectionMode
+            gridCellRangeClick.mode = settings.mode
+
+            // Update control values
+            document.getElementById('clickMode').value = settings.mode
+            document.getElementById('clickCellSelectionMode').value = settings.cellSelectionMode
+            document.getElementById('clickEditTrigger').value = settings.editTrigger
+            document.getElementById('clickIsEditable').checked = settings.isEditable
+            document.getElementById('clickIsHoverable').checked = settings.isHoverable
+        }
+
+        // Initialize with saved settings
+        const currentSettings = loadSettings()
+        applySettings(currentSettings)
+
+        gridCellRangeClick.rangeShortcuts = [
+            {
+                key: 'Delete',
+                id: 'clear-cells',
+                label: 'Clear selected cells',
+                action: ({ cells, cellRange }) => {
+                    if (!cellRange) return
+                    const log = document.getElementById('cellRangeClickLog')
+                    log.innerHTML = `<span style="color: #dc2626;"><strong>CLEARED:</strong> ${cells.length} cell(s)</span>`
+                    cells.forEach(({ row, field }) => {
+                        row[field] = null
+                    })
+                    gridCellRangeClick.items = [...gridCellRangeClick.items]
+                    gridCellRangeClick.clearCellSelection()
+                }
+            },
+            {
+                key: 'Ctrl+C',
+                id: 'copy-cells',
+                label: 'Copy to clipboard',
+                action: async ({ cells, cellRange }) => {
+                    if (!cellRange) return
+                    const log = document.getElementById('cellRangeClickLog')
+                    const success = await gridCellRangeClick.copyCellSelectionToClipboard()
+                    if (success) {
+                        const withHeaders = gridCellRangeClick.shouldCopyWithHeaders ? ' (with headers)' : ''
+                        log.innerHTML = `<span style="color: #16a34a;"><strong>COPIED:</strong> ${cells.length} cell(s) to clipboard${withHeaders}</span>`
+                    } else {
+                        log.innerHTML = `<span style="color: #dc2626;"><strong>FAILED:</strong> Could not copy to clipboard</span>`
+                    }
+                }
+            }
+        ]
+
+        // Wire up controls for Click Mode example
+        document.getElementById('clickMode').addEventListener('change', (e) => {
+            currentSettings.mode = e.target.value
+            gridCellRangeClick.mode = e.target.value
+            saveSettings(currentSettings)
+            console.log('mode changed to:', e.target.value)
+        })
+
+        document.getElementById('clickCellSelectionMode').addEventListener('change', (e) => {
+            currentSettings.cellSelectionMode = e.target.value
+            gridCellRangeClick.cellSelectionMode = e.target.value
+            saveSettings(currentSettings)
+            console.log('cellSelectionMode changed to:', e.target.value)
+        })
+
+        document.getElementById('clickEditTrigger').addEventListener('change', (e) => {
+            currentSettings.editTrigger = e.target.value
+            gridCellRangeClick.editTrigger = e.target.value
+            saveSettings(currentSettings)
+            console.log('editTrigger changed to:', e.target.value)
+        })
+
+        document.getElementById('clickIsEditable').addEventListener('change', (e) => {
+            currentSettings.isEditable = e.target.checked
+            gridCellRangeClick.isEditable = e.target.checked
+            saveSettings(currentSettings)
+            console.log('isEditable changed to:', e.target.checked)
+        })
+
+        document.getElementById('clickIsHoverable').addEventListener('change', (e) => {
+            currentSettings.isHoverable = e.target.checked
+            gridCellRangeClick.isHoverable = e.target.checked
+            saveSettings(currentSettings)
+            console.log('isHoverable changed to:', e.target.checked)
+        })
+
+        document.getElementById('clickCopyWithHeaders').addEventListener('change', (e) => {
+            gridCellRangeClick.shouldCopyWithHeaders = e.target.checked
+        })
+
+        setInterval(() => {
+            const log = document.getElementById('cellRangeClickLog')
+            const range = gridCellRangeClick.selectedCellRange
+            if (!range) {
+                log.textContent = 'No cells selected'
+            } else {
+                const cells = gridCellRangeClick.getSelectedCells()
+                log.innerHTML = `<strong>Selected ${cells.length} cell(s)</strong>`
+            }
+        }, 100)
+
+        // =================================================================
+        // EXAMPLE 3: Cell Range Selection (Shift Mode)
+        // =================================================================
+        const gridCellRangeShift = document.getElementById('grid-cell-range-shift')
+        gridCellRangeShift.items = createSampleData()
+        gridCellRangeShift.columns = columns
+        gridCellRangeShift.isRowNumbersVisible = true
+        gridCellRangeShift.isHoverable = true
+        gridCellRangeShift.editTrigger = 'click'
+        gridCellRangeShift.cellSelectionMode = 'shift'
+
+        gridCellRangeShift.rangeShortcuts = [
+            {
+                key: 'Delete',
+                id: 'clear-cells-shift',
+                label: 'Clear selected cells',
+                action: ({ cells, cellRange }) => {
+                    if (!cellRange) return
+                    const log = document.getElementById('cellRangeShiftLog')
+                    log.innerHTML = `<span style="color: #dc2626;"><strong>CLEARED:</strong> ${cells.length} cell(s)</span>`
+                    cells.forEach(({ row, field }) => {
+                        row[field] = null
+                    })
+                    gridCellRangeShift.items = [...gridCellRangeShift.items]
+                    gridCellRangeShift.clearCellSelection()
+                }
+            },
+            {
+                key: 'Ctrl+C',
+                id: 'copy-shift',
+                label: 'Copy to clipboard',
+                action: async ({ rows, cells, cellRange }) => {
+                    const log = document.getElementById('cellRangeShiftLog')
+                    if (cellRange) {
+                        const success = await gridCellRangeShift.copyCellSelectionToClipboard()
+                        if (success) {
+                            log.innerHTML = `<span style="color: #16a34a;"><strong>COPIED:</strong> ${cells.length} cell(s) to clipboard</span>`
+                        } else {
+                            log.innerHTML = `<span style="color: #dc2626;"><strong>FAILED:</strong> Could not copy to clipboard</span>`
+                        }
+                    } else if (rows.length > 0) {
+                        const success = await gridCellRangeShift.copySelectedRowsToClipboard()
+                        if (success) {
+                            log.innerHTML = `<span style="color: #16a34a;"><strong>COPIED:</strong> ${rows.length} row(s) to clipboard</span>`
+                        } else {
+                            log.innerHTML = `<span style="color: #dc2626;"><strong>FAILED:</strong> Could not copy to clipboard</span>`
+                        }
+                    }
+                }
+            }
+        ]
+
+        setInterval(() => {
+            const log = document.getElementById('cellRangeShiftLog')
+            const range = gridCellRangeShift.selectedCellRange
+            if (!range) {
+                log.textContent = 'Hold Shift and drag to select cells...'
+            } else {
+                const cells = gridCellRangeShift.getSelectedCells()
+                log.innerHTML = `<strong>Selected ${cells.length} cell(s)</strong>`
+            }
+        }, 100)
+
+        // =================================================================
+        // EXAMPLE 4: Unified Range Shortcuts
+        // =================================================================
+        const gridRangeShortcuts = document.getElementById('grid-range-shortcuts')
+        gridRangeShortcuts.items = createSampleData()
+        gridRangeShortcuts.columns = columns
+        gridRangeShortcuts.isRowNumbersVisible = true
+        gridRangeShortcuts.isHoverable = true
+        gridRangeShortcuts.mode = 'navigate'
+        gridRangeShortcuts.cellSelectionMode = 'click'
+
+        gridRangeShortcuts.rangeShortcuts = [
+            {
+                key: 'Delete',
+                id: 'delete-or-clear',
+                label: 'Delete rows or clear cells',
+                action: ({ rows, rowIndices, cells, cellRange }) => {
+                    const log = document.getElementById('rangeShortcutsLog')
+                    if (cellRange) {
+                        log.innerHTML = `<span style="color: #dc2626;"><strong>CLEARED:</strong> ${cells.length} cell(s)</span>`
+                        cells.forEach(({ row, field }) => {
+                            row[field] = null
+                        })
+                        gridRangeShortcuts.items = [...gridRangeShortcuts.items]
+                        gridRangeShortcuts.clearCellSelection()
+                    } else if (rows.length > 0) {
+                        log.innerHTML = `<span style="color: #dc2626;"><strong>DELETED:</strong> ${rows.length} row(s)</span>`
+                        for (const idx of [...rowIndices].reverse()) {
+                            gridRangeShortcuts.items.splice(idx, 1)
+                        }
+                        gridRangeShortcuts.items = [...gridRangeShortcuts.items]
+                        gridRangeShortcuts.clearSelection()
+                    }
+                }
+            },
+            {
+                key: 'Ctrl+C',
+                id: 'copy-unified',
+                label: 'Copy to clipboard',
+                action: async ({ rows, cells, cellRange }) => {
+                    const log = document.getElementById('rangeShortcutsLog')
+                    if (cellRange) {
+                        const success = await gridRangeShortcuts.copyCellSelectionToClipboard()
+                        if (success) {
+                            log.innerHTML = `<span style="color: #16a34a;"><strong>COPIED:</strong> ${cells.length} cell(s) to clipboard</span>`
+                        } else {
+                            log.innerHTML = `<span style="color: #dc2626;"><strong>FAILED:</strong> Could not copy to clipboard</span>`
+                        }
+                    } else if (rows.length > 0) {
+                        const success = await gridRangeShortcuts.copySelectedRowsToClipboard()
+                        if (success) {
+                            log.innerHTML = `<span style="color: #16a34a;"><strong>COPIED:</strong> ${rows.length} row(s) to clipboard</span>`
+                        } else {
+                            log.innerHTML = `<span style="color: #dc2626;"><strong>FAILED:</strong> Could not copy to clipboard</span>`
+                        }
+                    }
+                }
+            },
+            {
+                key: 'Ctrl+Alt+E',
+                id: 'export',
+                label: 'Export selected data',
+                action: ({ rows, cells, cellRange }) => {
+                    const log = document.getElementById('rangeShortcutsLog')
+                    if (cellRange) {
+                        log.innerHTML = `<span style="color: #16a34a;"><strong>EXPORTED:</strong> ${cells.length} cell(s) to console</span>`
+                        console.log('Exporting cells:', cells)
+                    } else {
+                        log.innerHTML = `<span style="color: #16a34a;"><strong>EXPORTED:</strong> ${rows.length} row(s) to console</span>`
+                        console.log('Exporting rows:', rows)
+                    }
+                }
+            },
+            {
+                key: 'Ctrl+Alt+S',
+                id: 'sum-cells',
+                label: 'Sum selected cells',
+                action: ({ cells, cellRange }) => {
+                    if (!cellRange) return
+                    const log = document.getElementById('rangeShortcutsLog')
+                    const sum = cells.reduce((acc, { value }) => {
+                        const num = typeof value === 'number' ? value : parseFloat(value)
+                        return acc + (isNaN(num) ? 0 : num)
+                    }, 0)
+                    log.innerHTML = `<span style="color: #2563eb;"><strong>SUM:</strong> ${sum.toLocaleString()} (from ${cells.length} cells)</span>`
+                }
+            }
+        ]
+
+        setInterval(() => {
+            const log = document.getElementById('rangeShortcutsLog')
+            const cellRange = gridRangeShortcuts.selectedCellRange
+            const selectedRows = gridRangeShortcuts.selectedRows
+            
+            if (cellRange) {
+                const cells = gridRangeShortcuts.getSelectedCells()
+                log.innerHTML = `<strong>Cell Range:</strong> ${cells.length} cell(s) selected - Try Ctrl+C, Delete, Ctrl+Alt+E, or Ctrl+Alt+S`
+            } else if (selectedRows.length > 0) {
+                const names = selectedRows.map(idx => gridRangeShortcuts.items[idx]?.name).filter(Boolean)
+                log.innerHTML = `<strong>Row Selection:</strong> ${selectedRows.length} row(s) - Try Ctrl+C, Delete, or Ctrl+Alt+E`
+            } else {
+                log.textContent = 'Select rows (click row numbers) or cells (click+drag on cells)...'
+            }
+        }, 100)
+    </script>
+</body>
+</html>

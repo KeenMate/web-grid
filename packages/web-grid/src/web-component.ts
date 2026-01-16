@@ -154,6 +154,16 @@ import {
 	handleEscapeKey as handleSelectionEscape
 } from './modules/selection/index.js'
 
+import {
+	handleCellMouseDown,
+	handleCellShiftClick,
+	isCellSelecting,
+	isCellSelectionPending,
+	createRangeBorder,
+	updateRangeBorder,
+	removeRangeBorder
+} from './modules/cell-selection/index.js'
+
 import type { GridContext } from './modules/types.js'
 
 /**
@@ -458,6 +468,23 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	clearSelection(): void { this.grid.clearSelection() }
 	isRowSelected(rowIndex: number): boolean { return this.grid.isRowSelected(rowIndex) }
 	getSelectedRowsData(): T[] { return this.grid.getSelectedRowsData() }
+	copySelectedRowsToClipboard(): Promise<boolean> { return this.grid.copySelectedRowsToClipboard() }
+
+	// Cell range selection
+	get cellSelectionMode() { return this.grid.cellSelectionMode }
+	set cellSelectionMode(value) { this.grid.cellSelectionMode = value }
+
+	get selectedCellRange() { return this.grid.selectedCellRange }
+	selectCellRange(range: any): void { this.grid.selectCellRange(range) }
+	clearCellSelection(): void { this.grid.clearCellSelection() }
+	getSelectedCells() { return this.grid.getSelectedCells() }
+	copyCellSelectionToClipboard(): Promise<boolean> { return this.grid.copyCellSelectionToClipboard() }
+
+	get shouldCopyWithHeaders(): boolean { return this.grid.shouldCopyWithHeaders }
+	set shouldCopyWithHeaders(value: boolean) { this.grid.shouldCopyWithHeaders = value }
+
+	get oncellselectionchange() { return this.grid.oncellselectionchange }
+	set oncellselectionchange(value) { this.grid.oncellselectionchange = value }
 
 	get isShortcutsHelpVisible(): boolean { return this.grid.isShortcutsHelpVisible }
 	set isShortcutsHelpVisible(value: boolean) { this.grid.isShortcutsHelpVisible = value }
@@ -1535,6 +1562,50 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Mousedown - toggle dropdown, handle cell transitions
 		table.addEventListener('mousedown', (e: Event) => {
 			const target = e.target as HTMLElement
+			const mouseEvent = e as MouseEvent
+
+			// Cell range selection - handle before other interactions
+			const cell = target.closest('.wg__cell') as HTMLElement
+			if (cell && !cell.classList.contains('wg__cell--editing') && !target.closest('.wg__row-number')) {
+				const rowIndex = parseInt(cell.dataset.row || '0', 10)
+				const colIndex = parseInt(cell.dataset.col || '0', 10)
+				const column = this.grid.visualColumns[colIndex]?.column
+				
+				if (column) {
+					const selectionMode = this.grid.cellSelectionMode
+					const isShiftClick = mouseEvent.shiftKey
+					const trigger = column.editTrigger || this.grid.editTrigger
+
+					// Check if we should handle cell range selection
+					const shouldSelectRange = 
+						selectionMode !== 'disabled' && (
+							(selectionMode === 'click' && !isShiftClick) ||
+							(selectionMode === 'shift' && isShiftClick)
+						)
+
+					if (shouldSelectRange) {
+						// Conflict check: editTrigger='click' + cellSelectionMode='click'
+						// Selection takes priority (user was warned)
+						if (trigger === 'click' && selectionMode === 'click') {
+							// Allow normal click to start selection, Shift+click to edit
+							handleCellMouseDown(this, rowIndex, colIndex, mouseEvent)
+							return
+						}
+
+						// No conflict - start cell selection (both click and shift modes)
+						if (trigger !== 'click') {
+							handleCellMouseDown(this, rowIndex, colIndex, mouseEvent)
+							return
+						}
+					} else {
+						// Not starting selection - clear any existing range
+						if (this.grid.selectedCellRange) {
+							this.grid.clearCellSelection()
+							removeRangeBorder()
+						}
+					}
+				}
+			}
 
 			// Date trigger button - handle in mousedown since SVG clicks don't bubble well
 			const dateTrigger = target.closest('.wg__date-trigger')
@@ -1762,6 +1833,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					handleRowNumberMouseDown(this, rowIndex, e as MouseEvent)
 				}
 			}
+
+			// Clear cell selection if clicking outside interactive elements
+			if (!target.closest('.wg__cell, .wg__row-number, .wg__header, .wg__toolbar, button, input, select, textarea')) {
+				if (this.grid.selectedCellRange) {
+					this.grid.clearCellSelection()
+					removeRangeBorder()
+				}
+			}
 		})
 
 		// Header click for sorting
@@ -1833,10 +1912,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			// Make container focusable for keyboard events when rows are selected
 			container.setAttribute('tabindex', '-1')
 
-			// Range shortcuts - handle keyboard shortcuts for selected rows
+			// Range shortcuts - handle keyboard shortcuts for selected rows or cell ranges
 			container.addEventListener('keydown', (e: KeyboardEvent) => {
 				const selectedRowIndices = this.grid.selectedRows
-				if (selectedRowIndices.length === 0) return
+				const hasCellRange = !!this.grid.selectedCellRange
+				if (selectedRowIndices.length === 0 && !hasCellRange) return
 
 				// Skip if focus is in an input
 				const target = e.target as HTMLElement
@@ -1844,21 +1924,34 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					return
 				}
 
-				// Handle Escape to clear selection
+				// Handle Escape to clear selection (cell range takes priority)
 				if (e.key === 'Escape') {
 					e.preventDefault()
-					this.grid.clearSelection()
+					if (this.grid.selectedCellRange) {
+						this.grid.clearCellSelection()
+						removeRangeBorder()
+					} else {
+						this.grid.clearSelection()
+					}
 					return
 				}
 
-				// Check range shortcuts
+				// Check range shortcuts (works for both row and cell selection)
 				const rangeShortcuts = this.grid.rangeShortcuts
 				if (!rangeShortcuts?.length) return
 
 				for (const shortcut of rangeShortcuts) {
 					const combo = parseKeyCombo(shortcut.key)
 					if (matchesKeyCombo(e, combo)) {
-						const ctx: RangeShortcutContext<T> = {
+						// Build context based on selection type
+						const ctx: RangeShortcutContext<T> = hasCellRange ? {
+							// Cell range mode
+							rows: [],
+							rowIndices: [],
+							cellRange: this.grid.selectedCellRange!,
+							cells: this.grid.getSelectedCells()
+						} : {
+							// Row selection mode
 							rows: this.grid.getSelectedRowsData(),
 							rowIndices: selectedRowIndices
 						}
@@ -1908,6 +2001,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 				// Update fill handle position on scroll
 				updateFillHandle(this)
+
+				// Update cell range border on scroll
+				if (this.grid.selectedCellRange) {
+					updateRangeBorder(this)
+				}
 			})
 
 			// Window scroll handler - close overlays
@@ -2531,6 +2629,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Update fill handle after render
 		updateFillHandle(this)
+
+		// Update cell range border after render
+		if (this.grid.selectedCellRange) {
+			updateRangeBorder(this)
+		}
 	}
 
 	/**

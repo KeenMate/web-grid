@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-rc11] - 2026-01-16
+
+### Added
+
+- **Copy to clipboard**: Cell range and row selections can now be copied to clipboard in TSV format (Excel-compatible)
+  - `copyCellSelectionToClipboard()` - Copy selected cell range
+  - `copySelectedRowsToClipboard()` - Copy selected rows
+  - `shouldCopyWithHeaders` property - Include column headers when copying (default: false)
+  - Works with Ctrl+C keyboard shortcut via `rangeShortcuts`
+
+### Fixed
+
+- **Cell range selection border alignment**: Fixed 1px offset caused by container border (getBoundingClientRect measures from border edge, position:absolute from padding edge)
+- **Focus border during drag**: Focus outline now properly hides when starting a cell range drag selection
+- **Selection focus timing**: Improved focus reliability when multiple grids are on the same page using double requestAnimationFrame
+
 ## [1.0.0-rc10] - 2026-01-13 (Published)
 
 ### BREAKING CHANGES
@@ -431,27 +447,6 @@ editorOptions: {
   - Renamed `-background` suffix to `-bg` throughout
   - Renamed `--base-layer-*` to `--base-surface-*`
   - Renamed `--base-stroke-*` to `--base-border-*`
-
-## [Unreleased]
-
-### Changed
-- **Monorepo Structure** - Restructured project to use npm workspaces
-  - Library moved to `packages/web-grid/` with its own package.json, tsconfig, and vite config
-  - Documentation/examples moved to `docs/` as a separate Vite app
-  - Root package.json now defines workspaces: `["packages/*", "docs"]`
-  - Examples now import from `@keenmate/web-grid` instead of relative paths
-  - Vite alias in docs enables HMR during development
-
-- **Makefile** - Updated for workspace commands
-  - `make setup` - Install all workspace dependencies
-  - `make dev` - Start docs dev server with HMR
-  - `make build` - Build library and docs
-  - `make package` - Build library for publishing
-  - `make create-link` / `make unlink` - npm link management
-  - `make publish` / `make publish-dry` - Publishing to npm
-  - `make clean` - Clean build artifacts
-
-- **CLAUDE.md** - Updated to reflect new monorepo structure and commands
 
 ## [0.1.0] - 2024-12-XX
 

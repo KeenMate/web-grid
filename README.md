@@ -17,6 +17,7 @@ A lightweight, accessible data grid web component with sorting, filtering, inlin
 - **Context Menu** - Right-click menus with custom actions for rows and headers
 - **Keyboard Shortcuts** - Custom grid-level shortcuts with help overlay
 - **Row Selection** - Multi-row selection via row numbers with range shortcuts
+- **Cell Range Selection** - Excel-like click+drag cell selection with copy to clipboard
 - **Virtual Scrolling** - Efficient rendering for large datasets (10,000+ rows)
 - **Infinite Scroll** - Load more data as user scrolls
 - **Custom Styling** - Cell and row styling via callbacks
@@ -149,6 +150,18 @@ grid.selectRowRange(from, to);
 grid.clearSelection();
 grid.isRowSelected(index);
 grid.getSelectedRowsData();
+
+// Cell range selection
+grid.cellSelectionMode = 'click';  // 'disabled' | 'click' | 'shift'
+grid.selectedCellRange;            // Current range (read-only)
+grid.selectCellRange(range);
+grid.clearCellSelection();
+grid.getSelectedCells();
+
+// Copy to clipboard
+grid.shouldCopyWithHeaders = false;  // Include headers when copying
+grid.copyCellSelectionToClipboard(); // Copy cell range as TSV
+grid.copySelectedRowsToClipboard();  // Copy selected rows as TSV
 
 // Virtual scroll
 grid.isVirtualScrollEnabled = true;
@@ -303,6 +316,11 @@ grid.rowLocking = {
 | `clearSelection()` | Clear all selected rows |
 | `isRowSelected(index)` | Check if row is selected |
 | `getSelectedRowsData()` | Get data for selected rows |
+| `selectCellRange(range)` | Select cell range programmatically |
+| `clearCellSelection()` | Clear cell range selection |
+| `getSelectedCells()` | Get array of selected cell info |
+| `copyCellSelectionToClipboard()` | Copy cell range as TSV (Excel-compatible) |
+| `copySelectedRowsToClipboard()` | Copy selected rows as TSV (Excel-compatible) |
 
 ## Events
 
@@ -483,6 +501,14 @@ grid.isRowNumbersVisible = true
 // Define shortcuts for selected rows
 grid.rangeShortcuts = [
   {
+    key: 'Ctrl+C',
+    id: 'copy-rows',
+    label: 'Copy to clipboard',
+    action: async ({ rows }) => {
+      await grid.copySelectedRowsToClipboard()
+    }
+  },
+  {
     key: 'Delete',
     id: 'delete-selected',
     label: 'Delete selected rows',
@@ -494,12 +520,6 @@ grid.rangeShortcuts = [
       grid.items = [...grid.items]
       grid.clearSelection()
     }
-  },
-  {
-    key: 'Ctrl+Alt+E',
-    id: 'export-selected',
-    label: 'Export selected',
-    action: ({ rows }) => exportToCSV(rows)
   }
 ]
 
@@ -511,6 +531,60 @@ console.log(grid.selectedRows)    // [0, 1, 2, 3, 4, 5, 7]
 console.log(grid.getSelectedRowsData())  // Array of row objects
 grid.clearSelection()
 ```
+
+### Cell Range Selection
+
+Select rectangular cell ranges with click+drag, then copy to clipboard:
+
+```javascript
+// Enable cell selection (default is 'click')
+grid.cellSelectionMode = 'click'  // 'disabled' | 'click' | 'shift'
+
+// Selection interactions:
+// - Click+Drag → select rectangular range
+// - Shift+Click → extend range to clicked cell
+// - Escape → clear selection
+
+// Copy settings
+grid.shouldCopyWithHeaders = true  // Include column headers when copying
+
+// Define shortcuts for cell ranges
+grid.rangeShortcuts = [
+  {
+    key: 'Ctrl+C',
+    id: 'copy-cells',
+    label: 'Copy to clipboard',
+    action: async ({ cells, cellRange }) => {
+      if (cellRange) {
+        await grid.copyCellSelectionToClipboard()
+      }
+    }
+  },
+  {
+    key: 'Delete',
+    id: 'clear-cells',
+    label: 'Clear selected cells',
+    action: ({ cells, cellRange }) => {
+      if (!cellRange) return
+      cells.forEach(({ row, field }) => {
+        row[field] = null
+      })
+      grid.items = [...grid.items]
+      grid.clearCellSelection()
+    }
+  }
+]
+
+// Programmatic selection
+grid.selectCellRange({
+  startRowIndex: 0, endRowIndex: 2,
+  startColIndex: 1, endColIndex: 3,
+  startField: 'name', endField: 'salary'
+})
+console.log(grid.getSelectedCells())  // Array of { row, rowIndex, colIndex, field, value }
+```
+
+**Copy format:** Tab-separated values (TSV) compatible with Excel, Google Sheets, etc.
 
 ### Labels/i18n
 

@@ -78,6 +78,11 @@ export type {
 	RangeShortcut,
 	RangeShortcutContext,
 
+	// Cell range selection types
+	CellSelectionMode,
+	CellRange,
+	CellSelectionChangeDetail,
+
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,

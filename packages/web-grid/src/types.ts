@@ -26,6 +26,9 @@ export type EditStartSelection = "mousePosition" | "selectAll" | "cursorAtStart"
 // Fill handle direction mode
 export type FillDirection = "vertical" | "all"
 
+// Cell selection mode - how cell ranges are selected
+export type CellSelectionMode = "disabled" | "click" | "shift"
+
 // Option for select/combobox/autocomplete editors
 export type EditorOption = {
 	value: string | number | boolean
@@ -231,6 +234,12 @@ export type RowChangeDetail<T> = {
 	validationError?: string | null
 }
 
+// Detail passed to oncellselectionchange callback
+export type CellSelectionChangeDetail = {
+	range: CellRange | null
+	cellCount: number
+}
+
 // =============================================================================
 // Row Toolbar Types
 // =============================================================================
@@ -384,10 +393,31 @@ export type RowShortcut<T> = {
 	disabled?: boolean | ((ctx: ShortcutContext<T>) => boolean)
 }
 
-// Context for range shortcuts (multiple selected rows)
+// Selected cell range (rectangular region)
+export type CellRange = {
+	startRowIndex: number
+	startColIndex: number
+	endRowIndex: number
+	endColIndex: number
+	startField: string
+	endField: string
+}
+
+// Context for range shortcuts (multiple selected rows or cell range)
 export type RangeShortcutContext<T> = {
+	// Row selection mode
 	rows: T[]                      // Selected rows (in display order)
 	rowIndices: number[]           // Selected row indices (sorted ascending)
+	
+	// Cell range selection mode (optional, when cellRange is selected)
+	cellRange?: CellRange          // Cell range if selected
+	cells?: Array<{                // Individual cells in range
+		row: T
+		rowIndex: number
+		colIndex: number
+		field: string
+		value: unknown
+	}>
 }
 
 // Range shortcut definition (operates on multiple selected rows)
@@ -506,6 +536,11 @@ export type QuickGridProps<T> = {
 
 	// Fill handle (Excel-like autofill)
 	fillDragCallback?: (detail: FillDragDetail) => boolean | void  // Return false to cancel fill operation
+	
+	// Cell range selection
+	cellSelectionMode?: CellSelectionMode  // How to select cell ranges: 'disabled', 'click' (default), 'shift'
+	shouldCopyWithHeaders?: boolean  // Include column headers when copying cell selection to clipboard (default: false)
+	oncellselectionchange?: (detail: CellSelectionChangeDetail) => void  // Fired when cell selection changes
 }
 
 // =============================================================================
