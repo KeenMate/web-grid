@@ -88,6 +88,15 @@ td.wg__filler {
   font-size: var(--wg-font-size-sm);
 }
 
+/* Select all button (# header) */
+.wg__row-number-header {
+  cursor: pointer;
+}
+
+.wg__row-number-header:hover {
+  background: var(--wg-hover-bg);
+}
+
 .wg__row-number {
   /* Use box-shadow instead of border to avoid flicker during sticky scroll */
   box-shadow: inset -1px 0 0 var(--wg-border-color);

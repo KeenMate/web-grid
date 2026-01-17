@@ -765,3 +765,55 @@ export type FillDragDetail = {
 	targetCells: Array<{ rowIndex: number; colIndex: number; field: string }>
 	direction: 'up' | 'down' | 'left' | 'right'
 }
+
+// =============================================================================
+// Paste Types (Multi-cell paste from Excel/TSV)
+// =============================================================================
+
+/** Paste mode for handling non-editable columns */
+export type PasteMode = 'skip-non-editable' | 'all-columns' | 'editable-only'
+
+/** Column mapping when headers are detected in pasted data */
+export type PasteColumnMapping = {
+	pastedHeader: string    // Header value from clipboard
+	gridField: string       // Matched field in grid column
+	colIndex: number        // Column index in grid
+}
+
+/** Before paste event detail - cancelable, can skip specific cells */
+export type BeforePasteDetail<T> = {
+	rawText: string                        // Original clipboard text
+	parsedRows: string[][]                 // TSV parsed into 2D array
+	hasHeaders: boolean                    // Whether first row was detected as headers
+	headerMapping: PasteColumnMapping[] | null  // Mapping if headers detected
+	targetRowIndex: number                 // Starting row index
+	targetColIndex: number                 // Starting column index (ignored if headers detected)
+	newRowsCount: number                   // Number of new rows that will be created
+	cancel: boolean                        // Set to true to cancel entire paste
+	skipCells: Set<string>                 // Add "row-col" keys to skip specific cells
+}
+
+/** Result for a single pasted cell */
+export type PasteCellResult = {
+	rowIndex: number
+	field: string
+	value: unknown
+	isValid: boolean
+	validationError?: string
+	wasSkipped: boolean
+	skipReason?: 'non-editable' | 'user-canceled' | 'out-of-bounds' | 'locked'
+}
+
+/** After paste event detail */
+export type PasteDetail<T> = {
+	totalCells: number
+	successfulCells: number
+	failedCells: number
+	skippedCells: number
+	newRowsCreated: number
+	cellResults: PasteCellResult[]
+	hadHeaders: boolean
+}
+
+/** Callback to create new rows from pasted data */
+export type CreateRowCallback<T> = (pastedData: Record<string, unknown>, rowIndex: number) => T

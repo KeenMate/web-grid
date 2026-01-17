@@ -46,7 +46,11 @@ import type {
 	RangeShortcutContext,
 	CellSelectionMode,
 	CellRange,
-	CellSelectionChangeDetail
+	CellSelectionChangeDetail,
+	PasteMode,
+	BeforePasteDetail,
+	PasteDetail,
+	CreateRowCallback
 } from './types.js'
 
 // Date formatting utilities for auto-formatting date columns
@@ -245,6 +249,17 @@ export class WebGrid<T = unknown> {
 	protected _lastClickedCell: { rowIndex: number, colIndex: number } | null = null
 	protected _shouldCopyWithHeaders: boolean = false
 	protected _oncellselectionchange: ((detail: CellSelectionChangeDetail) => void) | null = null
+
+	// Column selection state (like row selection, supports non-contiguous)
+	protected _selectedColumns: Set<number> = new Set()
+	protected _lastSelectedColumnIndex: number = -1
+
+	// Paste configuration
+	protected _pasteMode: PasteMode = 'skip-non-editable'
+	protected _shouldValidateOnPaste: boolean = true
+	protected _createRowCallback: CreateRowCallback<T> | undefined = undefined
+	protected _onbeforepaste: ((detail: BeforePasteDetail<T>) => void) | undefined = undefined
+	protected _onpaste: ((detail: PasteDetail<T>) => void) | undefined = undefined
 
 	// ==========================================================================
 	// Public API - Getters/Setters
@@ -838,10 +853,11 @@ export class WebGrid<T = unknown> {
 	}
 
 	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
-		// Clear cell selection when selecting rows
+		// Clear cell and column selection when selecting rows
 		if (this._selectedCellRange) {
 			this._selectedCellRange = null
 		}
+		this._selectedColumns.clear()
 
 		switch (mode) {
 			case 'replace':
@@ -874,6 +890,10 @@ export class WebGrid<T = unknown> {
 	}
 
 	selectRowRange(fromIndex: number, toIndex: number): void {
+		// Clear column selection when selecting rows
+		this._selectedColumns.clear()
+		this._selectedCellRange = null
+
 		this._selectedRows.clear()
 		const start = Math.min(fromIndex, toIndex)
 		const end = Math.max(fromIndex, toIndex)
@@ -941,6 +961,55 @@ export class WebGrid<T = unknown> {
 		}
 	}
 
+	/**
+	 * Copy selected columns to clipboard in TSV format (Excel-compatible)
+	 * @returns true if copy was successful, false if no selection or clipboard failed
+	 */
+	async copySelectedColumnsToClipboard(): Promise<boolean> {
+		const selectedColIndices = this.selectedColumns
+		if (selectedColIndices.length === 0) return false
+
+		const rows: string[] = []
+
+		// Add header row if configured
+		if (this._shouldCopyWithHeaders) {
+			const headerCells: string[] = []
+			for (const colIndex of selectedColIndices) {
+				const vc = this.visualColumns[colIndex]
+				if (!vc) continue
+				const title = vc.column.title ?? vc.column.field ?? ''
+				headerCells.push(String(title))
+			}
+			rows.push(headerCells.join('\t'))
+		}
+
+		// Add data rows (all rows, only selected columns)
+		for (let rowIndex = 0; rowIndex < this.displayItems.length; rowIndex++) {
+			const rowData = this.displayItems[rowIndex]
+			if (!rowData) continue
+
+			const rowCells: string[] = []
+			for (const colIndex of selectedColIndices) {
+				const vc = this.visualColumns[colIndex]
+				if (!vc) continue
+				const field = String(vc.column.field)
+				const value = (rowData as Record<string, unknown>)[field]
+				const cellText = value == null ? '' : String(value)
+				rowCells.push(cellText)
+			}
+			rows.push(rowCells.join('\t'))
+		}
+
+		const tsv = rows.join('\n')
+
+		try {
+			await navigator.clipboard.writeText(tsv)
+			return true
+		} catch {
+			return false
+		}
+	}
+
 	// Cell range selection
 	get cellSelectionMode(): CellSelectionMode { return this._cellSelectionMode }
 	set cellSelectionMode(value: CellSelectionMode) {
@@ -968,12 +1037,29 @@ export class WebGrid<T = unknown> {
 		this._oncellselectionchange = value
 	}
 
+	// Paste properties
+	get pasteMode(): PasteMode { return this._pasteMode }
+	set pasteMode(value: PasteMode) { this._pasteMode = value }
+
+	get shouldValidateOnPaste(): boolean { return this._shouldValidateOnPaste }
+	set shouldValidateOnPaste(value: boolean) { this._shouldValidateOnPaste = value }
+
+	get createRowCallback(): CreateRowCallback<T> | undefined { return this._createRowCallback }
+	set createRowCallback(value: CreateRowCallback<T> | undefined) { this._createRowCallback = value }
+
+	get onbeforepaste(): ((detail: BeforePasteDetail<T>) => void) | undefined { return this._onbeforepaste }
+	set onbeforepaste(value: ((detail: BeforePasteDetail<T>) => void) | undefined) { this._onbeforepaste = value }
+
+	get onpaste(): ((detail: PasteDetail<T>) => void) | undefined { return this._onpaste }
+	set onpaste(value: ((detail: PasteDetail<T>) => void) | undefined) { this._onpaste = value }
+
 	selectCellRange(range: CellRange): void {
-		// Clear row selection when selecting cells
+		// Clear row and column selection when selecting cells
 		if (this._selectedRows.size > 0) {
 			this._selectedRows.clear()
 			this._lastSelectedRowIndex = null
 		}
+		this._selectedColumns.clear()
 
 		this._selectedCellRange = range
 		this.requestUpdate()
@@ -998,6 +1084,91 @@ export class WebGrid<T = unknown> {
 				this._oncellselectionchange({ range: null, cellCount: 0 })
 			}
 		}
+	}
+
+	/**
+	 * Select all cells in the grid (entire visible data range)
+	 */
+	selectAll(): void {
+		const rowCount = this.displayItems.length
+		const colCount = this.visualColumns.length
+
+		if (rowCount === 0 || colCount === 0) return
+
+		const firstCol = this.visualColumns[0]
+		const lastCol = this.visualColumns[colCount - 1]
+
+		const range = {
+			startRowIndex: 0,
+			startColIndex: 0,
+			endRowIndex: rowCount - 1,
+			endColIndex: colCount - 1,
+			startField: String(firstCol.column.field),
+			endField: String(lastCol.column.field)
+		}
+
+		this.selectCellRange(range)
+	}
+
+	/**
+	 * Select column(s) - similar to selectRow but for columns
+	 * @param colIndex - Column index to select
+	 * @param mode - 'replace' (default), 'toggle', or 'range'
+	 */
+	selectColumn(colIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
+		const colCount = this.visualColumns.length
+		if (colIndex < 0 || colIndex >= colCount) return
+
+		// Clear row selection and cell range when selecting columns
+		this._selectedRows.clear()
+		this._selectedCellRange = null
+
+		if (mode === 'replace') {
+			this._selectedColumns.clear()
+			this._selectedColumns.add(colIndex)
+			this._lastSelectedColumnIndex = colIndex
+		} else if (mode === 'toggle') {
+			if (this._selectedColumns.has(colIndex)) {
+				this._selectedColumns.delete(colIndex)
+			} else {
+				this._selectedColumns.add(colIndex)
+			}
+			this._lastSelectedColumnIndex = colIndex
+		} else if (mode === 'range') {
+			// Select range from last selected column to this one
+			const fromCol = this._lastSelectedColumnIndex >= 0 ? this._lastSelectedColumnIndex : colIndex
+			const minCol = Math.min(fromCol, colIndex)
+			const maxCol = Math.max(fromCol, colIndex)
+			for (let i = minCol; i <= maxCol; i++) {
+				this._selectedColumns.add(i)
+			}
+			// Don't update lastSelectedColumnIndex for range - keep the anchor
+		}
+
+		this.requestUpdate()
+	}
+
+	/**
+	 * Clear column selection
+	 */
+	clearColumnSelection(): void {
+		this._selectedColumns.clear()
+		this._lastSelectedColumnIndex = -1
+		this.requestUpdate()
+	}
+
+	/**
+	 * Get selected column indices (sorted)
+	 */
+	get selectedColumns(): number[] {
+		return Array.from(this._selectedColumns).sort((a, b) => a - b)
+	}
+
+	/**
+	 * Check if a column is selected
+	 */
+	isColumnSelected(colIndex: number): boolean {
+		return this._selectedColumns.has(colIndex)
 	}
 
 	getSelectedCells(): Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }> {

@@ -90,11 +90,15 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 		const isFrozen = ctx.grid.isColumnFrozen(visualIndex)
 		const isLastFrozen = isFrozen && visualIndex === ctx.grid.totalFrozenColumns - 1
 
+		// Check if column is selected
+		const isColumnSelected = ctx.grid.isColumnSelected(visualIndex)
+
 		const classes = ['wg__header']
 		if (isSortable) classes.push('wg__header--sortable')
 		if (isSorted) classes.push('wg__header--sorted')
 		if (isFrozen) classes.push('wg__header--frozen')
 		if (isLastFrozen) classes.push('wg__header--frozen-last')
+		if (isColumnSelected) classes.push('wg__header--selected')
 
 		// Calculate column width for offset tracking
 		// Use runtime width override if set (from column resize), otherwise column definition
@@ -265,6 +269,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			if (isEditingThisCell) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
 			if (ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
+			if (ctx.grid.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
 			if (isFrozen) classes.push('wg__cell--frozen')
 			if (isLastFrozen) classes.push('wg__cell--frozen-last')
 			if (column.cellClass) classes.push(column.cellClass)
@@ -553,6 +558,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			if (isEditingThisCell) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
 			if (ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
+			if (ctx.grid.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
 			if (isFrozen) classes.push('wg__cell--frozen')
 			if (isLastFrozen) classes.push('wg__cell--frozen-last')
 			if (column.cellClass) classes.push(column.cellClass)

@@ -63,6 +63,7 @@ export function renderCell<T>(
 	if (isEditing) classes.push('wg__cell--editing')
 	if (isInvalid) classes.push('wg__cell--invalid')
 	if (visualIndex >= 0 && ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
+	if (visualIndex >= 0 && ctx.grid.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
 	if (isFrozen) classes.push('wg__cell--frozen')
 	if (isLastFrozen) classes.push('wg__cell--frozen-last')
 	if (column.cellClass) classes.push(column.cellClass)

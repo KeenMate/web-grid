@@ -83,6 +83,14 @@ export type {
 	CellRange,
 	CellSelectionChangeDetail,
 
+	// Paste types
+	PasteMode,
+	PasteColumnMapping,
+	BeforePasteDetail,
+	PasteCellResult,
+	PasteDetail,
+	CreateRowCallback,
+
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,

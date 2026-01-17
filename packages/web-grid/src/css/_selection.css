@@ -29,6 +29,16 @@
   background: var(--wg-selection-row-number-bg);
 }
 
+/* =============================================================================
+   COLUMN SELECTION STYLES
+   Column selection via header clicks (similar to row selection)
+   ============================================================================= */
+
+/* Selected column cells - same background as row selection */
+.wg__cell--column-selected {
+  background: var(--wg-selection-bg);
+}
+
 /* Container state during drag selection */
 .wg--selecting {
   cursor: default;

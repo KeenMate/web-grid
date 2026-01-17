@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Paste from clipboard**: Multi-cell paste from Excel/TSV clipboard data
+  - Automatically detects TSV format (tabs, newlines) from clipboard
+  - **Header detection**: If first row matches column titles/fields (>50%), maps data by column name
+  - **Position-based paste**: Without headers, pastes starting from focused cell position
+  - **New row creation**: Automatically creates rows when pasting beyond existing data
+  - `createRowCallback` - Custom row factory for new rows (default: plain object with pasted values)
+  - `pasteMode` property - How to handle non-editable columns:
+    - `'skip-non-editable'` (default) - Skip non-editable cells
+    - `'all-columns'` - Paste into all columns regardless of editable flag
+    - `'editable-only'` - Only paste if all target columns are editable
+  - `shouldValidateOnPaste` property - Run validation on pasted values (default: true)
+  - `onbeforepaste` event - Cancel or modify paste operation before it executes
+  - `onpaste` event - Summary after paste completes with success/failure counts
+  - Respects column `beforePasteCallback` for value transformation
+  - Respects row locking - locked rows are skipped
+
+- **Select All**: Click the `#` row number header to select all cells in the grid
+  - `selectAll()` method for programmatic selection
+  - Visual feedback: cursor changes to pointer, hover highlight on header
+
+- **Column Selection**: Click column headers to select entire columns (like row selection)
+  - `selectColumn(colIndex, mode)` method - modes: 'replace', 'toggle', 'range'
+  - `isColumnSelected(colIndex)` method to check selection state
+  - `selectedColumns` getter returns sorted array of selected column indices
+  - `clearColumnSelection()` method
+  - `copySelectedColumnsToClipboard()` method - copy all rows for selected columns
+  - Click header = select single column (replaces previous)
+  - Ctrl+Click = toggle individual columns (non-contiguous selection)
+  - Shift+Click = select range from last clicked column
+  - Escape = clear column selection
+  - Ctrl+C = copy selected columns to clipboard
+  - Visual: selected headers get accent background (like row numbers), cells get selection background
+  - No border (matches row selection visual style)
+  - Sort moved to sort indicator only (▲/▼/⬍) - clicking header body selects column
+  - Mutual exclusivity: row, column, and cell range selections clear each other
+
+---
+
 ## [1.0.0-rc11] - 2026-01-16
 
 ### Added

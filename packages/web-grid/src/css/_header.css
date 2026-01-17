@@ -39,6 +39,16 @@
   background: var(--wg-header-bg-sorted);
 }
 
+.wg__header--selected {
+  background: var(--wg-selection-row-number-bg);
+  color: var(--wg-selection-row-number-color);
+}
+
+.wg__header--selected:hover {
+  background: var(--wg-selection-row-number-bg);
+  color: var(--wg-selection-row-number-color);
+}
+
 /* Header Container - flex layout for content + controls */
 .wg__header-container {
   display: flex;

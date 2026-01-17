@@ -14,10 +14,21 @@
             <p class="subtitle">Multi-row and cell range selection with keyboard shortcuts</p>
         </header>
 
-        <!-- EXAMPLE 1: Row Selection -->
+        <!-- Global Controls -->
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <span style="font-weight: 600;">Global Copy Settings:</span>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="globalCopyWithHeaders" style="width: 18px; height: 18px; cursor: pointer;">
+                    <span>Copy with headers (Ctrl+C includes column names)</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- EXAMPLE 1: Row/Column Selection Only -->
         <div class="card">
-            <h2>Row Selection</h2>
-            <p>Click row numbers to select entire rows. Use Ctrl+Click to toggle, Shift+Click for range, or drag to select multiple.</p>
+            <h2>Row/Column Selection Only</h2>
+            <p>Cell selection is disabled. Select entire rows via row numbers, or entire columns via Ctrl+Click on headers.</p>
 
             <web-grid id="grid-row-selection" style="max-width: 100%; max-height: 400px;"></web-grid>
 
@@ -26,16 +37,22 @@
             </div>
 
             <div class="note" style="margin-top: 1rem;">
-                <div class="note-title">Row Selection Controls</div>
+                <div class="note-title">Row/Column Selection Controls</div>
                 <ul>
                     <li><strong>Click</strong> row number - Select single row (clears others)</li>
-                    <li><strong>Ctrl+Click</strong> - Toggle row in selection</li>
-                    <li><strong>Shift+Click</strong> - Select range from last selected</li>
+                    <li><strong>Ctrl+Click</strong> row number - Toggle row in selection</li>
+                    <li><strong>Shift+Click</strong> row number - Select range from last selected</li>
                     <li><strong>Click+Drag</strong> on row numbers - Select range while dragging</li>
+                    <li><strong>Click #</strong> (top-left) - Select all cells</li>
+                    <li><strong>Click</strong> column header - Select entire column</li>
+                    <li><strong>Ctrl+Click</strong> column header - Toggle column (non-contiguous)</li>
+                    <li><strong>Shift+Click</strong> column header - Select range from last clicked</li>
+                    <li><strong>Click sort indicator</strong> (▲/▼) - Sort by column</li>
                     <li><strong>Escape</strong> - Clear selection</li>
                     <li><strong>Delete</strong> - Delete selected rows</li>
-                    <li><strong>Ctrl+C</strong> - Copy selected rows to clipboard</li>
+                    <li><strong>Ctrl+C</strong> - Copy selection to clipboard</li>
                 </ul>
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>cellSelectionMode: 'disabled'  // No cell range selection</code></pre>
             </div>
         </div>
 
@@ -75,9 +92,6 @@
                 </label>
                 <label>
                     <input type="checkbox" id="clickIsHoverable" checked> isHoverable
-                </label>
-                <label>
-                    <input type="checkbox" id="clickCopyWithHeaders"> Copy with headers
                 </label>
             </div>
 
@@ -282,7 +296,7 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
         ]
 
         // =================================================================
-        // EXAMPLE 1: Row Selection
+        // EXAMPLE 1: Row/Column Selection Only (cell selection disabled)
         // =================================================================
         const gridRowSelection = document.getElementById('grid-row-selection')
         gridRowSelection.items = createSampleData()
@@ -290,6 +304,9 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
         gridRowSelection.isRowNumbersVisible = true
         gridRowSelection.isHoverable = true
         gridRowSelection.mode = 'navigate'
+        gridRowSelection.cellSelectionMode = 'disabled'  // No cell drag selection, only row/column selection
+        gridRowSelection.sortMode = 'multi'
+        gridRowSelection.isColumnReorderAllowed = true
 
         gridRowSelection.rangeShortcuts = [
             {
@@ -340,6 +357,8 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
         gridCellRangeClick.items = createSampleData()
         gridCellRangeClick.columns = columns
         gridCellRangeClick.isRowNumbersVisible = true
+        gridCellRangeClick.sortMode = 'multi'
+        gridCellRangeClick.isColumnReorderAllowed = true
 
         // LocalStorage key for this example
         const STORAGE_KEY = 'webgrid-cell-range-example-settings'
@@ -463,10 +482,6 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
             console.log('isHoverable changed to:', e.target.checked)
         })
 
-        document.getElementById('clickCopyWithHeaders').addEventListener('change', (e) => {
-            gridCellRangeClick.shouldCopyWithHeaders = e.target.checked
-        })
-
         setInterval(() => {
             const log = document.getElementById('cellRangeClickLog')
             const range = gridCellRangeClick.selectedCellRange
@@ -488,6 +503,8 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
         gridCellRangeShift.isHoverable = true
         gridCellRangeShift.editTrigger = 'click'
         gridCellRangeShift.cellSelectionMode = 'shift'
+        gridCellRangeShift.sortMode = 'multi'
+        gridCellRangeShift.isColumnReorderAllowed = true
 
         gridCellRangeShift.rangeShortcuts = [
             {
@@ -551,6 +568,8 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
         gridRangeShortcuts.isHoverable = true
         gridRangeShortcuts.mode = 'navigate'
         gridRangeShortcuts.cellSelectionMode = 'click'
+        gridRangeShortcuts.sortMode = 'multi'
+        gridRangeShortcuts.isColumnReorderAllowed = true
 
         gridRangeShortcuts.rangeShortcuts = [
             {
@@ -634,7 +653,7 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
             const log = document.getElementById('rangeShortcutsLog')
             const cellRange = gridRangeShortcuts.selectedCellRange
             const selectedRows = gridRangeShortcuts.selectedRows
-            
+
             if (cellRange) {
                 const cells = gridRangeShortcuts.getSelectedCells()
                 log.innerHTML = `<strong>Cell Range:</strong> ${cells.length} cell(s) selected - Try Ctrl+C, Delete, Ctrl+Alt+E, or Ctrl+Alt+S`
@@ -645,6 +664,19 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
                 log.textContent = 'Select rows (click row numbers) or cells (click+drag on cells)...'
             }
         }, 100)
+
+        // =================================================================
+        // Global Copy With Headers Setting
+        // =================================================================
+        const allGrids = [gridRowSelection, gridCellRangeClick, gridCellRangeShift, gridRangeShortcuts]
+
+        document.getElementById('globalCopyWithHeaders').addEventListener('change', (e) => {
+            const withHeaders = e.target.checked
+            allGrids.forEach(grid => {
+                grid.shouldCopyWithHeaders = withHeaders
+            })
+            console.log('Copy with headers:', withHeaders)
+        })
     </script>
 </body>
 </html>

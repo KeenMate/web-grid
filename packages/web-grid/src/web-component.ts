@@ -164,6 +164,8 @@ import {
 	removeRangeBorder
 } from './modules/cell-selection/index.js'
 
+import { executePaste } from './modules/paste/index.js'
+
 import type { GridContext } from './modules/types.js'
 
 /**
@@ -849,8 +851,16 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		const editableCols = this.grid.getEditableColumns()
 		const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
 
-		// Ctrl+C - Copy cell value to clipboard
+		// Ctrl+C - Copy to clipboard
 		if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+			// If cell range is selected, copy the entire range
+			if (this.grid.selectedCellRange) {
+				e.preventDefault()
+				this.grid.copyCellSelectionToClipboard()
+				return
+			}
+
+			// Otherwise copy single cell value
 			const column = columns[colIndex]
 			const row = displayItems[rowIndex]
 			if (column && row) {
@@ -1834,6 +1844,23 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 			}
 
+			// Select all: handle click on row number header (#)
+			const rowNumberHeader = target.closest('.wg__row-number-header') as HTMLElement
+			if (rowNumberHeader) {
+				e.preventDefault()
+				this.grid.selectAll()
+				// Update the range border visual
+				if (this.grid.selectedCellRange) {
+					createRangeBorder(this)
+				}
+				this.render()
+				// Focus container so Ctrl+C works
+				requestAnimationFrame(() => {
+					const container = this.shadow.querySelector('.wg') as HTMLElement
+					container?.focus({ preventScroll: true })
+				})
+			}
+
 			// Clear cell selection if clicking outside interactive elements
 			if (!target.closest('.wg__cell, .wg__row-number, .wg__header, .wg__toolbar, button, input, select, textarea')) {
 				if (this.grid.selectedCellRange) {
@@ -1843,18 +1870,57 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Header click for sorting
+		// Header click for sorting (sort indicator) or column selection (header body)
 		table.addEventListener('click', (e: Event) => {
 			const mouseEvent = e as MouseEvent
 			const target = mouseEvent.target as HTMLElement
+
 			// Skip if clicking on resize handle
 			if (target.closest('.wg__resize-handle')) return
 			// Skip if reordering was just performed (prevents sort on drop)
 			if (isReordering()) return
-			const header = target.closest('.wg__header--sortable') as HTMLElement
+
+			// Click on sort indicator = sorting
+			const sortIndicator = target.closest('.wg__sort-indicator') as HTMLElement
+			if (sortIndicator) {
+				const header = sortIndicator.closest('.wg__header--sortable') as HTMLElement
+				if (header) {
+					handleSortClick(this, mouseEvent)
+					this.render()
+				}
+				return
+			}
+
+			// Click on header (not sort indicator) = column selection
+			const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
 			if (header) {
-				handleSortClick(this, mouseEvent)
+				e.preventDefault()
+				const field = header.dataset.field
+				if (!field) return
+
+				// Find visual column index
+				const colIndex = this.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
+				if (colIndex === -1) return
+
+				// Remove any existing cell range border (column selection doesn't use border)
+				removeRangeBorder()
+
+				// Ctrl = toggle individual column, Shift = range, plain = replace
+				if (mouseEvent.ctrlKey || mouseEvent.metaKey) {
+					this.grid.selectColumn(colIndex, 'toggle')
+				} else if (mouseEvent.shiftKey) {
+					this.grid.selectColumn(colIndex, 'range')
+				} else {
+					this.grid.selectColumn(colIndex, 'replace')
+				}
+
 				this.render()
+
+				// Focus container for keyboard shortcuts
+				requestAnimationFrame(() => {
+					const container = this.shadow.querySelector('.wg') as HTMLElement
+					container?.focus({ preventScroll: true })
+				})
 			}
 		})
 
@@ -1912,11 +1978,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			// Make container focusable for keyboard events when rows are selected
 			container.setAttribute('tabindex', '-1')
 
-			// Range shortcuts - handle keyboard shortcuts for selected rows or cell ranges
+			// Range shortcuts - handle keyboard shortcuts for selected rows, columns, or cell ranges
 			container.addEventListener('keydown', (e: KeyboardEvent) => {
 				const selectedRowIndices = this.grid.selectedRows
+				const selectedColIndices = this.grid.selectedColumns
 				const hasCellRange = !!this.grid.selectedCellRange
-				if (selectedRowIndices.length === 0 && !hasCellRange) return
+				if (selectedRowIndices.length === 0 && selectedColIndices.length === 0 && !hasCellRange) return
 
 				// Skip if focus is in an input
 				const target = e.target as HTMLElement
@@ -1924,14 +1991,29 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					return
 				}
 
-				// Handle Escape to clear selection (cell range takes priority)
+				// Handle Escape to clear selection (cell range > column > row priority)
 				if (e.key === 'Escape') {
 					e.preventDefault()
 					if (this.grid.selectedCellRange) {
 						this.grid.clearCellSelection()
 						removeRangeBorder()
+					} else if (selectedColIndices.length > 0) {
+						this.grid.clearColumnSelection()
 					} else {
 						this.grid.clearSelection()
+					}
+					return
+				}
+
+				// Handle Ctrl+C to copy selection (built-in, works without rangeShortcuts)
+				if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+					e.preventDefault()
+					if (hasCellRange) {
+						this.grid.copyCellSelectionToClipboard()
+					} else if (selectedColIndices.length > 0) {
+						this.grid.copySelectedColumnsToClipboard()
+					} else if (selectedRowIndices.length > 0) {
+						this.grid.copySelectedRowsToClipboard()
 					}
 					return
 				}
@@ -3683,31 +3765,45 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	/**
 	 * Handle paste event in navigate mode
+	 * Supports single-cell paste and multi-cell TSV paste from Excel
 	 */
-	private handlePaste = (e: ClipboardEvent): void => {
+	private handlePaste = async (e: ClipboardEvent): Promise<void> => {
 		// Only in navigate mode with focused cell, not while editing
 		if (!this.grid.isNavigateMode || this.grid.editingCell || !this.grid.focusedCell) return
 
 		const { rowIndex, colIndex } = this.grid.focusedCell
-		const column = this.grid.columns[colIndex]
-		const row = this.grid.displayItems[rowIndex]
-		if (!column || !row) return
+		const text = e.clipboardData?.getData('text') || ''
+		if (!text) return
 
-		// Check if cell is editable
-		if (!this.grid.isCellEditable(column)) return
+		// Check if this is multi-cell paste (contains tabs or multiple lines)
+		const isMultiCell = text.includes('\t') || text.includes('\n')
 
-		e.preventDefault()
+		if (isMultiCell) {
+			// Multi-cell paste - use paste module
+			e.preventDefault()
+			await executePaste(this, text, rowIndex, colIndex)
+			this.render()
+		} else {
+			// Single cell paste - original behavior
+			const column = this.grid.columns[colIndex]
+			const row = this.grid.displayItems[rowIndex]
+			if (!column || !row) return
 
-		let text = e.clipboardData?.getData('text') || ''
-		if (column.beforePasteCallback) {
-			const result = column.beforePasteCallback(text, row)
-			text = result != null ? String(result) : ''
+			// Check if cell is editable
+			if (!this.grid.isCellEditable(column)) return
+
+			e.preventDefault()
+
+			let processedText: unknown = text
+			if (column.beforePasteCallback) {
+				processedText = column.beforePasteCallback(text, row)
+			}
+
+			// Commit the pasted value
+			const field = String(column.field)
+			await this.grid.commitEdit(rowIndex, field, processedText)
+			this.render()
 		}
-
-		// Commit the pasted value
-		const field = String(column.field)
-		this.grid.commitEdit(rowIndex, field, text)
-		this.render()
 	}
 }
 
