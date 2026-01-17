@@ -208,6 +208,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	// Flag to track if toolbar outside click listener has been added
 	private toolbarOutsideClickAdded = false
+	private selectionOutsideClickAdded = false
 
 	// Flag to prevent mouseleave from closing toolbar during move actions
 	private toolbarMoveInProgress = false
@@ -1861,11 +1862,40 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				})
 			}
 
-			// Clear cell selection if clicking outside interactive elements
+			// Clear row/column selection when clicking on cells (not row numbers or headers)
+			if (target.closest('.wg__cell') && !target.closest('.wg__row-number, .wg__header')) {
+				let needsRender = false
+				if (this.grid.selectedRows.length > 0) {
+					this.grid.clearSelection()
+					needsRender = true
+				}
+				if (this.grid.selectedColumns.length > 0) {
+					this.grid.clearColumnSelection()
+					needsRender = true
+				}
+				if (needsRender) {
+					this.render()
+				}
+			}
+
+			// Clear all selections if clicking outside interactive elements (empty areas)
 			if (!target.closest('.wg__cell, .wg__row-number, .wg__header, .wg__toolbar, button, input, select, textarea')) {
+				let needsRender = false
 				if (this.grid.selectedCellRange) {
 					this.grid.clearCellSelection()
 					removeRangeBorder()
+					needsRender = true
+				}
+				if (this.grid.selectedRows.length > 0) {
+					this.grid.clearSelection()
+					needsRender = true
+				}
+				if (this.grid.selectedColumns.length > 0) {
+					this.grid.clearColumnSelection()
+					needsRender = true
+				}
+				if (needsRender) {
+					this.render()
 				}
 			}
 		})
@@ -2286,6 +2316,35 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (getActiveToolbarRowIndex() !== null) {
 					this.closeToolbarAndReset()
 					// No render() needed - closeToolbar() surgically removes toolbar
+				}
+			})
+		}
+
+		// Clear selection on outside click
+		if (!this.selectionOutsideClickAdded) {
+			this.selectionOutsideClickAdded = true
+			document.addEventListener('click', (e: MouseEvent) => {
+				// Check if click is inside this grid's shadow DOM
+				const path = e.composedPath()
+				if (path.includes(this)) return  // Click was inside our element
+
+				// Clear all selections
+				let needsRender = false
+				if (this.grid.selectedCellRange) {
+					this.grid.clearCellSelection()
+					removeRangeBorder()
+					needsRender = true
+				}
+				if (this.grid.selectedRows.length > 0) {
+					this.grid.clearSelection()
+					needsRender = true
+				}
+				if (this.grid.selectedColumns.length > 0) {
+					this.grid.clearColumnSelection()
+					needsRender = true
+				}
+				if (needsRender) {
+					this.render()
 				}
 			})
 		}

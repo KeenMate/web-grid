@@ -9,7 +9,8 @@
 }
 
 /* Selected row number cell - accent colored */
-.wg__row--selected > .wg__row-number {
+.wg__row--selected > .wg__cell.wg__row-number,
+.wg--navigate-mode .wg__row--selected > .wg__cell.wg__row-number {
   background: var(--wg-selection-row-number-bg);
   color: var(--wg-selection-row-number-color);
 }
@@ -25,8 +26,10 @@
 }
 
 /* When already selected, hover doesn't change background */
-.wg__row--selected > .wg__row-number:hover {
+.wg__row--selected > .wg__cell.wg__row-number:hover,
+.wg--navigate-mode .wg__row--selected > .wg__cell.wg__row-number:hover {
   background: var(--wg-selection-row-number-bg);
+  color: var(--wg-selection-row-number-color);
 }
 
 /* =============================================================================

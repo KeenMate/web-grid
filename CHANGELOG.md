@@ -45,6 +45,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Sort moved to sort indicator only (▲/▼/⬍) - clicking header body selects column
   - Mutual exclusivity: row, column, and cell range selections clear each other
 
+### Fixed
+
+- **Column selection after reorder**: Fixed issue where clicking a column header after reordering required two clicks. The `dragJustCompleted` flag now auto-clears after the current frame.
+- **Selected header hover state**: Fixed unreadable text when hovering over selected column headers (gray background + white text). Selected headers now maintain accent styling on hover.
+- **Selection clearing on click**: Row and column selections now clear when clicking on data cells or clicking outside the grid. Clicking row numbers preserves row selection, clicking headers preserves column selection.
+- **Selected row number styling in navigate mode**: Fixed selected row numbers not showing correct colors (white text on accent background) when using `editTrigger: 'navigate'`. Increased CSS specificity to ensure selection styles win.
+
 ---
 
 ## [1.0.0-rc11] - 2026-01-16

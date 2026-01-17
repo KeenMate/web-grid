@@ -336,7 +336,12 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	}
 
 	// Set flag to block the subsequent click event from triggering sort
+	// Use requestAnimationFrame to auto-clear after the current frame,
+	// so it only blocks the immediate click, not subsequent manual clicks
 	dragJustCompleted = true
+	requestAnimationFrame(() => {
+		dragJustCompleted = false
+	})
 
 	// Clean up
 	cleanup(ctx)
