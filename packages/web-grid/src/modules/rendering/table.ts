@@ -43,6 +43,7 @@ export function getContainerClasses<T>(ctx: GridContext<T>): string {
 	if (ctx.grid.isEditable) classes.push('wg--editable')
 	if (ctx.grid.isNavigateMode) classes.push('wg--navigate-mode')
 	if (ctx.grid.isColumnReorderAllowed) classes.push('wg--reorderable')
+	if (ctx.grid.isScrollable) classes.push('wg--scrollable')
 	return classes.join(' ')
 }
 

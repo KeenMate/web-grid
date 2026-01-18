@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Scroll behavior properties**: New `isScrollable` and `scrollMaxHeight` properties for grids without a height-constrained container
+  - `isScrollable: boolean` - When `true`, constrains grid to viewport height (default: `false`)
+  - `scrollMaxHeight: string` - Custom max-height when scrollable (default: `'100vh'`)
+  - Use when grid is not inside a container with explicit `max-height` but still needs to scroll
+
 - **Paste from clipboard**: Multi-cell paste from Excel/TSV clipboard data
   - Automatically detects TSV format (tabs, newlines) from clipboard
   - **Header detection**: If first row matches column titles/fields (>50%), maps data by column name
@@ -92,6 +97,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cell selection not cleared on sort**: Fixed cell selection remaining visible after clicking sort indicator. Now clears cell selection before sorting, matching behavior of other header interactions like column selection.
 - **Selection not cleared on date picker open**: Fixed row/column/cell selections remaining visible when opening a date picker. All selections and borders are now cleared when the date picker opens.
 - **Selection not cleared on resize/reorder**: Fixed row/column/cell selections remaining visible when starting column resize or reorder operations. Added `clearAllSelections()` helper method that clears all selection types and their visual borders.
+- **Selection not clearing on first outside click after drag**: Fixed cell/row/column selections requiring two clicks outside the grid to clear after drag-selecting. The `insideGridClickInProgress` flag was set on mousedown but only cleared on click - drag operations (mousedown → mousemove → mouseup) don't produce a click event, leaving the flag stuck. Added mouseup handler with 10ms timeout to clear the flag after drags.
+- **Blur and outsideClick handlers conflicting**: Fixed race condition where blur handlers and outsideClick handler both tried to handle cleanup when clicking outside the grid, causing inconsistent state. Blur handler now checks if focus is leaving the grid entirely (`relatedTarget` is null or outside shadow DOM) and defers all cleanup to the outsideClick handler in that case.
 
 ---
 

@@ -505,6 +505,9 @@ export type QuickGridProps<T> = {
 	isShortcutsHelpVisible?: boolean              // Show info icon (default: false)
 	shortcutsHelpPosition?: 'top-right' | 'top-left'  // Icon position (default: 'top-right')
 	shortcutsHelpContentCallback?: () => string   // Custom HTML to show with shortcuts list
+	// Scroll behavior
+	isScrollable?: boolean               // Enable scroll container with max-height: 100vh (default: false)
+	scrollMaxHeight?: string             // Custom max-height when isScrollable is true (default: '100vh')
 	// Virtual scroll
 	isVirtualScrollEnabled?: boolean     // Enable virtual scroll (default: false)
 	virtualScrollThreshold?: number      // Auto-enable when items >= threshold (default: 100)

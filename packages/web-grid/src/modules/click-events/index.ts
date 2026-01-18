@@ -79,6 +79,18 @@ export function createClickEventManager(): ClickEventManager {
 		return false
 	}
 
+	// Host element mouseup handler - clears the flag if no click follows (e.g., after drag)
+	const handleHostMouseup = () => {
+		// Clear the flag after a very short delay to allow click event to fire first
+		// Click fires within ~5ms of mouseup, so 10ms is safe
+		// If it was a drag (no click), this ensures the flag gets cleared
+		setTimeout(() => {
+			if (insideGridClickInProgress) {
+				insideGridClickInProgress = false
+			}
+		}, 10)
+	}
+
 	// Host element mousedown handler - detects clicks inside the grid
 	// Uses host element (not container) so it survives render() calls
 	const handleHostMousedown = (e: Event) => {
@@ -178,6 +190,7 @@ export function createClickEventManager(): ClickEventManager {
 			// Listen for mousedown on HOST element (not container)
 			// This survives render() calls which replace the container
 			hostElement.addEventListener('mousedown', handleHostMousedown)
+			hostElement.addEventListener('mouseup', handleHostMouseup)
 
 			// Listen for clicks on document (for outside-grid detection)
 			if (!documentListenerAttached) {
@@ -189,6 +202,7 @@ export function createClickEventManager(): ClickEventManager {
 		destroy() {
 			if (hostElementRef) {
 				hostElementRef.removeEventListener('mousedown', handleHostMousedown)
+				hostElementRef.removeEventListener('mouseup', handleHostMouseup)
 			}
 
 			if (documentListenerAttached) {

@@ -211,6 +211,10 @@ export class WebGrid<T = unknown> {
 	// Labels/i18n
 	protected _labels: GridLabels = { ...DEFAULT_LABELS }
 
+	// Scroll behavior
+	protected _isScrollable: boolean = false
+	protected _scrollMaxHeight: string = '100vh'
+
 	// Virtual scroll
 	protected _isVirtualScrollEnabled: boolean = false
 	protected _virtualScrollThreshold: number = 100
@@ -658,6 +662,19 @@ export class WebGrid<T = unknown> {
 	get labels(): GridLabels { return this._labels }
 	set labels(value: Partial<GridLabels>) {
 		this._labels = { ...DEFAULT_LABELS, ...value }
+		this.requestUpdate()
+	}
+
+	// Scroll behavior
+	get isScrollable(): boolean { return this._isScrollable }
+	set isScrollable(value: boolean) {
+		this._isScrollable = value
+		this.requestUpdate()
+	}
+
+	get scrollMaxHeight(): string { return this._scrollMaxHeight }
+	set scrollMaxHeight(value: string) {
+		this._scrollMaxHeight = value
 		this.requestUpdate()
 	}
 

@@ -692,6 +692,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get fillDragCallback(): ((detail: FillDragDetail) => boolean | void) | undefined { return this.grid.fillDragCallback }
 	set fillDragCallback(value: ((detail: FillDragDetail) => boolean | void) | undefined) { this.grid.fillDragCallback = value }
 
+	// Scroll behavior
+	get isScrollable(): boolean { return this.grid.isScrollable }
+	set isScrollable(value: boolean) { this.grid.isScrollable = value }
+
+	get scrollMaxHeight(): string { return this.grid.scrollMaxHeight }
+	set scrollMaxHeight(value: string) { this.grid.scrollMaxHeight = value }
+
 	// Virtual scroll
 	get isVirtualScrollEnabled(): boolean { return this.grid.isVirtualScrollEnabled }
 	set isVirtualScrollEnabled(value: boolean) { this.grid.isVirtualScrollEnabled = value }
@@ -2043,15 +2050,15 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Only subscribe once (attachEventListeners is called on every render)
 		if (!this.focusEventsSubscribed) {
 			this.focusEvents.subscribe('blur', (target, relatedTarget) => {
-				console.log('[blur] event on', target.className, {
-					focusedCell: this.grid.focusedCell,
-					editingCell: this.grid.editingCell,
-					dropdownOpen: this.dropdownOpen,
-					shouldSkip: this.focusEvents.shouldSkipBlur(),
-					relatedTarget: relatedTarget?.className
-				})
 				// Use unified guard check
 				if (this.focusEvents.shouldSkipBlur()) return
+
+				// If focus is leaving the grid entirely, let outsideClick handle ALL cleanup
+				// This prevents blur and outsideClick from racing/conflicting
+				const isLeavingGrid = !relatedTarget || !this.shadow.contains(relatedTarget)
+				if (isLeavingGrid) return
+
+				// Handle INTERNAL focus changes only (moving between cells/editors within grid)
 
 				// Text/number editors
 				if (target.matches('.wg__editor--text, .wg__editor--number')) {
@@ -2065,12 +2072,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 				// Select trigger
 				else if (target.matches('.wg__select-trigger')) {
-					console.log('[blur] calling handleSelectBlur', { relatedTarget: relatedTarget?.className })
 					this.handleSelectBlur(relatedTarget)
 				}
 				// Combobox/autocomplete
 				else if (target.matches('.wg__combobox-input, .wg__autocomplete-input')) {
-					console.log('[blur] calling handleComboboxBlur')
 					this.handleComboboxBlur(target as HTMLInputElement)
 				}
 			})
@@ -2215,11 +2220,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 				// Clear selections, focus, and close editors when clicking outside the grid
 				this.clickEvents.subscribe('outsideClick', () => {
-					console.log('[outsideClick] triggered', {
-						focusedCell: this.grid.focusedCell,
-						editingCell: this.grid.editingCell,
-						dropdownOpen: this.dropdownOpen
-					})
 					let needsRender = false
 
 					// Clear focused cell state FIRST (before renderCell rebuilds it with focused class)
@@ -2228,11 +2228,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						const cell = this.shadow.querySelector(
 							`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
 						)
-						console.log('[outsideClick] clearing focused cell', { rowIndex, colIndex, cellFound: !!cell })
 						cell?.classList.remove('wg__cell--focused')
 						this.grid.clearFocusedCell()
-					} else {
-						console.log('[outsideClick] no focused cell to clear')
 					}
 
 					// Close dropdown and cancel edit if editing
@@ -2242,18 +2239,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
 							: -1
 
-						console.log('[outsideClick] closing dropdown/edit', { oldEditingCell, oldColIndex })
 						removeDropdown(this)
 						clearEditingVisual(this)
 						this.grid.cancelEdit()
 
 						// Re-render old cell to restore display mode (now without focused class)
 						if (oldEditingCell && oldColIndex >= 0) {
-							console.log('[outsideClick] re-rendering cell', { rowIndex: oldEditingCell.rowIndex, colIndex: oldColIndex })
 							renderCell(this, oldEditingCell.rowIndex, oldColIndex)
 						}
-					} else {
-						console.log('[outsideClick] no dropdown/edit to close')
 					}
 
 					if (this.grid.selectedCellRange) {
@@ -2691,6 +2684,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Create the container
 		const container = document.createElement('div')
 		container.className = getContainerClasses(this)
+
+		// Set scroll max-height CSS variable if scrollable mode is enabled
+		if (this.grid.isScrollable && this.grid.scrollMaxHeight !== '100vh') {
+			container.style.setProperty('--wg-scroll-max-height', this.grid.scrollMaxHeight)
+		}
 
 		// Parse pagination positions (e.g., "bottom-center" or "top-right|bottom-right")
 		const paginationPositions = this.grid.paginationPosition.split('|').map(p => p.trim())
@@ -3863,25 +3861,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Handle select trigger blur - cancel edit and restore display mode
 	 */
 	private handleSelectBlur(relatedTarget: HTMLElement | null): void {
-		console.log('[handleSelectBlur] called', {
-			dropdownOpen: this.dropdownOpen,
-			isOpeningDropdown: this.isOpeningDropdown,
-			focusedCell: this.grid.focusedCell,
-			editingCell: this.grid.editingCell,
-			relatedTarget: relatedTarget?.className
-		})
-
 		// Skip if opening dropdown (prevents flicker during open)
-		if (this.isOpeningDropdown) {
-			console.log('[handleSelectBlur] skipping - opening dropdown')
-			return
-		}
+		if (this.isOpeningDropdown) return
 
 		// Skip if focus is moving to a dropdown option (let click handler handle it)
-		if (relatedTarget?.closest('.wg__dropdown')) {
-			console.log('[handleSelectBlur] skipping - focus moving to dropdown')
-			return
-		}
+		if (relatedTarget?.closest('.wg__dropdown')) return
 
 		// Capture cell info BEFORE cancelEdit clears it
 		const editingCell = this.grid.editingCell
@@ -3889,7 +3873,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			? this.grid.columns.findIndex(c => String(c.field) === editingCell.field)
 			: -1
 
-		console.log('[handleSelectBlur] closing and canceling edit', { editingCell, colIndex })
 		removeDropdown(this)
 		clearEditingVisual(this)
 		this.grid.cancelEdit()
@@ -3904,11 +3887,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Handle combobox/autocomplete blur - commit matched option or raw text
 	 */
 	private handleComboboxBlur(input: HTMLInputElement): void {
-		console.log('[handleComboboxBlur] called', {
-			focusedCell: this.grid.focusedCell,
-			editingCell: this.grid.editingCell,
-			dropdownOpen: this.dropdownOpen
-		})
 		removeDropdown(this)
 
 		if (this.grid.editingCell) {
@@ -3924,7 +3902,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					getOptionLabel(opt, opts).toLowerCase() === input.value.toLowerCase()
 				)
 				const value = matchedOpt ? getOptionValue(matchedOpt, opts) : input.value
-				console.log('[handleComboboxBlur] committing', { value, rowIndex: editingCell.rowIndex, colIndex })
 
 				// Clear visual and commit
 				clearEditingVisual(this)
