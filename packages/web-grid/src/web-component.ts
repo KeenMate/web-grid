@@ -1595,19 +1595,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						)
 
 					if (shouldSelectRange) {
-						// Conflict check: editTrigger='click' + cellSelectionMode='click'
-						// Selection takes priority (user was warned)
-						if (trigger === 'click' && selectionMode === 'click') {
-							// Allow normal click to start selection, Shift+click to edit
-							handleCellMouseDown(this, rowIndex, colIndex, mouseEvent)
-							return
+						// Clear row/column selection when starting cell selection
+						if (this.grid.selectedRows.length > 0) {
+							this.grid.clearSelection()
 						}
-
-						// No conflict - start cell selection (both click and shift modes)
-						if (trigger !== 'click') {
-							handleCellMouseDown(this, rowIndex, colIndex, mouseEvent)
-							return
+						if (this.grid.selectedColumns.length > 0) {
+							this.grid.clearColumnSelection()
 						}
+						// Start cell selection
+						// Note: if editTrigger='click' + cellSelectionMode='click', selection takes priority
+						// For shift mode, Shift+Click always starts selection regardless of editTrigger
+						handleCellMouseDown(this, rowIndex, colIndex, mouseEvent)
+						return
 					} else {
 						// Not starting selection - clear any existing range
 						if (this.grid.selectedCellRange) {
@@ -1863,7 +1862,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 
 			// Clear row/column selection when clicking on cells (not row numbers or headers)
-			if (target.closest('.wg__cell') && !target.closest('.wg__row-number, .wg__header')) {
+			// But NOT if cell selection is pending (would interfere with shift+drag)
+			if (target.closest('.wg__cell') && !target.closest('.wg__row-number, .wg__header') && !isCellSelectionPending()) {
 				let needsRender = false
 				if (this.grid.selectedRows.length > 0) {
 					this.grid.clearSelection()

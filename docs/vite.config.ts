@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
+	server: {
+		port: 12400
+	},
 	resolve: {
 		alias: {
 			// Point to source for HMR during development

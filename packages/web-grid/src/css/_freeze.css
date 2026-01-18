@@ -12,6 +12,13 @@
   background: var(--wg-frozen-header-bg, var(--wg-header-bg));
 }
 
+/* Selected frozen header (column selection) */
+.wg__header--frozen.wg__header--selected,
+.wg__header--frozen.wg__header--selected:hover {
+  background: var(--wg-selection-row-number-bg);
+  color: var(--wg-selection-row-number-color);
+}
+
 /* Corner cell (row number header when sticky) - highest z-index */
 .wg__row-number-header.wg__header--frozen {
   z-index: 4 !important;
@@ -60,6 +67,27 @@
 /* When a row is focused (navigate mode) */
 .wg__row--focused .wg__cell--frozen {
   background: var(--wg-focus-bg);
+}
+
+/* Row selection on frozen cells */
+.wg__row--selected > .wg__cell--frozen {
+  background: var(--wg-selection-bg) !important;
+}
+
+/* Row number cells in selected rows - accent color (override above rule) */
+.wg__row--selected > .wg__row-number.wg__cell--frozen {
+  background: var(--wg-selection-row-number-bg) !important;
+  color: var(--wg-selection-row-number-color);
+}
+
+/* Column selection on frozen cells */
+.wg__cell--frozen.wg__cell--column-selected {
+  background: var(--wg-selection-bg) !important;
+}
+
+/* Cell range selection on frozen cells */
+.wg__cell--frozen.wg__cell--in-range {
+  background: var(--wg-cell-selection-bg) !important;
 }
 
 /* ==========================================================================

@@ -51,6 +51,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Selected header hover state**: Fixed unreadable text when hovering over selected column headers (gray background + white text). Selected headers now maintain accent styling on hover.
 - **Selection clearing on click**: Row and column selections now clear when clicking on data cells or clicking outside the grid. Clicking row numbers preserves row selection, clicking headers preserves column selection.
 - **Selected row number styling in navigate mode**: Fixed selected row numbers not showing correct colors (white text on accent background) when using `editTrigger: 'navigate'`. Increased CSS specificity to ensure selection styles win.
+- **Shift+drag cell selection**: Fixed shift+drag cell selection not working when `editTrigger: 'click'` combined with `cellSelectionMode: 'shift'`. Simplified selection logic to handle all editTrigger combinations.
+- **Frozen cell selection visibility**: Fixed row, column, and cell range selections not showing on frozen columns. Added CSS rules with `!important` to ensure selection backgrounds override frozen cell styling.
+- **Frozen row number selection color**: Fixed selected row number cells showing wrong background color (light blue instead of accent) when row numbers are sticky/frozen.
+- **Frozen header selection**: Fixed selected column headers not showing accent color when frozen.
+- **Selection clearing with cell selection mode**: Fixed row/column selections not clearing when clicking on cells in grids with `cellSelectionMode: 'click'` (the default). The early return in cell selection handling now clears row/column selections first.
 
 ---
 

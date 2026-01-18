@@ -666,15 +666,28 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
         }, 100)
 
         // =================================================================
-        // Global Copy With Headers Setting
+        // Global Copy With Headers Setting (persisted to localStorage)
         // =================================================================
         const allGrids = [gridRowSelection, gridCellRangeClick, gridCellRangeShift, gridRangeShortcuts]
+        const copyWithHeadersCheckbox = document.getElementById('globalCopyWithHeaders')
 
-        document.getElementById('globalCopyWithHeaders').addEventListener('change', (e) => {
+        // Load saved setting from localStorage
+        const savedCopyWithHeaders = localStorage.getItem('wg-examples-copyWithHeaders')
+        if (savedCopyWithHeaders !== null) {
+            const withHeaders = savedCopyWithHeaders === 'true'
+            copyWithHeadersCheckbox.checked = withHeaders
+            allGrids.forEach(grid => {
+                grid.shouldCopyWithHeaders = withHeaders
+            })
+        }
+
+        copyWithHeadersCheckbox.addEventListener('change', (e) => {
             const withHeaders = e.target.checked
             allGrids.forEach(grid => {
                 grid.shouldCopyWithHeaders = withHeaders
             })
+            // Save to localStorage
+            localStorage.setItem('wg-examples-copyWithHeaders', withHeaders)
             console.log('Copy with headers:', withHeaders)
         })
     </script>
