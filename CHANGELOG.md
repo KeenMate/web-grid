@@ -70,6 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Date picker two-click with selection active**: Fixed date picker requiring two clicks when a row/column/cell selection was active. Moved selection clearing before cell edit transition to prevent render from interfering with date picker opening.
+- **Dropdown/editor not closing on outside click**: Fixed dropdowns (select, combobox, autocomplete) and editors staying open/focused when clicking outside the grid. Outside-click handler now explicitly closes dropdowns, cancels edits, clears focused cell state and visual class.
 - **Column selection with modifier keys when reorder enabled**: Fixed Ctrl+click and Shift+click not working for column selection when `isColumnReorderAllowed = true`. Reorder now skips when modifier keys are held, allowing column toggle/range selection.
 - **Column selection after reorder**: Fixed issue where clicking a column header after reordering required two clicks. The `dragJustCompleted` flag now auto-clears after the current frame.
 - **Selected header hover state**: Fixed unreadable text when hovering over selected column headers (gray background + white text). Selected headers now maintain accent styling on hover.
