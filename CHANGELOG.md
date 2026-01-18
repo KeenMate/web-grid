@@ -45,8 +45,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Sort moved to sort indicator only (▲/▼/⬍) - clicking header body selects column
   - Mutual exclusivity: row, column, and cell range selections clear each other
 
+- **Row/Column Selection Borders**: Visual borders around selected rows and columns for better visibility
+  - Border appears around selected row/column range (similar to cell range selection)
+  - Handles non-contiguous selections: separate borders for each contiguous segment (e.g., rows 1-2 and 5-7 show two borders)
+  - Row border starts from first data column (excludes row number column)
+  - Column border spans from header to last data row
+  - Borders update on scroll to stay positioned correctly
+  - CSS variables: `--wg-selection-border-width`, `--wg-selection-border-color`
+
+- **Column Drag Selection**: When column reorder is disabled, drag on headers to select column ranges
+  - Same UX as row drag selection on row numbers
+  - Click + drag = select range of columns
+  - 5px drag threshold before activating (prevents accidental selection)
+  - Ctrl+click = toggle individual columns
+  - Shift+click = range from last selected
+  - `selectColumnRange(fromIndex, toIndex)` method for programmatic range selection
+  - Cursor changes to `col-resize` during drag
+  - Only active when `isColumnReorderAllowed = false` (doesn't conflict with column reordering)
+
+### Changed
+
+- **Click Event Manager**: Introduced `ClickEventManager` (pub/sub pattern) for centralized click handling, following the same pattern as `ScrollEventManager` and `FocusEventManager`. Outside-click detection for selection clearing now uses this unified system.
+- **Sort Event Pipeline**: Sort indicator clicks now use the `ClickEventManager` pub/sub pattern (`sortClick` event type). This allows modules to subscribe to sort events and follows the same architecture as other event pipelines.
+
 ### Fixed
 
+- **Column selection with modifier keys when reorder enabled**: Fixed Ctrl+click and Shift+click not working for column selection when `isColumnReorderAllowed = true`. Reorder now skips when modifier keys are held, allowing column toggle/range selection.
 - **Column selection after reorder**: Fixed issue where clicking a column header after reordering required two clicks. The `dragJustCompleted` flag now auto-clears after the current frame.
 - **Selected header hover state**: Fixed unreadable text when hovering over selected column headers (gray background + white text). Selected headers now maintain accent styling on hover.
 - **Selection clearing on click**: Row and column selections now clear when clicking on data cells or clicking outside the grid. Clicking row numbers preserves row selection, clicking headers preserves column selection.
@@ -56,6 +80,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Frozen row number selection color**: Fixed selected row number cells showing wrong background color (light blue instead of accent) when row numbers are sticky/frozen.
 - **Frozen header selection**: Fixed selected column headers not showing accent color when frozen.
 - **Selection clearing with cell selection mode**: Fixed row/column selections not clearing when clicking on cells in grids with `cellSelectionMode: 'click'` (the default). The early return in cell selection handling now clears row/column selections first.
+- **Dropdown toggle click with cell selection**: Fixed dropdown/date toggles not responding to clicks when `cellSelectionMode: 'click'`. Toggle clicks are now excluded from cell selection logic so they properly trigger their own handlers.
+- **Dropdown not closing on cell selection**: Fixed dropdown staying open when clicking another cell to start cell selection. Active edit is now properly canceled (dropdown closed, cell re-rendered to display mode) before starting selection.
+- **Cell selection cleared on any click**: Fixed cell selection being incorrectly cleared on any click due to shadow DOM detection issue in `outsideClick` handler. Now correctly checks if host element is in event's composed path.
+- **Cell selection cleared on sort click**: Fixed cell selection being cleared when clicking sort indicator. The `render()` call after sorting was rebuilding the DOM, causing the document click handler to misdetect the click as outside the grid. Click event manager now tracks inside-grid clicks via a flag set on mousedown, and the listener is attached to the host element (not container) so it survives re-renders.
+- **Shadow DOM event target retargeting**: Fixed click event manager not detecting clicked elements correctly. When events cross the shadow DOM boundary to the host element listener, `event.target` gets retargeted to the host. Now uses `composedPath()[0]` to get the actual clicked element inside the shadow DOM.
+- **Click event subscription accumulation**: Fixed endless loop when clicking sort indicator. `attachEventListeners()` is called on every `render()`, causing subscriptions to accumulate. Added `clickEventsSubscribed` flag to ensure click event subscriptions are only registered once.
+- **Sort handler shadow DOM compatibility**: Fixed sort clicks not working due to `handleSortClick` using `event.target` which is retargeted when crossing shadow DOM. Now passes the field directly from the click context instead of extracting it from the event.
+- **Cell selection not cleared on sort**: Fixed cell selection remaining visible after clicking sort indicator. Now clears cell selection before sorting, matching behavior of other header interactions like column selection.
+- **Selection not cleared on date picker open**: Fixed row/column/cell selections remaining visible when opening a date picker. All selections and borders are now cleared when the date picker opens.
+- **Selection not cleared on resize/reorder**: Fixed row/column/cell selections remaining visible when starting column resize or reorder operations. Added `clearAllSelections()` helper method that clears all selection types and their visual borders.
 
 ---
 

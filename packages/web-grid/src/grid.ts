@@ -1158,6 +1158,24 @@ export class WebGrid<T = unknown> {
 	}
 
 	/**
+	 * Select a range of columns (for drag selection)
+	 */
+	selectColumnRange(fromIndex: number, toIndex: number): void {
+		// Clear row selection and cell range when selecting columns
+		this._selectedRows.clear()
+		this._selectedCellRange = null
+
+		this._selectedColumns.clear()
+		const start = Math.min(fromIndex, toIndex)
+		const end = Math.max(fromIndex, toIndex)
+		for (let i = start; i <= end; i++) {
+			this._selectedColumns.add(i)
+		}
+		this._lastSelectedColumnIndex = toIndex
+		this.requestUpdate()
+	}
+
+	/**
 	 * Get selected column indices (sorted)
 	 */
 	get selectedColumns(): number[] {

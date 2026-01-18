@@ -147,6 +147,7 @@ import { handleReorderStart, isReordering } from './modules/reorder/index.js'
 import { updateFillHandle, removeFillHandle } from './modules/fill-handle/index.js'
 import { createScrollEventManager, type ScrollEventManager } from './modules/scroll-events/index.js'
 import { createFocusEventManager, type FocusEventManager } from './modules/focus-events/index.js'
+import { createClickEventManager, type ClickEventManager } from './modules/click-events/index.js'
 
 import {
 	handleRowNumberMouseDown,
@@ -163,6 +164,21 @@ import {
 	updateRangeBorder,
 	removeRangeBorder
 } from './modules/cell-selection/index.js'
+
+import {
+	createRowSelectionBorders,
+	createColumnSelectionBorders,
+	updateSelectionBorders,
+	removeRowSelectionBorders,
+	removeColumnSelectionBorders,
+	removeAllSelectionBorders
+} from './modules/selection-border/index.js'
+
+import {
+	handleHeaderMouseDown,
+	isColumnSelecting,
+	isColumnSelectionPending
+} from './modules/column-selection/index.js'
 
 import { executePaste } from './modules/paste/index.js'
 
@@ -208,7 +224,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	// Flag to track if toolbar outside click listener has been added
 	private toolbarOutsideClickAdded = false
-	private selectionOutsideClickAdded = false
+
+	// Flag to track if clickEvents subscriptions have been added (only subscribe once)
+	private clickEventsSubscribed = false
 
 	// Flag to prevent mouseleave from closing toolbar during move actions
 	private toolbarMoveInProgress = false
@@ -272,11 +290,15 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Focus event manager (pub/sub for blur/focusout events)
 	readonly focusEvents: FocusEventManager
 
+	// Click event manager (pub/sub for click inside/outside events)
+	readonly clickEvents: ClickEventManager
+
 	constructor() {
 		super()
 		this.shadow = this.attachShadow({ mode: 'open' })
 		this.grid = new WebGrid<T>()
 		this.scrollEvents = createScrollEventManager()
+		this.clickEvents = createClickEventManager()
 		this.focusEvents = createFocusEventManager(
 			() => ({
 				isCommittingFromKeyboard: this.isCommittingFromKeyboard,
@@ -322,6 +344,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Cleanup event managers
 		this.scrollEvents.destroy()
 		this.focusEvents.destroy()
+		this.clickEvents.destroy()
+		this.clickEventsSubscribed = false
 
 		// Cleanup event listeners, observers, etc.
 		this.removeEventListener('paste', this.handlePaste as EventListener)
@@ -341,6 +365,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		closeToolbar()
 		// Cleanup inline shortcuts
 		this.removeInlineShortcuts()
+		// Cleanup selection borders
+		removeAllSelectionBorders()
 	}
 
 	// ==========================================================================
@@ -1576,8 +1602,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const mouseEvent = e as MouseEvent
 
 			// Cell range selection - handle before other interactions
+			// Skip if clicking on toggles (dropdown, date) - those have their own handlers
 			const cell = target.closest('.wg__cell') as HTMLElement
-			if (cell && !cell.classList.contains('wg__cell--editing') && !target.closest('.wg__row-number')) {
+			const isClickingToggle = target.closest('.wg__combobox-toggle, .wg__select-toggle, .wg__date-trigger')
+			if (cell && !cell.classList.contains('wg__cell--editing') && !target.closest('.wg__row-number') && !isClickingToggle) {
 				const rowIndex = parseInt(cell.dataset.row || '0', 10)
 				const colIndex = parseInt(cell.dataset.col || '0', 10)
 				const column = this.grid.visualColumns[colIndex]?.column
@@ -1595,6 +1623,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						)
 
 					if (shouldSelectRange) {
+						// Cancel any active edit before starting cell selection
+						if (this.grid.editingCell) {
+							const oldEditingCell = this.grid.editingCell
+							const oldColIndex = this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
+							removeDropdown(this)
+							clearEditingVisual(this)
+							this.grid.cancelEdit()
+							// Re-render old cell to restore display mode
+							if (oldColIndex >= 0) {
+								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
+							}
+						}
 						// Clear row/column selection when starting cell selection
 						if (this.grid.selectedRows.length > 0) {
 							this.grid.clearSelection()
@@ -1817,6 +1857,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			if (resizeHandle) {
 				e.preventDefault()
 				e.stopPropagation()
+				// Clear selections when starting resize
+				this.clearAllSelections()
 				const field = resizeHandle.dataset.field
 				if (field) {
 					handleResizeStart(this, e as MouseEvent, field)
@@ -1825,12 +1867,32 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 
 			// Column reorder: start drag when clicking on a non-frozen header (if enabled)
+			// Skip reorder if Ctrl/Shift held - let click handler do column selection instead
 			if (this.grid.isColumnReorderAllowed) {
-				const header = target.closest('.wg__header') as HTMLElement
-				if (header && !header.classList.contains('wg__header--frozen') && !header.classList.contains('wg__row-number-header')) {
+				const mouseEvent = e as MouseEvent
+				if (!mouseEvent.ctrlKey && !mouseEvent.metaKey && !mouseEvent.shiftKey) {
+					const header = target.closest('.wg__header') as HTMLElement
+					if (header && !header.classList.contains('wg__header--frozen') && !header.classList.contains('wg__row-number-header')) {
+						// Clear selections when starting reorder
+						this.clearAllSelections()
+						const field = header.dataset.field
+						if (field) {
+							handleReorderStart(this, e as MouseEvent, field)
+						}
+					}
+				}
+			}
+
+			// Column selection drag: when reorder is disabled, drag to select columns
+			if (!this.grid.isColumnReorderAllowed) {
+				const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
+				if (header && !target.closest('.wg__resize-handle') && !target.closest('.wg__sort-indicator')) {
 					const field = header.dataset.field
 					if (field) {
-						handleReorderStart(this, e as MouseEvent, field)
+						const colIndex = this.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
+						if (colIndex >= 0) {
+							handleHeaderMouseDown(this, colIndex, e as MouseEvent)
+						}
 					}
 				}
 			}
@@ -1900,28 +1962,21 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Header click for sorting (sort indicator) or column selection (header body)
+		// Header click for column selection (sort indicator handled by clickEvents)
+		// Only active when column reorder is enabled (otherwise, mousedown handler does selection)
 		table.addEventListener('click', (e: Event) => {
 			const mouseEvent = e as MouseEvent
 			const target = mouseEvent.target as HTMLElement
 
-			// Skip if clicking on resize handle
+			// Skip if clicking on resize handle or sort indicator
 			if (target.closest('.wg__resize-handle')) return
-			// Skip if reordering was just performed (prevents sort on drop)
+			if (target.closest('.wg__sort-indicator')) return
+			// Skip if reordering was just performed (prevents accidental selection on drop)
 			if (isReordering()) return
+			// Skip if column reorder is disabled (mousedown handler handles column selection)
+			if (!this.grid.isColumnReorderAllowed) return
 
-			// Click on sort indicator = sorting
-			const sortIndicator = target.closest('.wg__sort-indicator') as HTMLElement
-			if (sortIndicator) {
-				const header = sortIndicator.closest('.wg__header--sortable') as HTMLElement
-				if (header) {
-					handleSortClick(this, mouseEvent)
-					this.render()
-				}
-				return
-			}
-
-			// Click on header (not sort indicator) = column selection
+			// Click on header = column selection
 			const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
 			if (header) {
 				e.preventDefault()
@@ -2118,6 +2173,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (this.grid.selectedCellRange) {
 					updateRangeBorder(this)
 				}
+
+				// Update row/column selection borders on scroll
+				updateSelectionBorders(this)
 			})
 
 			// Window scroll handler - close overlays
@@ -2129,6 +2187,49 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					this.closeToolbarAndReset()
 				}
 			})
+
+			// Initialize click event manager for outside-click detection
+			// Only subscribe once (attachEventListeners is called on every render)
+			if (!this.clickEventsSubscribed) {
+				this.clickEvents.init(container, this)
+
+				// Clear selections when clicking outside the grid
+				this.clickEvents.subscribe('outsideClick', () => {
+					let needsRender = false
+					if (this.grid.selectedCellRange) {
+						this.grid.clearCellSelection()
+						removeRangeBorder()
+						needsRender = true
+					}
+					if (this.grid.selectedRows.length > 0) {
+						this.grid.clearSelection()
+						needsRender = true
+					}
+					if (this.grid.selectedColumns.length > 0) {
+						this.grid.clearColumnSelection()
+						needsRender = true
+					}
+					if (needsRender) {
+						this.render()
+					}
+				})
+
+				// Handle sort indicator clicks
+				this.clickEvents.subscribe('sortClick', (ctx) => {
+					// Skip if reordering was just performed (prevents sort on drop)
+					if (isReordering()) return
+					// Clear cell selection when sorting (like other header interactions)
+					if (this.grid.selectedCellRange) {
+						this.grid.clearCellSelection()
+						removeRangeBorder()
+					}
+					// Pass field directly - ctx.event.target is retargeted when crossing shadow DOM
+					handleSortClick(this, ctx.event, ctx.field)
+					this.render()
+				})
+
+				this.clickEventsSubscribed = true
+			}
 		}
 
 		// Tooltip events
@@ -2316,35 +2417,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				if (getActiveToolbarRowIndex() !== null) {
 					this.closeToolbarAndReset()
 					// No render() needed - closeToolbar() surgically removes toolbar
-				}
-			})
-		}
-
-		// Clear selection on outside click
-		if (!this.selectionOutsideClickAdded) {
-			this.selectionOutsideClickAdded = true
-			document.addEventListener('click', (e: MouseEvent) => {
-				// Check if click is inside this grid's shadow DOM
-				const path = e.composedPath()
-				if (path.includes(this)) return  // Click was inside our element
-
-				// Clear all selections
-				let needsRender = false
-				if (this.grid.selectedCellRange) {
-					this.grid.clearCellSelection()
-					removeRangeBorder()
-					needsRender = true
-				}
-				if (this.grid.selectedRows.length > 0) {
-					this.grid.clearSelection()
-					needsRender = true
-				}
-				if (this.grid.selectedColumns.length > 0) {
-					this.grid.clearColumnSelection()
-					needsRender = true
-				}
-				if (needsRender) {
-					this.render()
 				}
 			})
 		}
@@ -2775,6 +2847,20 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		if (this.grid.selectedCellRange) {
 			updateRangeBorder(this)
 		}
+
+		// Update row selection borders after render
+		if (this.grid.selectedRows.length > 0) {
+			createRowSelectionBorders(this)
+		} else {
+			removeRowSelectionBorders()
+		}
+
+		// Update column selection borders after render
+		if (this.grid.selectedColumns.length > 0) {
+			createColumnSelectionBorders(this)
+		} else {
+			removeColumnSelectionBorders()
+		}
 	}
 
 	/**
@@ -2820,9 +2906,30 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	/**
+	 * Clear all selections (cell range, row, column) and their visual borders
+	 */
+	private clearAllSelections(): void {
+		if (this.grid.selectedCellRange) {
+			this.grid.clearCellSelection()
+			removeRangeBorder()
+		}
+		if (this.grid.selectedRows.length > 0) {
+			this.grid.clearSelection()
+			removeRowSelectionBorders()
+		}
+		if (this.grid.selectedColumns.length > 0) {
+			this.grid.clearColumnSelection()
+			removeColumnSelectionBorders()
+		}
+	}
+
+	/**
 	 * Open the date picker for a date input
 	 */
 	private openDatePicker(input: HTMLInputElement, anchor: HTMLElement): void {
+		// Clear any existing selections when opening date picker
+		this.clearAllSelections()
+
 		// Close any existing datepicker silently (don't trigger onClose - we're opening a new one)
 		if (this.datepicker) {
 			this.datepicker.close(true)

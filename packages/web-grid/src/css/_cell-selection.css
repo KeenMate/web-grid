@@ -56,3 +56,38 @@
 .wg:has(.wg__cell-range-border) .wg__fill-handle {
   display: none;
 }
+
+/* =============================================================================
+   ROW AND COLUMN SELECTION BORDERS
+   Visual borders around row/column selections for better visibility
+   ============================================================================= */
+
+.wg__row-selection-border,
+.wg__column-selection-border {
+  position: absolute;
+  border: var(--wg-selection-border-width, 2px) solid var(--wg-selection-border-color, var(--wg-accent-color));
+  pointer-events: none;
+  z-index: 3;
+  box-sizing: border-box;
+  border-radius: 1px;
+}
+
+/* =============================================================================
+   COLUMN SELECTION DRAG STATE
+   Cursor and user-select during column header drag selection
+   ============================================================================= */
+
+.wg--selecting-columns {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+.wg--selecting-columns * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* Override header cursors during column selection drag */
+.wg--selecting-columns .wg__header {
+  cursor: col-resize !important;
+}

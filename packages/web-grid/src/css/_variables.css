@@ -310,6 +310,8 @@
   --wg-selection-bg: color-mix(in srgb, var(--wg-accent-color) 15%, transparent);
   --wg-selection-row-number-bg: var(--wg-accent-color);
   --wg-selection-row-number-color: var(--base-text-inverted, #fff);
+  --wg-selection-border-width: 2px;
+  --wg-selection-border-color: var(--wg-accent-color);
 
   /* ==========================================================================
      CELL RANGE SELECTION

@@ -7,14 +7,17 @@ import type { GridContext } from '../types.js'
 /**
  * Handle header click for sorting.
  * Supports single and multi-column sorting (Ctrl+Click for multi).
+ * @param field - The field to sort (passed directly to avoid shadow DOM target retargeting issues)
  */
-export function handleSortClick<T>(ctx: GridContext<T>, e: MouseEvent): void {
-	const target = e.target as HTMLElement
-	const header = target.closest('.wg__header--sortable') as HTMLElement
-	if (!header) return
-
-	const field = header.dataset.field
-	if (!field) return
+export function handleSortClick<T>(ctx: GridContext<T>, e: MouseEvent, field?: string): void {
+	// If field not provided, try to extract from event target (legacy support)
+	if (!field) {
+		const target = e.target as HTMLElement
+		const header = target.closest('.wg__header--sortable') as HTMLElement
+		if (!header) return
+		field = header.dataset.field
+		if (!field) return
+	}
 
 	const currentSort = [...ctx.grid.sort]
 	const existingIndex = currentSort.findIndex(s => s.column === field)
