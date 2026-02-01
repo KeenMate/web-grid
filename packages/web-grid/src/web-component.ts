@@ -1730,6 +1730,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			const target = e.target as HTMLElement
 			const mouseEvent = e as MouseEvent
 
+			// Try pipeline first for 'always' mode cells (handles cell clicks and toggle clicks)
+			if (this.pipelineAdapter?.tryHandleMouseDown(mouseEvent)) {
+				return
+			}
+
 			// Cell range selection - handle before other interactions
 			// Skip if clicking on toggles (dropdown, date) - those have their own handlers
 			const cell = target.closest('.wg__cell') as HTMLElement
@@ -1889,11 +1894,6 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 			// Toggle click
 			if (target.matches('.wg__combobox-toggle, .wg__select-toggle')) {
-				// Try pipeline first (handles 'always' mode)
-				if (this.pipelineAdapter?.tryHandleMouseDown(e as MouseEvent)) {
-					return
-				}
-
 				e.preventDefault()
 				e.stopPropagation()
 

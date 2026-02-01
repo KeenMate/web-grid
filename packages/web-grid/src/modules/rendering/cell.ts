@@ -44,7 +44,8 @@ export function renderCell<T>(
 	if (!item) return
 
 	// Determine cell state
-	const isEditing = ctx.grid.isEditing(rowIndex, field)
+	const shouldShowEditor = ctx.grid.shouldShowEditor(rowIndex, colIndex)
+	const isActivelyEditing = ctx.grid.isEditing(rowIndex, field)  // Only the ONE tracked cell
 	const isFocused = ctx.grid.isCellFocused(rowIndex, colIndex)
 	const isEditable = ctx.grid.isCellEditable(column)
 	const isInvalid = ctx.grid.isCellInvalid(rowIndex, field)
@@ -54,13 +55,18 @@ export function renderCell<T>(
 	const isFrozen = visualIndex >= 0 && ctx.grid.isColumnFrozen(visualIndex)
 	const isLastFrozen = isFrozen && visualIndex === ctx.grid.totalFrozenColumns - 1
 
+	// Determine if this is 'always' editTrigger mode
+	const effectiveTrigger = column.editTrigger ?? ctx.grid.editTrigger
+
 	// Build class list
 	const classes = ['wg__cell']
 	if (isEditable) classes.push('wg__cell--editable')
-	if (isFocused && !isEditing) classes.push('wg__cell--focused')
+	if (isFocused && !isActivelyEditing) classes.push('wg__cell--focused')
+	// In 'always' mode, add special focus class even when showing editor
+	if (isFocused && effectiveTrigger === 'always') classes.push('wg__cell--always-edit-focused')
 	if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
 	if (column.maxLines) classes.push('wg__cell--line-clamp')
-	if (isEditing) classes.push('wg__cell--editing')
+	if (isActivelyEditing) classes.push('wg__cell--editing')
 	if (isInvalid) classes.push('wg__cell--invalid')
 	if (visualIndex >= 0 && ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
 	if (visualIndex >= 0 && ctx.grid.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
@@ -77,7 +83,7 @@ export function renderCell<T>(
 	cell.className = classes.join(' ')
 
 	// Update content
-	if (isEditing) {
+	if (shouldShowEditor) {
 		cell.innerHTML = renderCellEditor(ctx, rowIndex, colIndex, column)
 
 		// Focus editor if requested

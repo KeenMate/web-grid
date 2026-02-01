@@ -10,6 +10,30 @@ import { removeDropdown } from '../dropdown/rendering.js'
 import { removeFillHandle } from '../fill-handle/index.js'
 
 /**
+ * Focus the appropriate element within a cell.
+ * In 'always' edit mode, focuses the editor input inside the cell.
+ * Otherwise, focuses the cell element itself.
+ */
+function focusElementInCell(cell: HTMLElement, isAlwaysEditMode: boolean): void {
+	if (isAlwaysEditMode) {
+		// In 'always' mode, find and focus the editor input inside the cell
+		const editor = cell.querySelector(
+			'.wg__editor, .wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger'
+		) as HTMLElement
+		if (editor) {
+			editor.focus({ preventScroll: true })
+			// Select all text in text inputs for easier editing
+			if (editor instanceof HTMLInputElement && editor.type === 'text') {
+				editor.select()
+			}
+			return
+		}
+	}
+	// Default: focus the cell itself
+	cell.focus({ preventScroll: true })
+}
+
+/**
  * Focus a cell element in the DOM
  * In virtual scroll mode, only scroll if cell is outside viewport (minimal scroll)
  */
@@ -18,6 +42,11 @@ export function focusCellElement<T>(
 	rowIndex: number,
 	colIndex: number
 ): void {
+	// Check if this cell uses 'always' editTrigger
+	const column = ctx.grid.columns[colIndex]
+	const effectiveTrigger = column?.editTrigger ?? ctx.grid.editTrigger
+	const isAlwaysEditMode = effectiveTrigger === 'always'
+
 	// In virtual scroll mode: only scroll if row is outside viewport
 	if (ctx.grid.shouldUseVirtualScroll()) {
 		ensureRowVisibleMinimal(ctx, rowIndex)
@@ -26,7 +55,7 @@ export function focusCellElement<T>(
 			`[data-row="${rowIndex}"][data-col="${colIndex}"]`
 		) as HTMLElement
 		if (cell) {
-			cell.focus({ preventScroll: true })
+			focusElementInCell(cell, isAlwaysEditMode)
 		}
 		// If not visible, scroll triggered re-render which will focus via renderVirtualRows
 		return
@@ -38,7 +67,7 @@ export function focusCellElement<T>(
 	) as HTMLElement
 	if (!cell) return
 
-	cell.focus({ preventScroll: true })
+	focusElementInCell(cell, isAlwaysEditMode)
 
 	// Let scrollIntoView handle the main scrolling (both axes)
 	cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })

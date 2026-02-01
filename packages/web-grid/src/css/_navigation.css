@@ -19,8 +19,16 @@
   outline-offset: -2px;
 }
 
+/* Focus styling for always-editing mode (editTrigger: 'always' / input-matrix mode) */
+/* In this mode, wg--navigate-mode is not added, but we still need focus visual */
+.wg__cell.wg__cell--always-edit-focused {
+  outline: var(--wg-focus-outline);
+  outline-offset: -2px;
+}
+
 /* Hide hover border when cell is focused */
-.wg__cell--focused::after {
+.wg__cell--focused::after,
+.wg__cell--always-edit-focused::after {
   display: none;
 }
 

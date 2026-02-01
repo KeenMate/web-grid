@@ -1726,6 +1726,29 @@ export class WebGrid<T = unknown> {
 	}
 
 	/**
+	 * Check if a cell should be rendered as an editor
+	 * Returns true if:
+	 * - The cell is actively being edited (tracked in _editingCell), OR
+	 * - The cell's effective editTrigger is 'always' AND the cell is editable
+	 */
+	shouldShowEditor(rowIndex: number, colIndex: number): boolean {
+		const column = this._columns[colIndex]
+		if (!column) return false
+		const field = String(column.field)
+
+		// Always show editor if actively editing this cell
+		if (this.isEditing(rowIndex, field)) return true
+
+		// Check if editTrigger is 'always' for this column
+		const effectiveTrigger = column.editTrigger ?? this._editTrigger
+		if (effectiveTrigger === 'always' && this.isCellEditable(column)) {
+			return true
+		}
+
+		return false
+	}
+
+	/**
 	 * Start editing a cell
 	 */
 	startEdit(rowIndex: number, field: string, options?: { initialSearchQuery?: string; cursorPosition?: number }): void {

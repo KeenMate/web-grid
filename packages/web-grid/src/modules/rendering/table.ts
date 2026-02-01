@@ -267,13 +267,19 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			const isFrozen = ctx.grid.isColumnFrozen(visualIndex)
 			const isLastFrozen = isFrozen && visualIndex === ctx.grid.totalFrozenColumns - 1
 
+			// Determine if this is 'always' editTrigger mode
+			const effectiveTrigger = column.editTrigger ?? ctx.grid.editTrigger
+
 			const classes = ['wg__cell']
-			const isEditingThisCell = ctx.grid.isEditing(rowIndex, field)
+			const shouldShowEditor = ctx.grid.shouldShowEditor(rowIndex, originalIndex)
+			const isActivelyEditing = ctx.grid.isEditing(rowIndex, field)  // Only the ONE tracked cell
 			if (isEditable) classes.push('wg__cell--editable')
-			if (isFocused && !isEditingThisCell) classes.push('wg__cell--focused')
+			if (isFocused && !isActivelyEditing) classes.push('wg__cell--focused')
+			// In 'always' mode, add special focus class even when showing editor
+			if (isFocused && effectiveTrigger === 'always') classes.push('wg__cell--always-edit-focused')
 			if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
 			if (column.maxLines) classes.push('wg__cell--line-clamp')
-			if (isEditingThisCell) classes.push('wg__cell--editing')
+			if (isActivelyEditing) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
 			if (ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
 			if (ctx.grid.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
@@ -363,7 +369,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 					${tabindexAttr}
 					${tooltipAttr}
 				>
-					${ctx.grid.isEditing(rowIndex, field)
+					${shouldShowEditor
 						? renderCellEditor(ctx, rowIndex, originalIndex, column)
 						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused)}
 				</td>
@@ -563,13 +569,19 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			const isFrozen = ctx.grid.isColumnFrozen(visualIndex)
 			const isLastFrozen = isFrozen && visualIndex === ctx.grid.totalFrozenColumns - 1
 
+			// Determine if this is 'always' editTrigger mode
+			const effectiveTrigger = column.editTrigger ?? ctx.grid.editTrigger
+
 			const classes = ['wg__cell']
-			const isEditingThisCell = ctx.grid.isEditing(rowIndex, field)
+			const shouldShowEditor = ctx.grid.shouldShowEditor(rowIndex, originalIndex)
+			const isActivelyEditing = ctx.grid.isEditing(rowIndex, field)  // Only the ONE tracked cell
 			if (isEditable) classes.push('wg__cell--editable')
-			if (isFocused && !isEditingThisCell) classes.push('wg__cell--focused')
+			if (isFocused && !isActivelyEditing) classes.push('wg__cell--focused')
+			// In 'always' mode, add special focus class even when showing editor
+			if (isFocused && effectiveTrigger === 'always') classes.push('wg__cell--always-edit-focused')
 			if (column.textOverflow !== 'wrap') classes.push('wg__cell--ellipsis')
 			if (column.maxLines) classes.push('wg__cell--line-clamp')
-			if (isEditingThisCell) classes.push('wg__cell--editing')
+			if (isActivelyEditing) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
 			if (ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
 			if (ctx.grid.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
@@ -658,7 +670,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 					${tabindexAttr}
 					${tooltipAttr}
 				>
-					${ctx.grid.isEditing(rowIndex, field)
+					${shouldShowEditor
 						? renderCellEditor(ctx, rowIndex, originalIndex, column)
 						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused)}
 				</td>
