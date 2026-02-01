@@ -15,6 +15,9 @@ import { checkboxExecutor } from './executors/checkbox-executor.js'
 import { datepickerExecutor } from './executors/datepicker-executor.js'
 import { editExecutor } from './executors/edit-executor.js'
 import { selectionExecutor } from './executors/selection-executor.js'
+import { clipboardExecutor } from './executors/clipboard-executor.js'
+import { contextMenuExecutor } from './executors/context-menu-executor.js'
+import { fillHandleExecutor } from './executors/fill-handle-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
 import type { CellCoordinates } from './types.js'
 
@@ -40,6 +43,9 @@ export class ActionPipelineAdapter<T = unknown> {
 		this.pipeline.registerExecutor(datepickerExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(editExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(selectionExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(clipboardExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(contextMenuExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(fillHandleExecutor as ActionExecutor<T>)
 	}
 
 	/**
@@ -248,6 +254,14 @@ export class ActionPipelineAdapter<T = unknown> {
 			e.preventDefault()
 			e.stopPropagation()
 			this.pipeline.dispatch({ type: 'deleteCell', target: cell })
+			return true
+		}
+
+		// Ctrl+C copies selection
+		if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+			e.preventDefault()
+			e.stopPropagation()
+			this.pipeline.dispatch({ type: 'copy' })
 			return true
 		}
 
