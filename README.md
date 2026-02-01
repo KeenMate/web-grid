@@ -17,6 +17,7 @@ A lightweight, accessible data grid web component with sorting, filtering, inlin
 - **Context Menu** - Right-click menus with custom actions for rows and headers
 - **Keyboard Shortcuts** - Custom grid-level shortcuts with help overlay
 - **Row Selection** - Multi-row selection via row numbers with range shortcuts
+- **Row Focus** - Track which row the user is interacting with (master/detail patterns)
 - **Cell Range Selection** - Excel-like click+drag cell selection with copy to clipboard
 - **Virtual Scrolling** - Efficient rendering for large datasets (10,000+ rows)
 - **Infinite Scroll** - Load more data as user scrolls
@@ -150,6 +151,12 @@ grid.selectRowRange(from, to);
 grid.clearSelection();
 grid.isRowSelected(index);
 grid.getSelectedRowsData();
+
+// Row focus (master/detail)
+grid.focusedRowIndex;             // Current focused row (null if none)
+grid.focusedRowIndex = 3;         // Focus row 3 programmatically
+grid.focusedRowIndex = null;      // Clear focus
+grid.onrowfocus = ({ rowIndex, row, previousRowIndex }) => { ... };
 
 // Cell range selection
 grid.cellSelectionMode = 'click';  // 'disabled' | 'click' | 'shift'
@@ -311,6 +318,7 @@ grid.rowLocking = {
 | `unlockRowById(id)` | Unlock row externally |
 | `updateRowById(id, data)` | Partial update row by ID |
 | `replaceRowById(id, row)` | Replace entire row by ID |
+| `isRowFocused(index)` | Check if row is focused |
 | `selectRow(index, mode)` | Select row ('replace', 'toggle', 'range') |
 | `selectRowRange(from, to)` | Select range of rows |
 | `clearSelection()` | Clear all selected rows |
@@ -332,6 +340,7 @@ grid.rowLocking = {
 | `onroweditcancel` | `{ row, rowIndex, field }` | Edit cancelled |
 | `onvalidationerror` | `{ row, rowIndex, field, error }` | Validation failed |
 | `onrowdelete` | `{ row, rowIndex }` | Ctrl+Delete pressed |
+| `onrowfocus` | `{ rowIndex, row, previousRowIndex }` | Different row focused via cell click |
 | `ontoolbarclick` | `{ item, row, rowIndex }` | Toolbar button clicked |
 
 ## Keyboard Shortcuts
@@ -531,6 +540,31 @@ console.log(grid.selectedRows)    // [0, 1, 2, 3, 4, 5, 7]
 console.log(grid.getSelectedRowsData())  // Array of row objects
 grid.clearSelection()
 ```
+
+### Row Focus (Master/Detail)
+
+Track which row the user is interacting with — click any data cell to focus its row:
+
+```javascript
+// Listen for row focus changes
+grid.onrowfocus = ({ rowIndex, row, previousRowIndex }) => {
+  detailPanel.innerHTML = renderDetail(row)
+  console.log(`Row ${rowIndex} focused (was: ${previousRowIndex})`)
+}
+
+// Programmatic control
+grid.focusedRowIndex = 3     // Focus row 3
+grid.focusedRowIndex = null  // Clear focus
+
+// Check focus state
+grid.isRowFocused(3)  // true/false
+```
+
+**Behavior:**
+- Click a data cell → focuses that row, fires `onrowfocus`
+- Click row number → selects row (does **not** trigger focus)
+- Click outside grid → clears row focus
+- CSS variables: `--wg-row-focus-bg`, `--wg-row-focus-row-number-bg`
 
 ### Cell Range Selection
 

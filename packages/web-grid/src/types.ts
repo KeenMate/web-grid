@@ -234,6 +234,13 @@ export type RowChangeDetail<T> = {
 	validationError?: string | null
 }
 
+// Detail passed to onrowfocus callback
+export type RowFocusDetail<T> = {
+	rowIndex: number
+	row: T
+	previousRowIndex: number | null
+}
+
 // Detail passed to oncellselectionchange callback
 export type CellSelectionChangeDetail = {
 	range: CellRange | null
@@ -249,6 +256,10 @@ export type PredefinedToolbarItemType = 'add' | 'delete' | 'duplicate' | 'moveUp
 
 // Toolbar position options
 export type ToolbarPosition = 'auto' | 'left' | 'right' | 'top' | 'inline'
+
+// New empty row position
+/** @experimental This type may change in future releases */
+export type NewRowPosition = 'top' | 'bottom'
 
 // Toolbar tooltip configuration
 export type ToolbarTooltip = {
@@ -466,6 +477,7 @@ export type QuickGridProps<T> = {
 	totalItems?: number   // Total items for server-side pagination
 	showPagination?: boolean | 'auto'  // true=always show, false=never, 'auto'=hide when ≤1 page
 	pageSizes?: number[]  // Available page sizes for selector (e.g., [10, 25, 50, 100])
+	paginationMode?: 'client' | 'server'  // 'client' = grid slices items, 'server' = items are already current page (default: 'client')
 	paginationPosition?: string  // Position(s): "bottom-center" (default), "top-right|bottom-right" for multiple
 	paginationLabelsCallback?: PaginationLabelsCallback  // Callback to customize/translate pagination text
 	paginationLayout?: string  // Element order: "pageSize|previous|pageInfo|next" or "first|previous|pageInfo|next|last"
@@ -508,6 +520,7 @@ export type QuickGridProps<T> = {
 	// Scroll behavior
 	isScrollable?: boolean               // Enable scroll container with max-height: 100vh (default: false)
 	scrollMaxHeight?: string             // Custom max-height when isScrollable is true (default: '100vh')
+	tableBorderOnly?: boolean            // Border only around table, not pagination/toolbar (default: false)
 	// Virtual scroll
 	isVirtualScrollEnabled?: boolean     // Enable virtual scroll (default: false)
 	virtualScrollThreshold?: number      // Auto-enable when items >= threshold (default: 100)
@@ -527,6 +540,7 @@ export type QuickGridProps<T> = {
 	ontoolbarclick?: (detail: ToolbarClickDetail<T>) => void
 	ondatarequest?: (detail: DataRequestDetail) => void  // Fires when sort/page changes
 	onrowdelete?: (detail: { rowIndex: number; row: T }) => void  // Ctrl+Delete pressed on a row
+	onrowfocus?: (detail: RowFocusDetail<T>) => void  // Fires when a different row is focused via cell click/focus
 	// Column resize & persistence
 	gridName?: string                                    // Unique name for localStorage persistence
 	shouldPersistColumnWidths?: boolean                  // Persist column widths to localStorage (requires gridName)
@@ -544,6 +558,12 @@ export type QuickGridProps<T> = {
 	cellSelectionMode?: CellSelectionMode  // How to select cell ranges: 'disabled', 'click' (default), 'shift'
 	shouldCopyWithHeaders?: boolean  // Include column headers when copying cell selection to clipboard (default: false)
 	oncellselectionchange?: (detail: CellSelectionChangeDetail) => void  // Fired when cell selection changes
+
+	// New empty row (inline data entry) — EXPERIMENTAL: API may change in future releases
+	isNewRowEnabled?: boolean                          // [Experimental] Enable always-visible empty row for data entry (default: false)
+	newRowPosition?: NewRowPosition                    // [Experimental] Position of empty row: 'top' or 'bottom' (default: 'bottom')
+	newRowIndicator?: string                           // [Experimental] Indicator shown in row number column (default: '+')
+	createEmptyRowCallback?: () => T | Promise<T>     // [Experimental] Factory function to create empty row (can be async)
 }
 
 // =============================================================================

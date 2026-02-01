@@ -35,6 +35,34 @@ web-grid:not(:defined) {
 }
 
 /* ==============================================================================
+   TABLE BORDER ONLY MODE
+   ==============================================================================
+   Border only around the table, pagination/toolbar outside the border.
+   Useful when grid is inside a card to avoid double borders.
+*/
+.wg--table-border-only {
+  border: none;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.wg--table-border-only .wg__table-container {
+  border: var(--wg-table-border);
+  overflow: auto;
+  max-height: inherit;
+  flex: 1;
+  min-height: 0; /* Allow shrinking in flex context */
+}
+
+/* Sticky headers still work within the table container */
+.wg--table-border-only .wg__table-container .wg__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* ==============================================================================
    TABLE
    ============================================================================== */
 .wg__table {
@@ -104,7 +132,7 @@ td.wg__filler {
 
 .wg__row-number {
   /* Use box-shadow instead of border to avoid flicker during sticky scroll */
-  box-shadow: inset -1px 0 0 var(--wg-border-color);
+  box-shadow: inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
 }
 
 /* ==============================================================================

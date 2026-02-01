@@ -11,11 +11,13 @@ import { renderCell } from '../rendering/index.js'
 
 /**
  * Select dropdown option by index
+ * @param commitEmptyRow - If true and editing empty row, add it to items (Enter key behavior)
  */
 export function selectDropdownOption<T>(
 	ctx: GridContext<T>,
 	index: number,
-	moveAfterSelect: boolean = true
+	moveAfterSelect: boolean = true,
+	commitEmptyRow: boolean = false
 ): void {
 	const option = ctx.dropdownOptions[index]
 	if (!option) return
@@ -40,7 +42,7 @@ export function selectDropdownOption<T>(
 	ctx.justSelected = true
 	ctx.isCommittingFromKeyboard = true
 	removeDropdown(ctx)
-	ctx.grid.commitEdit(editingCell.rowIndex, editingCell.field, value)
+	ctx.grid.commitEdit(editingCell.rowIndex, editingCell.field, value, commitEmptyRow)
 
 	if (moveAfterSelect) {
 		// Move focus to next row in same column (like Enter does for other editors)

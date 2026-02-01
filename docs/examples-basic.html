@@ -46,6 +46,11 @@
                 <span id="sortState" style="color: #666; margin-left: 0.5rem;">No sorting applied</span>
                 <small style="display: block; color: #999; margin-top: 0.25rem;">Click column header to sort. Ctrl+Click to add columns (cascading sort).</small>
             </div>
+
+            <div style="margin-top: 0.5rem;">
+                <strong>Focused Row:</strong>
+                <span id="focusedRowState" style="color: #666; margin-left: 0.5rem;">None</span>
+            </div>
         </div>
 
         <div class="card">
@@ -279,6 +284,12 @@
                 sampleData.splice(rowIndex, 1)
                 grid.items = [...sampleData]
             }
+        }
+
+        // Display focused row
+        const focusedRowEl = document.getElementById('focusedRowState')
+        grid.onrowfocus = ({ rowIndex, row }) => {
+            focusedRowEl.innerHTML = `Row ${rowIndex} — <strong>${row.name}</strong> (${row.department}, $${row.salary?.toLocaleString()})`
         }
 
         // Display current sort state (cascading sort)

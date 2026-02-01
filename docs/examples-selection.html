@@ -63,8 +63,8 @@
 
             <div class="controls">
                 <label>
-                    Mode:
-                    <select id="clickMode">
+                    <span title="Preset that configures isEditable, editTrigger, cellSelectionMode, and dropdown behavior">Mode:</span>
+                    <select id="clickMode" title="read-only: non-editable, click to select&#10;excel: editable via navigate, click+drag to select&#10;input-matrix: always editing, shift+drag to select">
                         <option value="read-only">read-only</option>
                         <option value="excel" selected>excel</option>
                         <option value="input-matrix">input-matrix</option>
@@ -110,6 +110,14 @@
                     <li><strong>Delete</strong> - Clear all values in range</li>
                     <li><strong>Ctrl+C</strong> - Copy to clipboard (Excel-compatible TSV)</li>
                 </ul>
+                <div style="margin-top: 1rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; font-size: 0.85rem;">
+                    <strong>Mode presets:</strong> The <code>mode</code> property is a convenience that sets multiple properties at once. Changing it will update the controls above:
+                    <ul style="margin: 0.5rem 0 0 0; padding-left: 1.25rem;">
+                        <li><strong>read-only</strong> &mdash; isEditable=false, cellSelectionMode=click</li>
+                        <li><strong>excel</strong> &mdash; isEditable=true, editTrigger=navigate, cellSelectionMode=click</li>
+                        <li><strong>input-matrix</strong> &mdash; isEditable=true, editTrigger=always, cellSelectionMode=shift (cells are always editing, so shift+drag is needed to select)</li>
+                    </ul>
+                </div>
                 <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>cellSelectionMode: 'click'  // Default
 shouldCopyWithHeaders: false  // Include headers when copying</code></pre>
             </div>
@@ -181,7 +189,50 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
             </div>
         </div>
 
-        <!-- EXAMPLE 5: API Reference -->
+        <!-- EXAMPLE 5: Row Focus (Master/Detail) -->
+        <div class="card">
+            <h2>Row Focus (Master/Detail Pattern)</h2>
+            <p>Click any data cell to focus its row. The <code>onrowfocus</code> callback fires with the focused row's data — perfect for master/detail layouts. Row number clicks do <strong>not</strong> trigger focus (they handle row selection). Clicking outside the grid clears focus.</p>
+
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 400px;">
+                    <web-grid id="grid-row-focus" style="max-width: 100%; max-height: 350px;"></web-grid>
+                </div>
+                <div id="rowFocusDetail" style="flex: 0 0 260px; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 0.9rem; align-self: flex-start;">
+                    <div style="color: #94a3b8; text-align: center; padding: 2rem 0;">Click a cell to see row details</div>
+                </div>
+            </div>
+
+            <div id="rowFocusLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
+                No row focused
+            </div>
+
+            <div class="controls" style="margin-top: 1rem;">
+                <button id="focusRow0Btn">Focus row 0</button>
+                <button id="focusRow5Btn">Focus row 5</button>
+                <button id="clearRowFocusBtn">Clear focus</button>
+            </div>
+
+            <div class="note" style="margin-top: 1rem;">
+                <div class="note-title">Row Focus API</div>
+                <ul>
+                    <li><strong>Click cell</strong> — Focuses that row, fires <code>onrowfocus</code></li>
+                    <li><strong>Click row number</strong> — Selects row (does NOT focus)</li>
+                    <li><strong>Click outside</strong> — Clears row focus</li>
+                    <li><strong>grid.focusedRowIndex</strong> — Get/set focused row programmatically</li>
+                </ul>
+                <pre style="background: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-top: 0.5rem;"><code>grid.onrowfocus = ({ rowIndex, row, previousRowIndex }) => {
+    detailPanel.innerHTML = renderDetail(row)
+    console.log(`Row ${rowIndex} focused (was: ${previousRowIndex})`)
+}
+
+// Programmatic control
+grid.focusedRowIndex = 3    // Focus row 3
+grid.focusedRowIndex = null // Clear focus</code></pre>
+            </div>
+        </div>
+
+        <!-- EXAMPLE 6: API Reference -->
         <div class="card">
             <h2>API Reference</h2>
             
@@ -230,6 +281,18 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
                 <tr>
                     <td><code>oncellselectionchange</code></td>
                     <td>Event fired when cell selection changes</td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top: 2rem; color: #667eea;">Row Focus API</h3>
+            <table class="props-table">
+                <tr>
+                    <td><code>focusedRowIndex</code></td>
+                    <td>Get/set the focused row index (null if none)</td>
+                </tr>
+                <tr>
+                    <td><code>onrowfocus</code></td>
+                    <td>Callback fired when focused row changes: <code>{ rowIndex, row, previousRowIndex }</code></td>
                 </tr>
             </table>
 
@@ -446,12 +509,24 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
             }
         ]
 
+        // Sync UI controls with actual grid state (after mode changes apply defaults)
+        const syncControlsWithGrid = () => {
+            document.getElementById('clickCellSelectionMode').value = gridCellRangeClick.cellSelectionMode
+            document.getElementById('clickEditTrigger').value = gridCellRangeClick.editTrigger
+            document.getElementById('clickIsEditable').checked = gridCellRangeClick.isEditable
+            // Update currentSettings to match
+            currentSettings.cellSelectionMode = gridCellRangeClick.cellSelectionMode
+            currentSettings.editTrigger = gridCellRangeClick.editTrigger
+            currentSettings.isEditable = gridCellRangeClick.isEditable
+            saveSettings(currentSettings)
+        }
+
         // Wire up controls for Click Mode example
         document.getElementById('clickMode').addEventListener('change', (e) => {
             currentSettings.mode = e.target.value
-            gridCellRangeClick.mode = e.target.value
-            saveSettings(currentSettings)
-            console.log('mode changed to:', e.target.value)
+            gridCellRangeClick.mode = e.target.value  // This calls applyModeDefaults() internally
+            syncControlsWithGrid()  // Update UI to show what mode actually set
+            console.log('mode changed to:', e.target.value, '→ editTrigger:', gridCellRangeClick.editTrigger, ', cellSelectionMode:', gridCellRangeClick.cellSelectionMode)
         })
 
         document.getElementById('clickCellSelectionMode').addEventListener('change', (e) => {
@@ -666,9 +741,67 @@ cellSelectionMode: 'shift'  // Avoids conflict</code></pre>
         }, 100)
 
         // =================================================================
+        // EXAMPLE 5: Row Focus (Master/Detail)
+        // =================================================================
+        const gridRowFocus = document.getElementById('grid-row-focus')
+        gridRowFocus.items = createSampleData()
+        gridRowFocus.columns = columns
+        gridRowFocus.isRowNumbersVisible = true
+        gridRowFocus.isHoverable = true
+        gridRowFocus.mode = 'navigate'
+        gridRowFocus.sortMode = 'multi'
+
+        const detailPanel = document.getElementById('rowFocusDetail')
+        const focusLog = document.getElementById('rowFocusLog')
+
+        function renderDetail(row) {
+            return `
+                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.75rem; color: #334155;">${row.name}</div>
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.4rem 1rem;">
+                    <span style="color: #64748b;">ID:</span><span>${row.id}</span>
+                    <span style="color: #64748b;">Department:</span><span>${row.department}</span>
+                    <span style="color: #64748b;">Salary:</span><span>$${row.salary?.toLocaleString()}</span>
+                    <span style="color: #64748b;">Hours:</span><span>${row.hours}</span>
+                    <span style="color: #64748b;">Status:</span><span>${row.status}</span>
+                </div>
+            `
+        }
+
+        gridRowFocus.onrowfocus = ({ rowIndex, row, previousRowIndex }) => {
+            detailPanel.innerHTML = renderDetail(row)
+            const prevLabel = previousRowIndex !== null ? `row ${previousRowIndex}` : 'none'
+            focusLog.innerHTML = `<strong>Focused:</strong> row ${rowIndex} (${row.name}) — <span style="color: #94a3b8;">previous: ${prevLabel}</span>`
+        }
+
+        // Programmatic control buttons
+        document.getElementById('focusRow0Btn').addEventListener('click', () => {
+            gridRowFocus.focusedRowIndex = 0
+            const row = gridRowFocus.items[0]
+            if (row) {
+                detailPanel.innerHTML = renderDetail(row)
+                focusLog.innerHTML = `<strong>Focused:</strong> row 0 (${row.name}) — <span style="color: #94a3b8;">set programmatically</span>`
+            }
+        })
+
+        document.getElementById('focusRow5Btn').addEventListener('click', () => {
+            gridRowFocus.focusedRowIndex = 5
+            const row = gridRowFocus.items[5]
+            if (row) {
+                detailPanel.innerHTML = renderDetail(row)
+                focusLog.innerHTML = `<strong>Focused:</strong> row 5 (${row.name}) — <span style="color: #94a3b8;">set programmatically</span>`
+            }
+        })
+
+        document.getElementById('clearRowFocusBtn').addEventListener('click', () => {
+            gridRowFocus.focusedRowIndex = null
+            detailPanel.innerHTML = '<div style="color: #94a3b8; text-align: center; padding: 2rem 0;">Click a cell to see row details</div>'
+            focusLog.textContent = 'No row focused'
+        })
+
+        // =================================================================
         // Global Copy With Headers Setting (persisted to localStorage)
         // =================================================================
-        const allGrids = [gridRowSelection, gridCellRangeClick, gridCellRangeShift, gridRangeShortcuts]
+        const allGrids = [gridRowSelection, gridCellRangeClick, gridCellRangeShift, gridRangeShortcuts, gridRowFocus]
         const copyWithHeadersCheckbox = document.getElementById('globalCopyWithHeaders')
 
         // Load saved setting from localStorage

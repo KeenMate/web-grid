@@ -234,6 +234,37 @@
         </div>
 
         <div class="card">
+            <h2>Table Border Only (No Double Border)</h2>
+            <p>When a grid with pagination is inside a card, you get a double border effect.
+               Use <code>tableBorderOnly</code> to place the border only around the table,
+               letting pagination float outside.</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+                <!-- Default: Double border issue -->
+                <div>
+                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #666;">Default (double border)</h3>
+                    <div style="border: 2px solid #3b82f6; border-radius: 8px; padding: 1rem; background: var(--wg-surface-2, #f9fafb);">
+                        <web-grid id="gridDoubleBorder" style="max-height: 200px;"></web-grid>
+                    </div>
+                </div>
+
+                <!-- With tableBorderOnly -->
+                <div>
+                    <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #666;">tableBorderOnly={true}</h3>
+                    <div style="border: 2px solid #3b82f6; border-radius: 8px; padding: 1rem; background: var(--wg-surface-2, #f9fafb);">
+                        <web-grid id="gridTableBorderOnly" tableBorderOnly style="max-height: 200px;"></web-grid>
+                    </div>
+                </div>
+            </div>
+
+            <pre style="margin-top: 1rem;"><code>// Default - border wraps everything including pagination
+&lt;web-grid ...&gt;&lt;/web-grid&gt;
+
+// Table border only - pagination floats outside the border
+&lt;web-grid tableBorderOnly ...&gt;&lt;/web-grid&gt;</code></pre>
+        </div>
+
+        <div class="card">
             <h2>How It Works</h2>
 
             <h3>1. cellClassCallback (Column-level)</h3>
@@ -615,6 +646,37 @@
                 grid.columns = [...columns]  // Trigger re-render
             }
         })
+
+        // =====================================================================
+        // Table Border Only Comparison Grids
+        // =====================================================================
+        const borderDemoData = sampleData.slice(0, 8)  // Just first 8 rows
+        const borderDemoColumns = [
+            { field: 'id', title: 'ID', width: '50px', horizontalAlign: 'center' },
+            { field: 'name', title: 'Name', width: '140px' },
+            { field: 'department', title: 'Department', width: '100px' },
+            { field: 'salary', title: 'Salary', width: '90px', horizontalAlign: 'right',
+              formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : '' }
+        ]
+
+        // Default grid (shows double border issue)
+        const gridDoubleBorder = document.getElementById('gridDoubleBorder')
+        gridDoubleBorder.items = borderDemoData
+        gridDoubleBorder.columns = borderDemoColumns
+        gridDoubleBorder.isPageable = true
+        gridDoubleBorder.pageSize = 3
+        gridDoubleBorder.paginationPosition = 'bottom-right'
+        gridDoubleBorder.paginationLayout = 'previous|pageInfo|next'
+
+        // Grid with tableBorderOnly (no double border)
+        const gridTableBorderOnly = document.getElementById('gridTableBorderOnly')
+        gridTableBorderOnly.items = borderDemoData
+        gridTableBorderOnly.columns = borderDemoColumns
+        gridTableBorderOnly.isPageable = true
+        gridTableBorderOnly.pageSize = 3
+        gridTableBorderOnly.paginationPosition = 'bottom-right'
+        gridTableBorderOnly.paginationLayout = 'previous|pageInfo|next'
+        gridTableBorderOnly.tableBorderOnly = true
     </script>
 </body>
 </html>

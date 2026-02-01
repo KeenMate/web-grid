@@ -169,10 +169,19 @@ export async function executePaste<T>(
 	// Get visual columns for position-based mapping
 	const visualCols = grid.visualColumns
 
+	// Check if pasting into the empty row - if so, ALL rows become new rows
+	const isPastingIntoEmptyRow = grid.isEmptyRowIndex(targetRowIndex)
+
 	// Calculate how many new rows are needed
 	const existingRowCount = grid.items.length
-	const lastDataRowIndex = targetRowIndex + dataRows.length - 1
-	const newRowsCount = Math.max(0, lastDataRowIndex - existingRowCount + 1)
+	let newRowsCount: number
+	if (isPastingIntoEmptyRow) {
+		// All paste rows become new rows when pasting into empty row
+		newRowsCount = dataRows.length
+	} else {
+		const lastDataRowIndex = targetRowIndex + dataRows.length - 1
+		newRowsCount = Math.max(0, lastDataRowIndex - existingRowCount + 1)
+	}
 
 	// Build BeforePasteDetail for the event
 	const beforeDetail: BeforePasteDetail<T> = {
@@ -206,12 +215,18 @@ export async function executePaste<T>(
 
 	// Create new rows if needed
 	let createdRowsCount = 0
+	// Track the starting index for new rows (used for paste loop when pasting into empty row)
+	let newRowsStartIndex = existingRowCount
+
 	if (newRowsCount > 0) {
-		const newItems = [...grid.items]
+		const newRows: T[] = []
 
 		for (let i = 0; i < newRowsCount; i++) {
-			const rowIndex = existingRowCount + i
-			const relativeRowIndex = rowIndex - targetRowIndex
+			// When pasting into empty row, all rows are new (relativeRowIndex = i)
+			// Otherwise, calculate which paste row this new row corresponds to
+			const relativeRowIndex = isPastingIntoEmptyRow
+				? i
+				: (existingRowCount + i) - targetRowIndex
 			const pastedRowData = dataRows[relativeRowIndex]
 
 			// Collect pasted values for this row
@@ -236,28 +251,51 @@ export async function executePaste<T>(
 				})
 			}
 
-			// Create the row
+			// Create the row using createRowCallback or just the pasted data
+			// Note: We intentionally DON'T use createEmptyRowCallback here because
+			// that would assign IDs to potentially invalid rows. IDs should only
+			// be assigned when rows are validated and saved.
 			let newRow: T
 			if (grid.createRowCallback) {
-				newRow = grid.createRowCallback(pastedData, rowIndex)
+				newRow = grid.createRowCallback(pastedData, existingRowCount + i)
 			} else {
 				newRow = pastedData as T
 			}
 
-			newItems.push(newRow)
+			newRows.push(newRow)
 			createdRowsCount++
 		}
 
-		grid.items = newItems
+		// Insert new rows at correct position
+		if (isPastingIntoEmptyRow && grid.newRowPosition === 'top') {
+			// Insert at beginning
+			grid.items = [...newRows, ...grid.items]
+			newRowsStartIndex = 0
+		} else {
+			// Append at end
+			grid.items = [...grid.items, ...newRows]
+			newRowsStartIndex = existingRowCount
+		}
 	}
 
-	// Now paste values into cells
+	// Now paste values into cells (run validation)
 	const cellResults: PasteCellResult[] = []
 	const pasteMode = grid.pasteMode
 
 	for (let relRowIndex = 0; relRowIndex < dataRows.length; relRowIndex++) {
 		const row = dataRows[relRowIndex]
-		const absoluteRowIndex = targetRowIndex + relRowIndex
+		// Calculate both items index (for data access) and display index (for invalid cell tracking)
+		const itemsRowIndex = isPastingIntoEmptyRow
+			? newRowsStartIndex + relRowIndex
+			: targetRowIndex + relRowIndex
+		// Display index accounts for the virtual empty row
+		const displayRowIndex = isPastingIntoEmptyRow
+			? (grid.newRowPosition === 'top'
+				? 1 + relRowIndex  // Empty row at display[0], new rows at display[1, 2, ...]
+				: grid.items.length - dataRows.length + relRowIndex)  // New rows at end, before empty row
+			: targetRowIndex + relRowIndex
+		// Use itemsRowIndex for data access, displayRowIndex for invalid cell tracking
+		const absoluteRowIndex = itemsRowIndex
 
 		for (let relColIndex = 0; relColIndex < row.length; relColIndex++) {
 			const value = row[relColIndex]
@@ -279,7 +317,7 @@ export async function executePaste<T>(
 				if (absoluteColIndex >= visualCols.length) {
 					// Out of bounds - skip
 					cellResults.push({
-						rowIndex: absoluteRowIndex,
+						rowIndex: displayRowIndex,
 						field: '',
 						value,
 						isValid: false,
@@ -295,7 +333,7 @@ export async function executePaste<T>(
 			const cellKey = `${relRowIndex}-${relColIndex}`
 			if (beforeDetail.skipCells.has(cellKey)) {
 				cellResults.push({
-					rowIndex: absoluteRowIndex,
+					rowIndex: displayRowIndex,
 					field,
 					value,
 					isValid: true,
@@ -318,7 +356,7 @@ export async function executePaste<T>(
 				if (pasteMode === 'editable-only') {
 					// Block entire paste - but we're already iterating, so skip remaining
 					cellResults.push({
-						rowIndex: absoluteRowIndex,
+						rowIndex: displayRowIndex,
 						field,
 						value,
 						isValid: false,
@@ -328,7 +366,7 @@ export async function executePaste<T>(
 					continue
 				} else if (pasteMode === 'skip-non-editable') {
 					cellResults.push({
-						rowIndex: absoluteRowIndex,
+						rowIndex: displayRowIndex,
 						field,
 						value,
 						isValid: true,
@@ -341,10 +379,13 @@ export async function executePaste<T>(
 			}
 
 			// Check row locking
-			const rowData = grid.displayItems[absoluteRowIndex]
+			// For empty row paste, use items directly (new rows); otherwise use displayItems
+			const rowData = isPastingIntoEmptyRow
+				? grid.items[absoluteRowIndex]
+				: grid.displayItems[absoluteRowIndex]
 			if (rowData && grid.isRowLocked(rowData)) {
 				cellResults.push({
-					rowIndex: absoluteRowIndex,
+					rowIndex: displayRowIndex,
 					field,
 					value,
 					isValid: true,
@@ -360,18 +401,64 @@ export async function executePaste<T>(
 				processedValue = column.beforePasteCallback(value, rowData)
 			}
 
-			// Commit the value
-			if (grid.shouldValidateOnPaste) {
+			// Commit the value and run validation
+			if (isPastingIntoEmptyRow) {
+				// For empty row paste, data is already in items - just run validation
+				const item = grid.items[absoluteRowIndex]
+				if (item && grid.shouldValidateOnPaste && column.beforeCommitCallback) {
+					const context = {
+						value: processedValue,
+						oldValue: undefined,
+						row: item,
+						rowIndex: absoluteRowIndex,
+						field
+					}
+					const result = await Promise.resolve(column.beforeCommitCallback(context))
+					const isValid = result === true || result === undefined ||
+						(typeof result === 'object' && result !== null && (result as { valid?: boolean }).valid !== false)
+					const errorMsg = typeof result === 'object' && result !== null
+						? ((result as { error?: string }).error || (result as { message?: string }).message)
+						: (typeof result === 'string' ? result : undefined)
+
+					if (!isValid) {
+						// Use displayRowIndex for invalid cell tracking (render uses display indices)
+						grid.addInvalidCell(displayRowIndex, field, errorMsg || 'Invalid value')
+						grid.onvalidationerror?.({
+							row: item,
+							rowIndex: displayRowIndex,
+							field,
+							error: errorMsg || 'Invalid value'
+						})
+					}
+
+					cellResults.push({
+						rowIndex: displayRowIndex,
+						field,
+						value: processedValue,
+						isValid,
+						validationError: isValid ? undefined : errorMsg,
+						wasSkipped: false
+					})
+				} else {
+					cellResults.push({
+						rowIndex: displayRowIndex,
+						field,
+						value: processedValue,
+						isValid: true,
+						wasSkipped: false
+					})
+				}
+			} else if (grid.shouldValidateOnPaste) {
 				// Use commitEdit which handles validation
-				await grid.commitEdit(absoluteRowIndex, field, processedValue)
+				await grid.commitEdit(displayRowIndex, field, processedValue)
 
 				// Check if cell is now invalid
 				const invalidCell = grid.invalidCells.find(
-					c => c.rowIndex === absoluteRowIndex && c.field === field
+					c => c.rowIndex === displayRowIndex && c.field === field
 				)
 
 				cellResults.push({
-					rowIndex: absoluteRowIndex,
+					rowIndex: displayRowIndex,
 					field,
 					value: processedValue,
 					isValid: !invalidCell,
@@ -379,15 +466,14 @@ export async function executePaste<T>(
 					wasSkipped: false
 				})
 			} else {
-				// Skip validation - update directly
-				// For existing rows, we need to update via draft
+				// Skip validation - update items directly
 				const item = grid.items[absoluteRowIndex]
 				if (item) {
-					;(item as Record<string, unknown>)[field] = processedValue
+					(item as Record<string, unknown>)[field] = processedValue
 				}
 
 				cellResults.push({
-					rowIndex: absoluteRowIndex,
+					rowIndex: displayRowIndex,
 					field,
 					value: processedValue,
 					isValid: true,

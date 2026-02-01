@@ -49,6 +49,7 @@ npm install @keenmate/web-grid
 - **Inline Editing** - 7 editor types with validation support
 - **Navigate Mode** - Spreadsheet-like keyboard navigation
 - **Row Toolbar** - Floating action buttons on hover
+- **Row Focus** - Track focused row for master/detail patterns (`onrowfocus` event)
 - **Context Menu** - Right-click menu with dynamic options
 - **Dark Mode** - Built-in dark theme support via CSS variables
 - **Shadow DOM** - Encapsulated styles with CSS variable customization

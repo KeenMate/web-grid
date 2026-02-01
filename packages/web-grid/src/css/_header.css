@@ -15,7 +15,7 @@
   height: var(--wg-header-min-height);  /* In table layout, height acts as min-height */
   border-bottom: var(--wg-header-border);
   /* Use box-shadow instead of border-right to avoid flicker with sticky + border-collapse */
-  box-shadow: inset -1px 0 0 var(--wg-border-color);
+  box-shadow: inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
   box-sizing: border-box;  /* Include padding in width calculation */
   /* text-align set by inline style from column.headerAlign or column.align */
   user-select: none;

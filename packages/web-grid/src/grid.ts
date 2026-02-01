@@ -47,10 +47,12 @@ import type {
 	CellSelectionMode,
 	CellRange,
 	CellSelectionChangeDetail,
+	RowFocusDetail,
 	PasteMode,
 	BeforePasteDetail,
 	PasteDetail,
-	CreateRowCallback
+	CreateRowCallback,
+	NewRowPosition
 } from './types.js'
 
 // Date formatting utilities for auto-formatting date columns
@@ -109,6 +111,7 @@ export class WebGrid<T = unknown> {
 	protected _isPageable: boolean = false
 	protected _pageSize: number = 10
 	protected _pageSizes: number[] = [10, 25, 50, 100]
+	protected _paginationMode: 'client' | 'server' = 'client'
 	protected _isStriped: boolean = true
 	protected _isHoverable: boolean = true
 	protected _isEditable: boolean = false
@@ -214,6 +217,7 @@ export class WebGrid<T = unknown> {
 	// Scroll behavior
 	protected _isScrollable: boolean = false
 	protected _scrollMaxHeight: string = '100vh'
+	protected _tableBorderOnly: boolean = false
 
 	// Virtual scroll
 	protected _isVirtualScrollEnabled: boolean = false
@@ -240,7 +244,9 @@ export class WebGrid<T = unknown> {
 
 	// Interaction state (centralized tracking for hover, focus, edit)
 	protected _hoveredRowIndex: number | null = null
-	protected _onInteractionChange: ((type: 'hoveredRow' | 'focusedCell' | 'editingCell', detail: { prev: any, current: any }) => void) | null = null
+	protected _focusedRowIndex: number | null = null
+	protected _onrowfocus: ((detail: RowFocusDetail<T>) => void) | undefined
+	protected _onInteractionChange: ((type: 'hoveredRow' | 'focusedCell' | 'editingCell' | 'focusedRow', detail: { prev: any, current: any }) => void) | null = null
 
 	// Row selection state
 	protected _selectedRows: Set<number> = new Set()
@@ -264,6 +270,13 @@ export class WebGrid<T = unknown> {
 	protected _createRowCallback: CreateRowCallback<T> | undefined = undefined
 	protected _onbeforepaste: ((detail: BeforePasteDetail<T>) => void) | undefined = undefined
 	protected _onpaste: ((detail: PasteDetail<T>) => void) | undefined = undefined
+
+	// New empty row (inline data entry) — EXPERIMENTAL: API may change
+	protected _isNewRowEnabled: boolean = false
+	protected _newRowPosition: NewRowPosition = 'bottom'
+	protected _newRowIndicator: string = '+'
+	protected _createEmptyRowCallback: (() => T | Promise<T>) | undefined = undefined
+	protected _emptyRowDraft: T | null = null  // Tracks edits to empty row before commit
 
 	// ==========================================================================
 	// Public API - Getters/Setters
@@ -308,6 +321,12 @@ export class WebGrid<T = unknown> {
 	get pageSizes(): number[] { return this._pageSizes }
 	set pageSizes(value: number[]) {
 		this._pageSizes = value
+		this.requestUpdate()
+	}
+
+	get paginationMode(): 'client' | 'server' { return this._paginationMode }
+	set paginationMode(value: 'client' | 'server') {
+		this._paginationMode = value
 		this.requestUpdate()
 	}
 
@@ -675,6 +694,12 @@ export class WebGrid<T = unknown> {
 	get scrollMaxHeight(): string { return this._scrollMaxHeight }
 	set scrollMaxHeight(value: string) {
 		this._scrollMaxHeight = value
+		this.requestUpdate()
+	}
+
+	get tableBorderOnly(): boolean { return this._tableBorderOnly }
+	set tableBorderOnly(value: boolean) {
+		this._tableBorderOnly = value
 		this.requestUpdate()
 	}
 
@@ -1070,6 +1095,34 @@ export class WebGrid<T = unknown> {
 	get onpaste(): ((detail: PasteDetail<T>) => void) | undefined { return this._onpaste }
 	set onpaste(value: ((detail: PasteDetail<T>) => void) | undefined) { this._onpaste = value }
 
+	// New empty row properties — EXPERIMENTAL: API may change
+	get isNewRowEnabled(): boolean { return this._isNewRowEnabled }
+	set isNewRowEnabled(value: boolean) {
+		if (value && !this.isNavigateMode) {
+			console.warn('[WebGrid] Empty row requires navigate mode (editTrigger: "navigate"). Tab navigation will not work correctly without it.')
+		}
+		this._isNewRowEnabled = value
+		this._emptyRowDraft = null  // Reset draft when feature is toggled
+		this.requestUpdate()
+	}
+
+	get newRowPosition(): NewRowPosition { return this._newRowPosition }
+	set newRowPosition(value: NewRowPosition) {
+		this._newRowPosition = value
+		this.requestUpdate()
+	}
+
+	get newRowIndicator(): string { return this._newRowIndicator }
+	set newRowIndicator(value: string) {
+		this._newRowIndicator = value
+		this.requestUpdate()
+	}
+
+	get createEmptyRowCallback(): (() => T | Promise<T>) | undefined { return this._createEmptyRowCallback }
+	set createEmptyRowCallback(value: (() => T | Promise<T>) | undefined) {
+		this._createEmptyRowCallback = value
+	}
+
 	selectCellRange(range: CellRange): void {
 		// Clear row and column selection when selecting cells
 		if (this._selectedRows.size > 0) {
@@ -1359,6 +1412,12 @@ export class WebGrid<T = unknown> {
 	get paginatedItems(): T[] {
 		if (!this._isPageable) return this.sortedItems
 
+		// Server-side pagination: items are already the current page, don't slice
+		if (this._paginationMode === 'server') {
+			return this.sortedItems
+		}
+
+		// Client-side pagination: slice the items array
 		const start = (this._currentPage - 1) * this._pageSize
 		const end = start + this._pageSize
 		return this.sortedItems.slice(start, end)
@@ -1371,7 +1430,97 @@ export class WebGrid<T = unknown> {
 	}
 
 	get displayItems(): T[] {
-		return this.paginatedItems
+		const items = this.paginatedItems
+		if (!this._isNewRowEnabled) return items
+
+		const emptyRow = this.getEmptyRow()
+		return this._newRowPosition === 'top'
+			? [emptyRow, ...items]
+			: [...items, emptyRow]
+	}
+
+	// ==========================================================================
+	// Empty Row Helpers
+	// ==========================================================================
+
+	/**
+	 * Get the empty row (draft or newly created)
+	 * Caches the result in _emptyRowDraft to avoid calling createEmptyRowCallback multiple times
+	 */
+	protected getEmptyRow(): T {
+		if (this._emptyRowDraft) {
+			return this._emptyRowDraft
+		}
+		// Create and cache the empty row
+		const newRow = this.createNewEmptyRow()
+		this._emptyRowDraft = newRow
+		return newRow
+	}
+
+	/**
+	 * Create a new empty row using callback or default factory
+	 */
+	protected createNewEmptyRow(): T {
+		if (this._createEmptyRowCallback) {
+			const result = this._createEmptyRowCallback()
+			if (result instanceof Promise) {
+				// Async callback - return empty object for now, will update when resolved
+				result.then(row => {
+					this._emptyRowDraft = row
+					this.requestUpdate()
+				}).catch(err => {
+					console.warn('WebGrid: createEmptyRowCallback failed', err)
+				})
+				return {} as T
+			}
+			return result
+		}
+		// Default: create object with null values for all columns
+		const row = {} as Record<string, unknown>
+		for (const col of this._columns) {
+			row[String(col.field)] = null
+		}
+		return row as T
+	}
+
+	/**
+	 * Check if a display index refers to the empty row
+	 */
+	isEmptyRowIndex(displayIndex: number): boolean {
+		if (!this._isNewRowEnabled) return false
+
+		if (this._newRowPosition === 'top') {
+			return displayIndex === 0
+		} else {
+			// Bottom: empty row is last item
+			return displayIndex === this.paginatedItems.length
+		}
+	}
+
+	/**
+	 * Convert display index to data index (accounting for empty row)
+	 */
+	getDataIndexFromDisplayIndex(displayIndex: number): number {
+		if (!this._isNewRowEnabled) return displayIndex
+		if (this._newRowPosition === 'top') {
+			// Empty row at top: subtract 1 from display index
+			return displayIndex - 1
+		}
+		// Empty row at bottom: same index
+		return displayIndex
+	}
+
+	/**
+	 * Check if empty row has any actual data (not all null/empty)
+	 */
+	protected emptyRowHasData(row: T): boolean {
+		for (const col of this._columns) {
+			const value = (row as Record<string, unknown>)[String(col.field)]
+			if (value !== null && value !== undefined && value !== '') {
+				return true
+			}
+		}
+		return false
 	}
 
 	// ==========================================================================
@@ -1501,9 +1650,13 @@ export class WebGrid<T = unknown> {
 	// ==========================================================================
 
 	getCellRawValue(item: T, rowIndex: number, field: string): unknown {
-		const draftRow = this._draftRows.get(rowIndex)
-		if (draftRow) {
-			return (draftRow as Record<string, unknown>)[field]
+		// Empty row uses item directly (which is _emptyRowDraft via displayItems)
+		// Don't check _draftRows for empty row - it has its own draft system
+		if (!this.isEmptyRowIndex(rowIndex)) {
+			const draftRow = this._draftRows.get(rowIndex)
+			if (draftRow) {
+				return (draftRow as Record<string, unknown>)[field]
+			}
 		}
 		return (item as Record<string, unknown>)[field]
 	}
@@ -1548,7 +1701,7 @@ export class WebGrid<T = unknown> {
 		return cell?.error || null
 	}
 
-	protected addInvalidCell(rowIndex: number, field: string, error: string): void {
+	addInvalidCell(rowIndex: number, field: string, error: string): void {
 		const existingIndex = this._invalidCells.findIndex(c => c.rowIndex === rowIndex && c.field === field)
 		if (existingIndex >= 0) {
 			this._invalidCells[existingIndex] = { rowIndex, field, error }
@@ -1557,7 +1710,7 @@ export class WebGrid<T = unknown> {
 		}
 	}
 
-	protected removeInvalidCell(rowIndex: number, field: string): void {
+	removeInvalidCell(rowIndex: number, field: string): void {
 		this._invalidCells = this._invalidCells.filter(c => !(c.rowIndex === rowIndex && c.field === field))
 	}
 
@@ -1658,14 +1811,16 @@ export class WebGrid<T = unknown> {
 
 	/**
 	 * Commit edit with validation
+	 * @param commitEmptyRow - If true and editing empty row, add it to items. If false, just update the draft.
 	 */
-	async commitEdit(rowIndex: number, field: string, newValue: unknown): Promise<void> {
+	async commitEdit(rowIndex: number, field: string, newValue: unknown, commitEmptyRow: boolean = false): Promise<void> {
 		const column = this._columns.find(c => String(c.field) === field)
 		if (!column) return
 
 		const item = this.displayItems[rowIndex]
 		if (!item) return
 
+		const isEmptyRow = this.isEmptyRowIndex(rowIndex)
 		const oldValue = (item as Record<string, unknown>)[field]
 		let finalValue = newValue
 		let validationError: string | null = null
@@ -1704,6 +1859,95 @@ export class WebGrid<T = unknown> {
 		}
 
 		this._isValidating = false
+
+		// Handle empty row commit - LENIENT validation (tracks errors but doesn't block)
+		if (isEmptyRow) {
+			// Always update empty row draft with the value (preserves user input)
+			if (!this._emptyRowDraft) {
+				this._emptyRowDraft = { ...item }
+			}
+			(this._emptyRowDraft as Record<string, unknown>)[field] = finalValue
+
+			// Track validation state (but DON'T block commit)
+			if (!isValid) {
+				this.addInvalidCell(rowIndex, field, validationError || "Invalid value")
+				this._currentCellError = validationError
+				this._onvalidationerror?.({
+					row: item,
+					rowIndex,
+					field,
+					error: validationError || "Invalid value"
+				})
+			} else {
+				this.removeInvalidCell(rowIndex, field)
+				this._currentCellError = null
+			}
+
+			// Commit to items if explicitly requested (Enter key or Tab on last cell)
+			if (commitEmptyRow) {
+				// Check if the empty row has any actual data (not all null/empty)
+				const hasData = this.emptyRowHasData(this._emptyRowDraft)
+
+				if (hasData) {
+					// Add the row to items (even with invalid cells)
+					const newRow = { ...this._emptyRowDraft }
+					const newRowIndex = this._newRowPosition === 'top'
+						? 0
+						: this._items.length
+
+					// Shift invalid cell indices: empty row becomes real row
+					this._invalidCells = this._invalidCells.map(c => {
+						if (c.rowIndex === rowIndex) {
+							// This was the empty row, now it's at newRowIndex
+							return { ...c, rowIndex: newRowIndex }
+						}
+						// Shift other indices if inserting at top
+						if (this._newRowPosition === 'top') {
+							return { ...c, rowIndex: c.rowIndex + 1 }
+						}
+						return c
+					})
+
+					if (this._newRowPosition === 'top') {
+						this._items = [newRow, ...this._items]
+					} else {
+						this._items = [...this._items, newRow]
+					}
+
+					// Check if the committed row has any invalid cells
+					const rowHasInvalidCells = this._invalidCells.some(c => c.rowIndex === newRowIndex)
+
+					// Fire onrowchange with validation state
+					this._onrowchange?.({
+						row: newRow,
+						draftRow: newRow,
+						rowIndex: newRowIndex,
+						field,
+						oldValue: null,
+						newValue: finalValue,
+						isValid: !rowHasInvalidCells,
+						validationError: rowHasInvalidCells ? 'Row has invalid cells' : null
+					})
+
+					// Reset empty row draft for next entry
+					this._emptyRowDraft = null
+
+					// Exit edit mode and re-render
+					const prevEditingCell = this._editingCell
+					this._editingCell = null
+					this._onInteractionChange?.('editingCell', { prev: prevEditingCell, current: null })
+					this.requestUpdate()
+					return
+				}
+			}
+
+			// Tab within empty row or no data yet - exit edit mode, keep draft
+			// NOTE: No requestUpdate() - caller handles surgical DOM update
+			const prevEditingCell = this._editingCell
+			this._editingCell = null
+			this._onInteractionChange?.('editingCell', { prev: prevEditingCell, current: null })
+			return
+		}
 
 		// ALWAYS update draft row (valid OR invalid) - preserves user input
 		let draftRow = this._draftRows.get(rowIndex)
@@ -1821,6 +2065,67 @@ export class WebGrid<T = unknown> {
 		const prev = this._hoveredRowIndex
 		this._hoveredRowIndex = rowIndex
 		this._onInteractionChange?.('hoveredRow', { prev, current: rowIndex })
+	}
+
+	// ==========================================================================
+	// Row Focus (for master/detail patterns)
+	// ==========================================================================
+
+	get focusedRowIndex(): number | null { return this._focusedRowIndex }
+	set focusedRowIndex(value: number | null) {
+		if (value === null) {
+			this.clearRowFocus()
+		} else {
+			this.setFocusedRow(value)
+		}
+		this.requestUpdate()
+	}
+
+	get onrowfocus(): ((detail: RowFocusDetail<T>) => void) | undefined {
+		return this._onrowfocus
+	}
+	set onrowfocus(value: ((detail: RowFocusDetail<T>) => void) | undefined) {
+		this._onrowfocus = value
+	}
+
+	/**
+	 * Check if a row is currently focused
+	 */
+	isRowFocused(rowIndex: number): boolean {
+		return this._focusedRowIndex === rowIndex
+	}
+
+	/**
+	 * Clear the focused row
+	 * NOTE: Does NOT call requestUpdate() - caller handles DOM updates
+	 */
+	clearRowFocus(): void {
+		if (this._focusedRowIndex === null) return
+		const prev = this._focusedRowIndex
+		this._focusedRowIndex = null
+		this._onInteractionChange?.('focusedRow', { prev, current: null })
+	}
+
+	/**
+	 * Set the focused row (fires callback if row changed)
+	 * Called internally when a cell is focused/clicked
+	 * NOTE: Does NOT call requestUpdate() - caller handles DOM updates surgically
+	 */
+	setFocusedRow(rowIndex: number): void {
+		if (this._focusedRowIndex === rowIndex) return
+		const previousRowIndex = this._focusedRowIndex
+		this._focusedRowIndex = rowIndex
+		this._onInteractionChange?.('focusedRow', { prev: previousRowIndex, current: rowIndex })
+
+		// Fire onrowfocus callback
+		const row = this.displayItems[rowIndex]
+		if (row && this._onrowfocus) {
+			this._onrowfocus({
+				rowIndex,
+				row,
+				previousRowIndex
+			})
+		}
 	}
 
 	// ==========================================================================

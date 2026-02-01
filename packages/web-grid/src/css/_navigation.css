@@ -28,3 +28,27 @@
 .wg--navigate-mode .wg__cell--dragging-from.wg__cell--focused {
   outline: none;
 }
+
+/* ==============================================================================
+   ROW FOCUS (master/detail patterns)
+   ==============================================================================
+   Must be in this file (after _cells.css) so source order beats the
+   .wg--navigate-mode .wg__cell:not(.wg__cell--editable) readonly rule
+   at equal specificity (0,3,0).
+*/
+.wg__row--focused > .wg__cell {
+  background: var(--wg-row-focus-bg);
+}
+
+.wg__row--focused > .wg__cell.wg__row-number {
+  background: var(--wg-row-focus-row-number-bg);
+}
+
+/* Navigate mode: override read-only cell background (needs 0,3,0 specificity) */
+.wg--navigate-mode .wg__row--focused > .wg__cell {
+  background: var(--wg-row-focus-bg);
+}
+
+.wg--navigate-mode .wg__row--focused > .wg__cell.wg__row-number {
+  background: var(--wg-row-focus-row-number-bg);
+}

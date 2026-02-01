@@ -44,6 +44,7 @@ export function getContainerClasses<T>(ctx: GridContext<T>): string {
 	if (ctx.grid.isNavigateMode) classes.push('wg--navigate-mode')
 	if (ctx.grid.isColumnReorderAllowed) classes.push('wg--reorderable')
 	if (ctx.grid.isScrollable) classes.push('wg--scrollable')
+	if (ctx.grid.tableBorderOnly) classes.push('wg--table-border-only')
 	return classes.join(' ')
 }
 
@@ -210,10 +211,13 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 		const lockInfo = ctx.grid.getRowLockInfo(item)
 		const isLocked = lockInfo?.isLocked === true
 
+		// Check if this is the empty row
+		const isEmptyRow = ctx.grid.isEmptyRowIndex(rowIndex)
+
 		// Track cumulative offset for sticky positioning
 		let cumulativeOffset = 0
 
-		// Row number cell (shows lock icon when locked, may be sticky)
+		// Row number cell (shows lock icon when locked, empty row indicator, may be sticky)
 		let rowNumberCell = ''
 		if (showRowNumbers) {
 			const stickyStyle = stickyRowNumbers
@@ -226,6 +230,8 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 					? `Locked by ${lockInfo.lockedBy}`
 					: 'This row is locked'
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
+			} else if (isEmptyRow) {
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.grid.newRowIndicator}</td>`
 			} else {
 				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
@@ -367,7 +373,9 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 		// Build row classes
 		const rowClasses = ['wg__row']
 		if (isLocked) rowClasses.push('wg__row--locked')
+		if (isEmptyRow) rowClasses.push('wg__row--empty-row')
 		if (ctx.grid.isRowSelected(rowIndex)) rowClasses.push('wg__row--selected')
+		if (ctx.grid.isRowFocused(rowIndex)) rowClasses.push('wg__row--focused')
 		if (ctx.grid.rowClassCallback) {
 			const dynamicClass = ctx.grid.rowClassCallback(item, rowIndex)
 			if (dynamicClass) rowClasses.push(dynamicClass)
@@ -378,7 +386,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			? `data-tooltip="${ctx.escapeHtml(lockInfo?.lockedBy ? `Locked by ${lockInfo.lockedBy}` : 'This row is locked')}"`
 			: ''
 
-		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__filler"></td></tr>`
+		return `<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}"></td></tr>`
 	}).join('')
 }
 
@@ -499,10 +507,13 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 		const lockInfo = ctx.grid.getRowLockInfo(item)
 		const isLocked = lockInfo?.isLocked === true
 
+		// Check if this is the empty row
+		const isEmptyRow = ctx.grid.isEmptyRowIndex(rowIndex)
+
 		// Track cumulative offset for sticky positioning
 		let cumulativeOffset = 0
 
-		// Row number cell (shows lock icon when locked, may be sticky)
+		// Row number cell (shows lock icon when locked, empty row indicator, may be sticky)
 		let rowNumberCell = ''
 		if (showRowNumbers) {
 			const stickyStyle = stickyRowNumbers
@@ -515,6 +526,8 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 					? `Locked by ${lockInfo.lockedBy}`
 					: 'This row is locked'
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__row-number--locked${frozenClass}" style="${stickyStyle}" data-tooltip="${ctx.escapeHtml(lockTooltip)}" data-row-number="${rowIndex}">🔒</td>`
+			} else if (isEmptyRow) {
+				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.grid.newRowIndicator}</td>`
 			} else {
 				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
@@ -655,7 +668,9 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 		// Build row classes
 		const rowClasses = ['wg__row']
 		if (isLocked) rowClasses.push('wg__row--locked')
+		if (isEmptyRow) rowClasses.push('wg__row--empty-row')
 		if (ctx.grid.isRowSelected(rowIndex)) rowClasses.push('wg__row--selected')
+		if (ctx.grid.isRowFocused(rowIndex)) rowClasses.push('wg__row--focused')
 		if (ctx.grid.rowClassCallback) {
 			const dynamicClass = ctx.grid.rowClassCallback(item, rowIndex)
 			if (dynamicClass) rowClasses.push(dynamicClass)
@@ -666,7 +681,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			? `data-tooltip="${ctx.escapeHtml(lockInfo?.lockedBy ? `Locked by ${lockInfo.lockedBy}` : 'This row is locked')}"`
 			: ''
 
-		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__filler"></td></tr>`)
+		visibleRows.push(`<tr class="${rowClasses.join(' ')}" data-row-index="${rowIndex}" ${rowTooltipAttr}>${rowNumberCell}${inlineActionsCell}${actionsCell}${cells}<td class="wg__cell wg__filler" data-row="${rowIndex}"></td></tr>`)
 	}
 
 	// Bottom spacer row - height on TD for better browser compatibility

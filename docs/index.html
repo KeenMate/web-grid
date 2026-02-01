@@ -3,427 +3,261 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGrid Examples - Choose Your Demo</title>
+    <title>WebGrid - Examples</title>
+    <link rel="stylesheet" href="examples-shared.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f0f2f5;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 2rem;
         }
 
-        .container {
-            max-width: 900px;
-            width: 100%;
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 3rem;
+        .header-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 2.5rem 3rem;
+            margin-bottom: 2rem;
             color: white;
         }
 
-        h1 {
-            font-size: 3rem;
+        .header-card h1 {
+            font-size: 2.5rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin: 0 0 0.5rem 0;
         }
 
-        .subtitle {
-            font-size: 1.25rem;
+        .header-card .subtitle {
+            font-size: 1.1rem;
             opacity: 0.9;
-            font-weight: 300;
+            margin: 0 0 1rem 0;
         }
 
         .version-badge {
             display: inline-block;
             background: rgba(255, 255, 255, 0.2);
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
+            padding: 0.35rem 0.85rem;
+            border-radius: 8px;
             font-size: 0.875rem;
-            margin-top: 0.5rem;
-            backdrop-filter: blur(10px);
+            font-weight: 500;
         }
 
         .cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
         }
 
-        .card {
+        .card-link {
             background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 12px;
+            padding: 1.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
             text-decoration: none;
             color: inherit;
             display: block;
         }
 
-        .card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        .card-link:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            text-decoration: none;
         }
 
         .card-icon {
-            font-size: 3rem;
+            font-size: 2.5rem;
             margin-bottom: 1rem;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         }
 
         .card-title {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #2d3748;
+            margin: 0 0 0.5rem 0;
+            color: #1a202c;
         }
 
         .card-description {
-            color: #718096;
+            color: #64748b;
             line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .card-features {
-            list-style: none;
-            margin-top: 1rem;
-        }
-
-        .card-features li {
-            padding: 0.5rem 0;
-            border-top: 1px solid #e2e8f0;
-            font-size: 0.875rem;
-            color: #4a5568;
-            display: flex;
-            align-items: center;
-        }
-
-        .card-features li:before {
-            content: "✓";
-            color: #667eea;
-            font-weight: bold;
-            margin-right: 0.5rem;
+            margin: 0;
+            font-size: 0.95rem;
         }
 
         .badge {
             display: inline-block;
-            background: #667eea;
+            background: #f56565;
             color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.65rem;
             font-weight: 600;
             margin-left: 0.5rem;
-        }
-
-        .badge.new {
-            background: #f56565;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            vertical-align: middle;
+            text-transform: uppercase;
         }
 
         footer {
             text-align: center;
             margin-top: 3rem;
-            color: white;
-            opacity: 0.8;
+            color: #64748b;
             font-size: 0.875rem;
         }
 
         footer a {
-            color: white;
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
             text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>WebGrid Component</h1>
-            <p class="subtitle">Interactive examples showcasing features and capabilities</p>
-            <span class="version-badge">v0.1.0</span>
+    <div class="page-container">
+        <header class="header-card">
+            <h1>Web Grid</h1>
+            <p class="subtitle">Framework-agnostic data grid web component with Excel-like editing</p>
+            <span class="version-badge">v1.0.0-rc12</span>
         </header>
 
-        <div class="cards">
-            <!-- Basic Examples -->
-            <a href="examples-basic.html" class="card">
-                <div class="card-icon">📦</div>
-                <h2 class="card-title">Basic Examples</h2>
-                <p class="card-description">
-                    Core grid features with all editor types. Perfect for getting started and testing functionality.
-                </p>
-                <ul class="card-features">
-                    <li>Text, number, date editors</li>
-                    <li>Select, combobox, autocomplete</li>
-                    <li>Keyboard navigation (navigate mode)</li>
-                    <li>Sorting, pagination, striping</li>
-                    <li>Tooltips and header info</li>
-                </ul>
-            </a>
-
-            <!-- Custom Styling -->
-            <a href="examples-custom-styling.html" class="card">
-                <div class="card-icon">🎨</div>
-                <h2 class="card-title">Custom Styling <span class="badge new">NEW</span></h2>
-                <p class="card-description">
-                    Dynamic cell and row styling based on data values using callbacks and custom CSS injection.
-                </p>
-                <ul class="card-features">
-                    <li>cellClassCallback for cell styling</li>
-                    <li>rowClassCallback for row styling</li>
-                    <li>Rainbow salary visualization</li>
-                    <li>Inactive row highlighting</li>
-                    <li>customStylesCallback for Shadow DOM</li>
-                </ul>
-            </a>
-
-            <!-- Row Locking -->
-            <a href="examples-row-locking.html" class="card">
-                <div class="card-icon">🔒</div>
-                <h2 class="card-title">Row Locking <span class="badge new">NEW</span></h2>
-                <p class="card-description">
-                    Collaborative editing with row-level locking. Lock rows via data properties, callbacks, or external API.
-                </p>
-                <ul class="card-features">
-                    <li>Property-based locking (isLocked)</li>
-                    <li>Callback-based lock computation</li>
-                    <li>External lock API (WebSocket)</li>
-                    <li>updateRowById for server updates</li>
-                    <li>Configurable edit behavior</li>
-                </ul>
-            </a>
-
-            <!-- Freeze Panes -->
-            <a href="examples-freeze-panes.html" class="card">
-                <div class="card-icon">❄️</div>
-                <h2 class="card-title">Freeze Panes</h2>
-                <p class="card-description">
-                    Excel-like frozen columns that stay visible while scrolling horizontally.
-                </p>
-                <ul class="card-features">
-                    <li>Sticky row numbers</li>
-                    <li>Freeze first N columns</li>
-                    <li>Column-level frozen property</li>
-                    <li>Visual reorder (frozen first)</li>
-                    <li>Shadow indicators</li>
-                </ul>
-            </a>
-
-            <!-- Resizable Columns -->
-            <a href="examples-resizable-columns.html" class="card">
-                <div class="card-icon">↔️</div>
-                <h2 class="card-title">Resizable Columns</h2>
-                <p class="card-description">
-                    Excel-like column resizing by dragging the edge between column headers.
-                </p>
-                <ul class="card-features">
-                    <li>Drag to resize columns</li>
-                    <li>Per-column opt-out</li>
-                    <li>oncolumnresize callback</li>
-                    <li>localStorage persistence</li>
-                    <li>Min/max width constraints</li>
-                </ul>
-            </a>
-
-            <!-- Fill Handle -->
-            <a href="examples-fill-handle.html" class="card">
-                <div class="card-icon">+</div>
-                <h2 class="card-title">Fill Handle <span class="badge new">NEW</span></h2>
-                <p class="card-description">
-                    Excel-like autofill by dragging the handle at the corner of a focused cell.
-                </p>
-                <ul class="card-features">
-                    <li>Drag to copy values</li>
-                    <li>All directions (up/down/left/right)</li>
-                    <li>onfilldrag callback</li>
-                    <li>Cancellable operations</li>
-                    <li>Skips non-editable cells</li>
-                </ul>
-            </a>
-
-            <!-- Sorting & Pagination -->
-            <a href="examples-sorting-paging.html" class="card">
-                <div class="card-icon">🔀</div>
-                <h2 class="card-title">Sorting & Pagination</h2>
-                <p class="card-description">
-                    Multi-column sorting with Ctrl+Click support and server-side pagination with data request events.
-                </p>
-                <ul class="card-features">
-                    <li>Multi-column sorting (Ctrl+Click)</li>
-                    <li>Visual priority indicators (▲¹ ▼²)</li>
-                    <li>Server-side pagination simulation</li>
-                    <li>ondatarequest event</li>
-                    <li>totalItems for external paging</li>
-                </ul>
-            </a>
-
-            <!-- Virtual Scroll & Infinite Scroll -->
-            <a href="examples-virtual-scroll.html" class="card">
-                <div class="card-icon">🚀</div>
-                <h2 class="card-title">Virtual & Infinite Scroll <span class="badge new">NEW</span></h2>
-                <p class="card-description">
-                    Efficiently handle large datasets with virtual scrolling and progressive loading via infinite scroll.
-                </p>
-                <ul class="card-features">
-                    <li>Virtual scroll (10,000+ rows)</li>
-                    <li>Only renders visible rows</li>
-                    <li>Infinite scroll (load more)</li>
-                    <li>Auto-enable via threshold</li>
-                    <li>Configurable row height & buffer</li>
-                </ul>
-            </a>
-
-            <!-- Dropdown Features -->
-            <a href="examples-dropdowns.html" class="card">
-                <div class="card-icon">🔽</div>
-                <h2 class="card-title">Dropdown Features</h2>
-                <p class="card-description">
-                    Advanced dropdown customization with icons, subtitles, custom rendering, and async search.
-                </p>
-                <ul class="card-features">
-                    <li>Icons and subtitles</li>
-                    <li>Disabled options</li>
-                    <li>Custom member callbacks</li>
-                    <li>Custom option rendering</li>
-                    <li>Async autocomplete search</li>
-                </ul>
-            </a>
-
-            <!-- Custom Editor & Context Menu -->
-            <a href="examples-editors.html" class="card">
-                <div class="card-icon">✏️</div>
-                <h2 class="card-title">Custom Editor & Context Menu</h2>
-                <p class="card-description">
-                    Dialog-based editing with custom editor callback and right-click context menus with dynamic items.
-                </p>
-                <ul class="card-features">
-                    <li>Custom editor with commit/cancel</li>
-                    <li>Context menu on right-click</li>
-                    <li>Dynamic labels and visibility</li>
-                    <li>Disabled states and danger styling</li>
-                    <li>Icons and dividers</li>
-                </ul>
-            </a>
-
-            <!-- Row Toolbar -->
-            <a href="examples-toolbar.html" class="card">
-                <div class="card-icon">🛠️</div>
-                <h2 class="card-title">Row Toolbar</h2>
-                <p class="card-description">
-                    Floating toolbar with row actions. Add, delete, duplicate, and reorder rows with hover or button triggers.
-                </p>
-                <ul class="card-features">
-                    <li>Predefined actions (add, delete, duplicate)</li>
-                    <li>Move up/down with connector arrow</li>
-                    <li>Multi-row layout with groups</li>
-                    <li>Hover, click, or button triggers</li>
-                    <li>Custom actions with async support</li>
-                </ul>
-            </a>
-
-            <!-- Keyboard Shortcuts -->
-            <a href="examples-shortcuts.html" class="card">
-                <div class="card-icon">⌨️</div>
-                <h2 class="card-title">Keyboard Shortcuts <span class="badge new">NEW</span></h2>
-                <p class="card-description">
-                    Grid-level keyboard shortcuts for row operations with help overlay showing available shortcuts.
-                </p>
-                <ul class="card-features">
-                    <li>Custom key bindings (Delete, Ctrl+D, F2)</li>
-                    <li>Modifier key support (Ctrl, Shift, Alt)</li>
-                    <li>Help icon with shortcuts overlay</li>
-                    <li>Disabled shortcut support</li>
-                    <li>Custom help content callback</li>
-                </ul>
-            </a>
-
-            <!-- Selection -->
-            <a href="examples-selection.html" class="card">
-                <div class="card-icon">☑️</div>
-                <h2 class="card-title">Selection <span class="badge new">NEW</span></h2>
-                <p class="card-description">
-                    Multi-row and cell range selection with keyboard shortcuts. Select entire rows or arbitrary cell ranges.
-                </p>
-                <ul class="card-features">
-                    <li>Row selection via row numbers</li>
-                    <li>Cell range selection (click+drag)</li>
-                    <li>Configurable selection mode</li>
-                    <li>Range shortcuts (Delete, custom)</li>
-                    <li>Programmatic selection API</li>
-                </ul>
-            </a>
-
-            <!-- Context Menu -->
-            <a href="examples-contextmenu.html" class="card">
-                <div class="card-icon">📋</div>
-                <h2 class="card-title">Context Menu <span class="badge new">NEW</span></h2>
-                <p class="card-description">
-                    Right-click context menus with cell and row awareness. Dynamic labels, conditional visibility, and more.
-                </p>
-                <ul class="card-features">
-                    <li>Cell-aware context menus</li>
-                    <li>Dynamic labels and icons</li>
-                    <li>Conditional visibility</li>
-                    <li>Disabled states and danger styling</li>
-                    <li>Dividers for grouping</li>
-                </ul>
-            </a>
-
-            <!-- Full Editable Features -->
-            <a href="examples-editable-full.html" class="card">
-                <div class="card-icon">📝</div>
-                <h2 class="card-title">Full Editable</h2>
-                <p class="card-description">
-                    Comprehensive editing features with validation, all editor types, and Excel-like navigation.
-                </p>
-                <ul class="card-features">
-                    <li>All edit triggers (dblclick, click, navigate, always)</li>
-                    <li>Validation with beforeCommitCallback</li>
-                    <li>Value transformation</li>
-                    <li>Custom JSON editor dialog</li>
-                    <li>All editor types in one demo</li>
-                </ul>
-            </a>
-
-            <!-- Edit Trigger -->
-            <a href="examples-edit-trigger.html" class="card">
-                <div class="card-icon">🖱️</div>
-                <h2 class="card-title">Edit Trigger <span class="badge new">NEW</span></h2>
-                <p class="card-description">
-                    Test different edit trigger modes: click, dblclick, navigate. Verify grid.isEditable inheritance.
-                </p>
-                <ul class="card-features">
-                    <li>editTrigger = 'click' mode</li>
-                    <li>Single click to edit</li>
-                    <li>grid.isEditable inheritance</li>
-                    <li>Column-level isEditable override</li>
-                    <li>Smooth cell-to-cell transitions</li>
-                </ul>
-            </a>
-        </div>
+        <div class="cards" id="cards"></div>
 
         <footer>
-            <p>
-                Created by <a href="https://github.com/keenmate" target="_blank">Keenmate</a> |
-                <a href="https://github.com/keenmate/web-grid" target="_blank">GitHub</a>
-            </p>
+            <p>Created by <a href="https://github.com/keenmate" target="_blank">KeenMate</a> | <a href="https://github.com/keenmate/web-grid" target="_blank">GitHub</a></p>
         </footer>
     </div>
+
+    <script>
+        // =====================================================
+        // Demo Page Registry
+        // Add new pages here - they'll appear automatically
+        // =====================================================
+        const pages = [
+            {
+                href: 'examples-basic.html',
+                icon: '📦',
+                title: 'Basic Examples',
+                description: 'Core grid features with all editor types, keyboard navigation, sorting, and pagination.'
+            },
+            {
+                href: 'examples-custom-styling.html',
+                icon: '🎨',
+                title: 'Custom Styling',
+                description: 'Dynamic cell and row styling using callbacks and custom CSS injection into Shadow DOM.'
+            },
+            {
+                href: 'examples-row-locking.html',
+                icon: '🔒',
+                title: 'Row Locking',
+                description: 'Collaborative editing with row-level locking via data properties, callbacks, or external API.'
+            },
+            {
+                href: 'examples-freeze-panes.html',
+                icon: '❄️',
+                title: 'Freeze Panes',
+                description: 'Excel-like frozen columns that stay visible while scrolling horizontally.'
+            },
+            {
+                href: 'examples-resizable-columns.html',
+                icon: '↔️',
+                title: 'Resizable Columns',
+                description: 'Drag column edges to resize with min/max constraints and localStorage persistence.'
+            },
+            {
+                href: 'examples-fill-handle.html',
+                icon: '➕',
+                title: 'Fill Handle',
+                description: 'Excel-like autofill by dragging the handle at the corner of a focused cell.'
+            },
+            {
+                href: 'examples-sorting-paging.html',
+                icon: '🔀',
+                title: 'Sorting & Pagination',
+                description: 'Multi-column sorting with Ctrl+Click and server-side pagination support.'
+            },
+            {
+                href: 'examples-virtual-scroll.html',
+                icon: '🚀',
+                title: 'Virtual & Infinite Scroll',
+                description: 'Efficiently handle 10,000+ rows with virtual scrolling and progressive loading.'
+            },
+            {
+                href: 'examples-dropdowns.html',
+                icon: '🔽',
+                title: 'Dropdown Features',
+                description: 'Advanced dropdowns with icons, subtitles, custom rendering, and async search.'
+            },
+            {
+                href: 'examples-editors.html',
+                icon: '✏️',
+                title: 'Custom Editors',
+                description: 'Dialog-based editing with custom editor callbacks and full control over the edit flow.'
+            },
+            {
+                href: 'examples-toolbar.html',
+                icon: '🛠️',
+                title: 'Row Toolbar',
+                description: 'Floating toolbar with row actions like add, delete, duplicate, and reorder.'
+            },
+            {
+                href: 'examples-shortcuts.html',
+                icon: '⌨️',
+                title: 'Keyboard Shortcuts',
+                description: 'Custom key bindings for row operations with help overlay showing available shortcuts.'
+            },
+            {
+                href: 'examples-selection.html',
+                icon: '☑️',
+                title: 'Selection',
+                badge: 'new',
+                description: 'Multi-row and cell range selection with keyboard shortcuts and programmatic API.'
+            },
+            {
+                href: 'examples-contextmenu.html',
+                icon: '📋',
+                title: 'Context Menu',
+                description: 'Right-click context menus with cell awareness, dynamic labels, and conditional visibility.'
+            },
+            {
+                href: 'examples-editable-full.html',
+                icon: '📝',
+                title: 'Full Editable',
+                description: 'Comprehensive editing with validation, value transformation, and all editor types.'
+            },
+            {
+                href: 'examples-edit-trigger.html',
+                icon: '🖱️',
+                title: 'Edit Trigger & Empty Row',
+                badge: 'experimental',
+                description: 'Edit trigger modes and experimental empty row feature for inline data entry in navigate mode.'
+            }
+        ]
+
+        // =====================================================
+        // Render cards from registry
+        // =====================================================
+        function renderCards() {
+            const container = document.getElementById('cards')
+            container.innerHTML = pages.map(page => `
+                <a href="${page.href}" class="card-link">
+                    <div class="card-icon">${page.icon}</div>
+                    <h2 class="card-title">
+                        ${page.title}${page.badge ? `<span class="badge">${page.badge}</span>` : ''}
+                    </h2>
+                    <p class="card-description">${page.description}</p>
+                </a>
+            `).join('')
+        }
+
+        renderCards()
+    </script>
 </body>
 </html>

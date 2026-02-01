@@ -45,11 +45,13 @@ export function restoreCellToDisplayMode<T>(
 
 /**
  * Commit the value from the current editor
+ * @param commitEmptyRow - If true and editing empty row, add it to items (Enter key behavior)
  */
-export function commitCurrentEditor<T>(
+export async function commitCurrentEditor<T>(
 	ctx: GridContext<T>,
-	editor: HTMLElement
-): void {
+	editor: HTMLElement,
+	commitEmptyRow: boolean = false
+): Promise<void> {
 	const rowIndex = parseInt(editor.dataset.row || '0', 10)
 	const field = editor.dataset.field || ''
 
@@ -71,7 +73,7 @@ export function commitCurrentEditor<T>(
 		value = editor.value
 	}
 
-	ctx.grid.commitEdit(rowIndex, field, value)
+	await ctx.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
 }
 
 /**
@@ -123,10 +125,10 @@ export function toggleCheckboxAndMove<T>(
 /**
  * Handle editor blur (commit for text/number inputs)
  */
-export function handleEditorBlur<T>(
+export async function handleEditorBlur<T>(
 	ctx: GridContext<T>,
 	input: HTMLInputElement
-): void {
+): Promise<void> {
 	// Skip if keyboard already handled the commit
 	if (ctx.isCommittingFromKeyboard) {
 		return
@@ -138,7 +140,7 @@ export function handleEditorBlur<T>(
 		const field = input.dataset.field || ''
 		const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
 
-		commitCurrentEditor(ctx, input)
+		await commitCurrentEditor(ctx, input)
 
 		// Restore cell to display mode with formatted value
 		if (colIndex >= 0) {

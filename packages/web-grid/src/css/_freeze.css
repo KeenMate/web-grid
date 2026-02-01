@@ -34,7 +34,7 @@
 
 /* Only the last frozen cell gets the separator border */
 .wg__cell--frozen-last {
-  box-shadow: inset -1px 0 0 var(--wg-border-color);
+  box-shadow: inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
 }
 
 /* Row number cells when sticky */
@@ -64,9 +64,9 @@
    FOCUSED/SELECTED ROW WITH FROZEN COLUMNS
    ========================================================================== */
 
-/* When a row is focused (navigate mode) */
+/* When a row is focused (master/detail) */
 .wg__row--focused .wg__cell--frozen {
-  background: var(--wg-focus-bg);
+  background: var(--wg-row-focus-bg);
 }
 
 /* Row selection on frozen cells */

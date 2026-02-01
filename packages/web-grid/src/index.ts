@@ -29,10 +29,12 @@ export type {
 	Column,
 	CellRenderCallback,
 	RowChangeDetail,
+	RowFocusDetail,
 
 	// Toolbar types
 	PredefinedToolbarItemType,
 	ToolbarPosition,
+	NewRowPosition,
 	ToolbarTooltip,
 	RowToolbarItem,
 	RowToolbarConfig,

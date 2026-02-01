@@ -42,7 +42,8 @@ import type {
 	ColumnOrderState,
 	FillDragDetail,
 	RangeShortcut,
-	RangeShortcutContext
+	RangeShortcutContext,
+	RowFocusDetail
 } from './types.js'
 
 // Import CSS (Vite inlines this as a string)
@@ -93,6 +94,7 @@ import {
 	handleEditorBlur,
 	moveFocusAfterCommit,
 	focusCellAfterCancel,
+	restoreCellToDisplayMode,
 	renderCellEditor
 } from './modules/editing/index.js'
 
@@ -399,6 +401,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get pageSizes(): number[] { return this.grid.pageSizes }
 	set pageSizes(value: number[]) { this.grid.pageSizes = value }
 
+	get paginationMode(): 'client' | 'server' { return this.grid.paginationMode }
+	set paginationMode(value: 'client' | 'server') { this.grid.paginationMode = value }
+
 	get isStriped(): boolean { return this.grid.isStriped }
 	set isStriped(value: boolean) { this.grid.isStriped = value }
 
@@ -519,6 +524,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get oncellselectionchange() { return this.grid.oncellselectionchange }
 	set oncellselectionchange(value) { this.grid.oncellselectionchange = value }
 
+	// New empty row (inline data entry) — EXPERIMENTAL: API may change
+	get isNewRowEnabled(): boolean { return this.grid.isNewRowEnabled }
+	set isNewRowEnabled(value: boolean) { this.grid.isNewRowEnabled = value }
+
+	get newRowPosition() { return this.grid.newRowPosition }
+	set newRowPosition(value) { this.grid.newRowPosition = value }
+
+	get newRowIndicator(): string { return this.grid.newRowIndicator }
+	set newRowIndicator(value: string) { this.grid.newRowIndicator = value }
+
+	get createEmptyRowCallback() { return this.grid.createEmptyRowCallback }
+	set createEmptyRowCallback(value) { this.grid.createEmptyRowCallback = value }
+
 	get isShortcutsHelpVisible(): boolean { return this.grid.isShortcutsHelpVisible }
 	set isShortcutsHelpVisible(value: boolean) { this.grid.isShortcutsHelpVisible = value }
 
@@ -577,6 +595,16 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	set onrowdelete(value: ((detail: { rowIndex: number; row: T }) => void) | undefined) {
 		this.grid.onrowdelete = value
 	}
+
+	get onrowfocus(): ((detail: RowFocusDetail<T>) => void) | undefined {
+		return this.grid.onrowfocus
+	}
+	set onrowfocus(value: ((detail: RowFocusDetail<T>) => void) | undefined) {
+		this.grid.onrowfocus = value
+	}
+
+	get focusedRowIndex(): number | null { return this.grid.focusedRowIndex }
+	set focusedRowIndex(value: number | null) { this.grid.focusedRowIndex = value }
 
 	// Sorting & Pagination
 	get sort(): SortState[] { return this.grid.sort }
@@ -698,6 +726,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	get scrollMaxHeight(): string { return this.grid.scrollMaxHeight }
 	set scrollMaxHeight(value: string) { this.grid.scrollMaxHeight = value }
+
+	get tableBorderOnly(): boolean { return this.grid.tableBorderOnly }
+	set tableBorderOnly(value: boolean) { this.grid.tableBorderOnly = value }
 
 	// Virtual scroll
 	get isVirtualScrollEnabled(): boolean { return this.grid.isVirtualScrollEnabled }
@@ -1022,6 +1053,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					} else if (rowIndex < displayItems.length - 1) {
 						const newColIndex = editableCols[0].index
 						moveFocus(this, rowIndex + 1, newColIndex)
+					} else if (this.grid.isEmptyRowIndex(rowIndex)) {
+						// On last cell of empty row - wrap to first editable cell
+						moveFocus(this, rowIndex, editableCols[0].index)
 					}
 				}
 				break
@@ -1146,6 +1180,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				e.preventDefault()
 				const column = columns[colIndex]
 				const isDropdownColumn = column?.editor === 'select' || column?.editor === 'combobox' || column?.editor === 'autocomplete'
+				const isEmptyRowEnter = this.grid.isEmptyRowIndex(rowIndex)
 
 				if (isDropdownColumn && this.grid.getEffectiveShouldOpenDropdownOnEnter(column)) {
 					tryStartEdit(this, rowIndex, colIndex)
@@ -1154,6 +1189,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							openDropdownForCurrentEditor(this)
 						}
 					})
+				} else if (isEmptyRowEnter && column && this.grid.isCellEditable(column)) {
+					// On empty row, Enter starts editing the cell (like F2)
+					tryStartEdit(this, rowIndex, colIndex)
 				} else {
 					if (rowIndex < displayItems.length - 1) {
 						moveFocus(this, rowIndex + 1, colIndex)
@@ -1290,7 +1328,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	/**
 	 * Handle keydown in editor inputs
 	 */
-	private handleEditorKeyDown(e: KeyboardEvent, editor: HTMLElement): void {
+	private async handleEditorKeyDown(e: KeyboardEvent, editor: HTMLElement): Promise<void> {
 		const rowIndex = parseInt(editor.dataset.row || '0', 10)
 		const field = editor.dataset.field || ''
 		const column = this.grid.columns.find(c => c.field === field)
@@ -1398,16 +1436,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				e.preventDefault()
 				e.stopPropagation()
 				if (this.dropdownOpen && this.highlightedIndex >= 0) {
-					selectDropdownOption(this, this.highlightedIndex)
+					// Enter with dropdown selects option and commits empty row
+					selectDropdownOption(this, this.highlightedIndex, true, true)
 				} else if (isDropdownEditor && !this.dropdownOpen) {
 					openDropdownForCurrentEditor(this)
 				} else {
 					this.isCommittingFromKeyboard = true
 					removeDropdown(this)
 					if (editorType === 'date' && editor instanceof HTMLInputElement) {
-						this.commitDateEditor(editor)
+						// Enter commits empty row (adds to items if it has data)
+						await this.commitDateEditor(editor, true)
 					} else {
-						commitCurrentEditor(this, editor)
+						// Enter commits empty row (adds to items if it has data)
+						await commitCurrentEditor(this, editor, true)
 					}
 					moveFocusAfterCommit(this, rowIndex, field, 'down')
 				}
@@ -1421,6 +1462,15 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				e.preventDefault()
 				e.stopPropagation()
 				this.isCommittingFromKeyboard = true
+
+				// Check if we're on the empty row's last editable cell (Tab should commit)
+				const tabEditableCols = this.grid.getEditableColumns()
+				const tabColIndex = this.grid.columns.findIndex(c => String(c.field) === field)
+				const tabCurrentEditableIndex = tabEditableCols.findIndex(ec => ec.index === tabColIndex)
+				const isOnEmptyRow = this.grid.isEmptyRowIndex(rowIndex)
+				const isLastEditableCell = tabCurrentEditableIndex === tabEditableCols.length - 1
+				const shouldCommitEmptyRow = isOnEmptyRow && isLastEditableCell && !e.shiftKey
+
 				// For dropdowns with a highlighted option, select it before moving
 				if (this.dropdownOpen && this.highlightedIndex >= 0 && isDropdownEditor) {
 					// Select the highlighted option - this commits the value (skip if disabled)
@@ -1428,20 +1478,35 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					const opts = this.getCurrentEditorOptions()
 					if (option && !isOptionDisabled(option, opts)) {
 						const value = getOptionValue(option, opts)
-						this.grid.commitEdit(rowIndex, field, value)
+						await this.grid.commitEdit(rowIndex, field, value, shouldCommitEmptyRow)
 					}
 					removeDropdown(this)
 				} else {
 					removeDropdown(this)
 					if (editorType === 'date' && editor instanceof HTMLInputElement) {
-						this.commitDateEditor(editor)
+						await this.commitDateEditor(editor, shouldCommitEmptyRow)
 					} else if (!isDropdownEditor) {
 						// Only commit for non-dropdown editors (text, number, etc.)
-						commitCurrentEditor(this, editor)
+						await commitCurrentEditor(this, editor, shouldCommitEmptyRow)
 					}
 					// For select editors without dropdown open, keep current value
 				}
-				moveFocusAfterCommit(this, rowIndex, field, e.shiftKey ? 'prev' : 'next')
+
+				// After committing empty row on last cell, focus first editable cell of new empty row
+				if (shouldCommitEmptyRow) {
+					// Restore current cell to display mode
+					restoreCellToDisplayMode(this, rowIndex, tabColIndex)
+					// Focus the new empty row's first editable cell
+					const firstEditableColIndex = tabEditableCols.length > 0 ? tabEditableCols[0].index : 0
+					// Use queueMicrotask to allow the grid to re-render with the new empty row
+					queueMicrotask(() => {
+						const newEmptyRowIndex = this.grid.newRowPosition === 'top' ? 0 : this.grid.displayItems.length - 1
+						moveFocus(this, newEmptyRowIndex, firstEditableColIndex)
+						this.isCommittingFromKeyboard = false
+					})
+				} else {
+					moveFocusAfterCommit(this, rowIndex, field, e.shiftKey ? 'prev' : 'next')
+				}
 				break
 
 			case 'Escape':
@@ -1507,6 +1572,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const colIndex = parseInt(target.dataset.col || '0', 10)
 				handleCellFocus(this, rowIndex, colIndex)
 				updateFillHandle(this)
+				const prevFocusedRow = this.grid.focusedRowIndex
+				this.grid.setFocusedRow(rowIndex)
+				this.updateRowFocusVisual(prevFocusedRow, rowIndex)
 			}
 			if (target.matches('.wg__select-trigger, .wg__combobox-input, .wg__autocomplete-input')) {
 				if (!this.justSelected && !this.dropdownOpen) {
@@ -1937,6 +2005,17 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				})
 			}
 
+			// Set row focus when clicking on data cells (not row numbers or headers)
+			const clickedCell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
+			if (clickedCell && !target.closest('.wg__header')) {
+				const cellRowIndex = parseInt(clickedCell.dataset.row || '-1', 10)
+				if (cellRowIndex >= 0) {
+					const prevFocusedRow = this.grid.focusedRowIndex
+					this.grid.setFocusedRow(cellRowIndex)
+					this.updateRowFocusVisual(prevFocusedRow, cellRowIndex)
+				}
+			}
+
 			// Clear row/column selection when clicking on cells (not row numbers or headers)
 			// But NOT if cell selection is pending (would interfere with shift+drag)
 			if (target.closest('.wg__cell') && !target.closest('.wg__row-number, .wg__header') && !isCellSelectionPending()) {
@@ -2084,6 +2163,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Scroll events - close dropdown + virtual scroll + infinite scroll + connector update
 		const container = this.shadow.querySelector('.wg') as HTMLElement
+		// When tableBorderOnly is enabled, scroll container is .wg__table-container
+		const scrollContainer = this.grid.tableBorderOnly
+			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || container
+			: container
 		if (container) {
 			// Make container focusable for keyboard events when rows are selected
 			container.setAttribute('tabindex', '-1')
@@ -2162,12 +2245,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			})
 
 			// Initialize scroll event manager and subscribe to scroll events
-			this.scrollEvents.init(container)
+			this.scrollEvents.init(scrollContainer)
 
 			// Container scroll handler
 			this.scrollEvents.subscribe('container', () => {
 				// Toggle horizontal scroll indicator for frozen column shadow
-				const isScrolledHorizontally = container.scrollLeft > 0
+				const isScrolledHorizontally = scrollContainer.scrollLeft > 0
 				container.classList.toggle('wg--scrolled-horizontal', isScrolledHorizontally)
 
 				// Close dropdown on scroll
@@ -2177,12 +2260,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 				// Virtual scroll: recalculate visible range
 				if (this.grid.shouldUseVirtualScroll()) {
-					this.handleVirtualScroll(container)
+					this.handleVirtualScroll(scrollContainer)
 				}
 
 				// Infinite scroll: detect when near bottom
 				if (this.grid.isInfiniteScrollEnabled && this.grid.hasMoreItems && !this.isLoadingMoreItems) {
-					this.handleInfiniteScroll(container)
+					this.handleInfiniteScroll(scrollContainer)
 				}
 
 				// Update connector position when scrolling (clips at container boundary)
@@ -2230,6 +2313,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						)
 						cell?.classList.remove('wg__cell--focused')
 						this.grid.clearFocusedCell()
+					}
+
+					// Clear row focus
+					if (this.grid.focusedRowIndex !== null) {
+						this.grid.clearRowFocus()
+						needsRender = true
 					}
 
 					// Close dropdown and cancel edit if editing
@@ -2669,9 +2758,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	private render(): void {
 		// Preserve scroll position before re-render
+		// When tableBorderOnly is enabled, scroll container is .wg__table-container
 		const oldContainer = this.shadow.querySelector('.wg') as HTMLElement
-		const scrollTop = oldContainer?.scrollTop || 0
-		const scrollLeft = oldContainer?.scrollLeft || 0
+		const oldScrollContainer = this.grid.tableBorderOnly
+			? (this.shadow.querySelector('.wg__table-container') as HTMLElement) || oldContainer
+			: oldContainer
+		const scrollTop = oldScrollContainer?.scrollTop || 0
+		const scrollLeft = oldScrollContainer?.scrollLeft || 0
 
 		// Preserve focused cell position (for restoring after re-render)
 		const focusedCell = this.grid.focusedCell
@@ -2790,9 +2883,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		const shortcutsHelpHtml = this.renderShortcutsHelpIcon()
 
 		// Build the table HTML
-		const tableHtml = `
-			${shortcutsHelpHtml}
-			${topContent}
+		// When tableBorderOnly is true, wrap table in a scroll container with border
+		const tableCore = `
 			<table class="wg__table">
 				<thead>
 					${renderHeaderRow(this)}
@@ -2801,6 +2893,16 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					${dataRowsHtml}
 				</tbody>
 			</table>
+		`
+
+		const tableWithContainer = this.grid.tableBorderOnly
+			? `<div class="wg__table-container">${tableCore}</div>`
+			: tableCore
+
+		const tableHtml = `
+			${shortcutsHelpHtml}
+			${topContent}
+			${tableWithContainer}
 			${bottomContent}
 		`
 
@@ -2808,14 +2910,19 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		this.shadow.appendChild(container)
 
 		// Restore scroll position after re-render
+		// When tableBorderOnly is enabled, scroll container is .wg__table-container
+		const scrollContainer = this.grid.tableBorderOnly
+			? (container.querySelector('.wg__table-container') as HTMLElement) || container
+			: container
+
 		// For virtual scroll, clamp to valid range (items may have changed)
 		if (useVirtualScroll) {
-			const maxScrollTop = Math.max(0, this.grid.displayItems.length * this.grid.virtualScrollRowHeight - container.clientHeight)
-			container.scrollTop = Math.min(scrollTop, maxScrollTop)
+			const maxScrollTop = Math.max(0, this.grid.displayItems.length * this.grid.virtualScrollRowHeight - scrollContainer.clientHeight)
+			scrollContainer.scrollTop = Math.min(scrollTop, maxScrollTop)
 		} else {
-			container.scrollTop = scrollTop
+			scrollContainer.scrollTop = scrollTop
 		}
-		container.scrollLeft = scrollLeft
+		scrollContainer.scrollLeft = scrollLeft
 
 		// Wire up event listeners
 		this.attachEventListeners()
@@ -2982,6 +3089,23 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	/**
+	 * Surgically update row focus visual (add/remove wg__row--focused class)
+	 * Avoids full re-render to preserve cell focus
+	 */
+	private updateRowFocusVisual(prevRowIndex: number | null, newRowIndex: number | null): void {
+		if (prevRowIndex === newRowIndex) return
+
+		if (prevRowIndex !== null) {
+			const prevRow = this.shadow.querySelector(`tr[data-row-index="${prevRowIndex}"]`)
+			prevRow?.classList.remove('wg__row--focused')
+		}
+		if (newRowIndex !== null) {
+			const newRow = this.shadow.querySelector(`tr[data-row-index="${newRowIndex}"]`)
+			newRow?.classList.add('wg__row--focused')
+		}
+	}
+
+	/**
 	 * Open the date picker for a date input
 	 */
 	private openDatePicker(input: HTMLInputElement, anchor: HTMLElement): void {
@@ -3042,9 +3166,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Clear datepicker reference (picker closes silently via close(true), skipping onClose)
 		this.datepicker = null
 
-		// Commit the date
+		// Commit the date (Enter commits empty row, Tab doesn't)
 		this.isCommittingFromKeyboard = true
-		this.commitDateEditor(input)
+		const commitEmptyRow = direction === 'down' || direction === undefined
+		this.commitDateEditor(input, commitEmptyRow)
 
 		// Move focus after commit (direction from keyboard: Enter=down, Tab=next)
 		const rowIndex = parseInt(input.dataset.row || '0', 10)
@@ -3054,8 +3179,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	/**
 	 * Commit the date editor value
+	 * @param commitEmptyRow - If true and editing empty row, add it to items (Enter key behavior)
 	 */
-	private commitDateEditor(input: HTMLInputElement): void {
+	private async commitDateEditor(input: HTMLInputElement, commitEmptyRow: boolean = false): Promise<void> {
 		if (!this.grid.editingCell) return
 
 		const rowIndex = parseInt(input.dataset.row || '0', 10)
@@ -3084,7 +3210,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		}
 
-		this.grid.commitEdit(rowIndex, field, value)
+		await this.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
 	}
 
 	/**

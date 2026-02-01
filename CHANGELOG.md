@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Filler column cells now fire `cellClick` events with correct `rowIndex` (and `colIndex: -1`)
+
+---
+
+## [1.0.0-rc12] - 2026-01-26
+
 ### Added
+
+- **Table Border Only Mode**: New `tableBorderOnly` property for cleaner card integration
+  - `tableBorderOnly: boolean` - When `true`, border only wraps the table, pagination/toolbar float outside (default: `false`)
+  - Eliminates double-border issue when grid is inside a card component
+  - Table wrapped in `.wg__table-container` with border; outer `.wg` container is borderless
+  - Pagination and toolbar remain in outer container, visually separate from table
 
 - **Scroll behavior properties**: New `isScrollable` and `scrollMaxHeight` properties for grids without a height-constrained container
   - `isScrollable: boolean` - When `true`, constrains grid to viewport height (default: `false`)
@@ -29,6 +43,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `onpaste` event - Summary after paste completes with success/failure counts
   - Respects column `beforePasteCallback` for value transformation
   - Respects row locking - locked rows are skipped
+
+- **Row Focus (Master/Detail)**: `onrowfocus` event fires when a different row is focused via cell click/focus — ideal for master/detail layouts
+  - `onrowfocus` callback: `{ rowIndex, row, previousRowIndex }`
+  - `focusedRowIndex` getter/setter for programmatic control (set to `null` to clear)
+  - `isRowFocused(rowIndex)` method to check focus state
+  - Visual: focused row gets `--wg-row-focus-bg` background, row number gets `--wg-row-focus-row-number-bg` (30% accent tint)
+  - Row number clicks do **not** trigger focus (they handle row selection)
+  - Clicking outside the grid clears row focus
+  - Surgical DOM updates preserve cell focus (no full re-render)
+
+- **🧪 New Row (Inline Data Entry) [Experimental]**: Always-visible empty row for adding data directly in the grid
+  - `isNewRowEnabled: boolean` - Enable the empty row (default: `false`, requires navigate mode)
+  - `newRowPosition: 'top' | 'bottom'` - Where to show the empty row (default: `'bottom'`)
+  - `newRowIndicator: string` - Indicator in row number column (default: `'+'`)
+  - `createEmptyRowCallback: () => T | Promise<T>` - Factory for new row objects (supports async)
+  - Tab moves between cells within the empty row (saves to draft, doesn't commit)
+  - Tab on last editable cell commits the row (if it has data) and starts a fresh empty row
+  - Enter commits the row if it has any data
+  - Lenient validation: tracks errors but doesn't block input (rows can be committed with invalid cells)
+  - Paste support: pasting into the empty row creates new rows
+  - **Note:** This feature is experimental and may change in future releases
 
 - **Select All**: Click the `#` row number header to select all cells in the grid
   - `selectAll()` method for programmatic selection
