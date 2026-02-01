@@ -197,6 +197,14 @@ export type TransitionCellAction = {
 // =============================================================================
 
 /**
+ * Toggle checkbox value
+ */
+export type ToggleCheckboxAction = {
+	type: 'toggleCheckbox'
+	target: CellCoordinates
+}
+
+/**
  * All possible actions in the grid event pipeline
  */
 export type GridAction =
@@ -209,6 +217,7 @@ export type GridAction =
 	| SelectCellRangeAction
 	| ClearSelectionAction
 	| NavigateAction
+	| ToggleCheckboxAction
 	// Effect actions
 	| OpenDropdownAction
 	| CloseDropdownAction

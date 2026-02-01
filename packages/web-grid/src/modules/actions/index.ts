@@ -14,6 +14,7 @@ export type {
 	SelectCellRangeAction,
 	ClearSelectionAction,
 	NavigateAction,
+	ToggleCheckboxAction,
 	OpenDropdownAction,
 	CloseDropdownAction,
 	ToggleDropdownAction,
@@ -43,3 +44,4 @@ export { navigateExecutor } from './executors/navigate-executor.js'
 export { transitionExecutor } from './executors/transition-executor.js'
 export { renderExecutor } from './executors/render-executor.js'
 export { dropdownExecutor } from './executors/dropdown-executor.js'
+export { checkboxExecutor } from './executors/checkbox-executor.js'

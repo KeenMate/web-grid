@@ -5,12 +5,13 @@
 // =============================================================================
 
 import type { GridContext } from '../types.js'
-import { ActionPipeline, createActionPipeline } from './pipeline.js'
+import { ActionPipeline, createActionPipeline, ActionExecutor } from './pipeline.js'
 import { focusExecutor } from './executors/focus-executor.js'
 import { navigateExecutor } from './executors/navigate-executor.js'
 import { transitionExecutor } from './executors/transition-executor.js'
 import { renderExecutor } from './executors/render-executor.js'
 import { dropdownExecutor } from './executors/dropdown-executor.js'
+import { checkboxExecutor } from './executors/checkbox-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
 import type { CellCoordinates } from './types.js'
 
@@ -26,12 +27,13 @@ export class ActionPipelineAdapter<T = unknown> {
 		this.ctx = ctx
 		this.pipeline = createActionPipeline(ctx)
 
-		// Register all executors
-		this.pipeline.registerExecutor(focusExecutor)
-		this.pipeline.registerExecutor(navigateExecutor)
-		this.pipeline.registerExecutor(transitionExecutor)
-		this.pipeline.registerExecutor(renderExecutor)
-		this.pipeline.registerExecutor(dropdownExecutor)
+		// Register all executors (cast needed as executors are type-agnostic)
+		this.pipeline.registerExecutor(focusExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(navigateExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(transitionExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(renderExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(dropdownExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(checkboxExecutor as ActionExecutor<T>)
 	}
 
 	/**
@@ -52,6 +54,15 @@ export class ActionPipelineAdapter<T = unknown> {
 		if (!column) return false
 		const editor = column.editor
 		return editor === 'select' || editor === 'combobox' || editor === 'autocomplete'
+	}
+
+	/**
+	 * Check if a column has a checkbox editor
+	 */
+	private isCheckboxEditor(colIndex: number): boolean {
+		const column = this.ctx.grid.columns[colIndex]
+		if (!column) return false
+		return column.editor === 'checkbox'
 	}
 
 	/**
@@ -93,11 +104,12 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		const dropdownOpen = this.ctx.dropdownOpen
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
+		const isCheckbox = this.isCheckboxEditor(cell.colIndex)
 
-		console.log('[Pipeline] dropdownOpen:', dropdownOpen, 'isDropdown:', isDropdown)
+		console.log('[Pipeline] dropdownOpen:', dropdownOpen, 'isDropdown:', isDropdown, 'isCheckbox:', isCheckbox)
 
 		// Check if this key should be handled by the pipeline
-		if (!isPipelineKey(e.key, dropdownOpen, isDropdown)) {
+		if (!isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)) {
 			console.log('[Pipeline] Not a pipeline key, returning false')
 			return false
 		}
@@ -106,7 +118,8 @@ export class ActionPipelineAdapter<T = unknown> {
 		const action = mapKeyDownToAction(e, {
 			currentCell: cell,
 			dropdownOpen,
-			isDropdownEditor: isDropdown
+			isDropdownEditor: isDropdown,
+			isCheckboxEditor: isCheckbox
 		})
 		console.log('[Pipeline] Mapped action:', action)
 		if (!action) return false
@@ -164,10 +177,15 @@ export class ActionPipelineAdapter<T = unknown> {
 	tryHandleMouseDown(e: MouseEvent): boolean {
 		const target = e.target as HTMLElement
 
-		// Check if this is a toggle click
+		// Check what kind of click this is
 		const isToggleClick = target.matches('.wg__combobox-toggle, .wg__select-toggle')
+		const isCheckboxClick = target.matches('.wg__checkbox-input, input[type="checkbox"]')
+		const isCellClick = !isToggleClick && !isCheckboxClick && (
+			target.matches('.wg__cell') ||
+			target.closest('.wg__cell') !== null
+		)
 
-		// Get cell from toggle's parent editor container or from cell
+		// Get cell coordinates
 		let cell: CellCoordinates | null = null
 
 		if (isToggleClick) {
@@ -185,7 +203,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			cell = this.getCellFromTarget(target)
 		}
 
-		console.log('[Pipeline] tryHandleMouseDown: isToggle:', isToggleClick, 'cell:', cell)
+		console.log('[Pipeline] tryHandleMouseDown: isToggle:', isToggleClick, 'isCheckbox:', isCheckboxClick, 'isCellClick:', isCellClick, 'cell:', cell)
 
 		if (!cell) return false
 
@@ -195,8 +213,8 @@ export class ActionPipelineAdapter<T = unknown> {
 			return false
 		}
 
-		// Only handle toggle clicks for now (cell clicks work via focus events)
-		if (!isToggleClick) {
+		// Handle toggle clicks, checkbox clicks, and cell clicks
+		if (!isToggleClick && !isCheckboxClick && !isCellClick) {
 			return false
 		}
 
@@ -208,7 +226,10 @@ export class ActionPipelineAdapter<T = unknown> {
 			cell,
 			dropdownOpen,
 			isDropdownEditor: isDropdown,
-			isToggleClick
+			isCheckboxEditor: this.isCheckboxEditor(cell.colIndex),
+			isToggleClick,
+			isCheckboxClick,
+			isCellClick
 		})
 
 		console.log('[Pipeline] Mapped mouse actions:', actions.map(a => a.type))

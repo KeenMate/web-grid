@@ -12,6 +12,7 @@ export type EventMapperContext = {
 	currentCell: CellCoordinates | null
 	dropdownOpen: boolean
 	isDropdownEditor: boolean
+	isCheckboxEditor?: boolean
 }
 
 /**
@@ -46,6 +47,14 @@ export function mapKeyDownToAction(
 			case 'Escape':
 				return { type: 'closeDropdown' }
 			// Let other keys fall through to normal handling
+		}
+	}
+
+	// Checkbox editor - Space toggles checkbox
+	if (context.isCheckboxEditor && e.key === ' ') {
+		return {
+			type: 'toggleCheckbox',
+			target: currentCell
 		}
 	}
 
@@ -124,7 +133,7 @@ export function mapKeyDownToAction(
 /**
  * Check if a key should be handled by the pipeline
  */
-export function isPipelineKey(key: string, dropdownOpen: boolean, isDropdownEditor: boolean): boolean {
+export function isPipelineKey(key: string, dropdownOpen: boolean, isDropdownEditor: boolean, isCheckboxEditor: boolean = false): boolean {
 	const navKeys = [
 		'Tab',
 		'Enter',
@@ -143,6 +152,9 @@ export function isPipelineKey(key: string, dropdownOpen: boolean, isDropdownEdit
 	// Dropdown-specific keys
 	if (dropdownOpen && key === 'Escape') return true
 	if (isDropdownEditor && !dropdownOpen && (key === ' ' || key === 'F2')) return true
+
+	// Checkbox-specific keys
+	if (isCheckboxEditor && key === ' ') return true
 
 	return false
 }
@@ -163,7 +175,10 @@ export type MouseMapperContext = {
 	cell: CellCoordinates
 	dropdownOpen: boolean
 	isDropdownEditor: boolean
+	isCheckboxEditor?: boolean
 	isToggleClick: boolean
+	isCheckboxClick?: boolean
+	isCellClick?: boolean
 }
 
 /**
@@ -174,14 +189,23 @@ export function mapMouseDownToActions(
 	_e: MouseEvent,
 	context: MouseMapperContext
 ): GridAction[] {
-	const { cell, dropdownOpen, isToggleClick } = context
+	const { cell, dropdownOpen, isToggleClick, isCheckboxClick, isCellClick } = context
 	const actions: GridAction[] = []
+
+	// For checkbox clicks, just toggle - don't need to focus first
+	if (isCheckboxClick) {
+		actions.push({
+			type: 'toggleCheckbox',
+			target: cell
+		})
+		return actions
+	}
 
 	// Always focus the clicked cell first
 	actions.push({
 		type: 'focusCell',
 		target: cell,
-		selectText: false
+		selectText: !isToggleClick && !isCellClick  // Select text on editor focus, not on toggle/cell click
 	})
 
 	// Toggle click → toggle dropdown
