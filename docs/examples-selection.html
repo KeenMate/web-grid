@@ -355,7 +355,21 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             { field: 'department', title: 'Department', width: '120px', isEditable: true },
             { field: 'salary', title: 'Salary', width: '100px', formatCallback: v => '$' + v?.toLocaleString(), isEditable: true, editor: 'number' },
             { field: 'hours', title: 'Hours', width: '80px', editor: 'number', isEditable: true },
-            { field: 'status', title: 'Status', width: '100px' }
+            {
+                field: 'status',
+                title: 'Status',
+                width: '120px',
+                isEditable: true,
+                editor: 'combobox',
+                editorOptions: {
+                    options: [
+                        { value: 'active', label: 'Active' },
+                        { value: 'inactive', label: 'Inactive' },
+                        { value: 'pending', label: 'Pending' },
+                        { value: 'on-leave', label: 'On Leave' }
+                    ]
+                }
+            }
         ]
 
         // =================================================================
@@ -526,7 +540,12 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             currentSettings.mode = e.target.value
             gridCellRangeClick.mode = e.target.value  // This calls applyModeDefaults() internally
             syncControlsWithGrid()  // Update UI to show what mode actually set
-            console.log('mode changed to:', e.target.value, '→ editTrigger:', gridCellRangeClick.editTrigger, ', cellSelectionMode:', gridCellRangeClick.cellSelectionMode)
+            console.log('mode changed to:', e.target.value)
+            console.log('  → grid.editTrigger:', gridCellRangeClick.editTrigger)
+            console.log('  → grid.cellSelectionMode:', gridCellRangeClick.cellSelectionMode)
+            console.log('  → grid.isEditable:', gridCellRangeClick.isEditable)
+            console.log('  → grid.mode:', gridCellRangeClick.mode)
+            console.log('  → columns[1].isEditable:', gridCellRangeClick.columns[1]?.isEditable)
         })
 
         document.getElementById('clickCellSelectionMode').addEventListener('change', (e) => {

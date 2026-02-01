@@ -184,6 +184,11 @@ import {
 
 import { executePaste } from './modules/paste/index.js'
 
+import {
+	ActionPipelineAdapter,
+	createActionPipelineAdapter
+} from './modules/actions/index.js'
+
 import type { GridContext } from './modules/types.js'
 
 /**
@@ -298,6 +303,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Click event manager (pub/sub for click inside/outside events)
 	readonly clickEvents: ClickEventManager
 
+	// Action pipeline adapter (for 'always' editTrigger mode)
+	private pipelineAdapter: ActionPipelineAdapter<T> | null = null
+
 	constructor() {
 		super()
 		this.shadow = this.attachShadow({ mode: 'open' })
@@ -340,6 +348,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		if (this.grid.gridName && this.grid.shouldPersistColumnWidths) {
 			this.grid.loadPersistedWidths()
 		}
+		// Initialize action pipeline adapter for 'always' editTrigger mode
+		this.pipelineAdapter = createActionPipelineAdapter(this)
 		this.render()
 		// Register paste handler for navigate mode
 		this.addEventListener('paste', this.handlePaste as EventListener)
@@ -1576,6 +1586,40 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				this.grid.setFocusedRow(rowIndex)
 				this.updateRowFocusVisual(prevFocusedRow, rowIndex)
 			}
+			// Handle focus on editor inputs in always-editing mode
+			// When Tab/Enter moves focus to an editor input, we need to update the grid's focus state
+			if (target.matches('.wg__editor, .wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger')) {
+				const cell = target.closest('.wg__cell') as HTMLElement
+				if (cell) {
+					const rowIndex = parseInt(cell.dataset.row || '0', 10)
+					const colIndex = parseInt(cell.dataset.col || '0', 10)
+					const column = this.grid.columns[colIndex]
+					// Check if this cell uses 'always' editTrigger
+					const effectiveTrigger = column?.editTrigger ?? this.grid.editTrigger
+					if (effectiveTrigger === 'always') {
+						// Update focused cell state and visual
+						const oldFocus = this.grid.focusedCell
+						if (!oldFocus || oldFocus.rowIndex !== rowIndex || oldFocus.colIndex !== colIndex) {
+							this.grid.setFocusedCell(rowIndex, colIndex)
+							// Remove focus class from old cell (don't re-render - just update class)
+							if (oldFocus) {
+								const oldCell = this.shadow.querySelector(
+									`td[data-row="${oldFocus.rowIndex}"][data-col="${oldFocus.colIndex}"]`
+								) as HTMLElement
+								if (oldCell) {
+									oldCell.classList.remove('wg__cell--always-edit-focused')
+								}
+							}
+							// Add focus class to new cell (don't re-render - just update class)
+							cell.classList.add('wg__cell--always-edit-focused')
+							// Update row focus
+							const prevFocusedRow = this.grid.focusedRowIndex
+							this.grid.setFocusedRow(rowIndex)
+							this.updateRowFocusVisual(prevFocusedRow, rowIndex)
+						}
+					}
+				}
+			}
 			if (target.matches('.wg__select-trigger, .wg__combobox-input, .wg__autocomplete-input')) {
 				if (!this.justSelected && !this.dropdownOpen) {
 					const field = target.dataset.field || ''
@@ -1592,6 +1636,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		// Keydown events
 		table.addEventListener('keydown', (e: Event) => {
 			const target = e.target as HTMLElement
+
+			// Try action pipeline first (handles 'always' editTrigger mode)
+			if (this.pipelineAdapter?.tryHandleKeyDown(e as KeyboardEvent)) {
+				return
+			}
+
 			if (target.matches('.wg__editor, .wg__combobox-input, .wg__autocomplete-input, .wg__date-input')) {
 				this.handleEditorKeyDown(e as KeyboardEvent, target)
 				return
@@ -1839,6 +1889,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 			// Toggle click
 			if (target.matches('.wg__combobox-toggle, .wg__select-toggle')) {
+				// Try pipeline first (handles 'always' mode)
+				if (this.pipelineAdapter?.tryHandleMouseDown(e as MouseEvent)) {
+					return
+				}
+
 				e.preventDefault()
 				e.stopPropagation()
 

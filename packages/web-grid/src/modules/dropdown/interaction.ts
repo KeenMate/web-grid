@@ -11,6 +11,7 @@ import { renderCell } from '../rendering/index.js'
 
 /**
  * Select dropdown option by index
+ * Works with both editingCell (normal edit mode) and focusedCell ('always' edit mode)
  * @param commitEmptyRow - If true and editing empty row, add it to items (Enter key behavior)
  */
 export function selectDropdownOption<T>(
@@ -22,17 +23,28 @@ export function selectDropdownOption<T>(
 	const option = ctx.dropdownOptions[index]
 	if (!option) return
 
+	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
 	const editingCell = ctx.grid.editingCell
-	if (!editingCell) return
+	const focusedCell = ctx.grid.focusedCell
+	const cellInfo = editingCell
+		? { rowIndex: editingCell.rowIndex, field: editingCell.field, colIndex: ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) }
+		: focusedCell
+			? { rowIndex: focusedCell.rowIndex, field: String(ctx.grid.columns[focusedCell.colIndex]?.field), colIndex: focusedCell.colIndex }
+			: null
 
-	const opts = ctx.getCurrentEditorOptions()
+	if (!cellInfo) return
+
+	const { rowIndex, field, colIndex } = cellInfo
+
+	// Get column for editorOptions
+	const column = ctx.grid.columns[colIndex]
+	const opts = column?.editorOptions || {}
 
 	// Skip if option is disabled
 	if (isOptionDisabled(option, opts)) return
 
 	const value = getOptionValue(option, opts)
-	const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
-	const row = ctx.grid.displayItems[editingCell.rowIndex]
+	const row = ctx.grid.displayItems[rowIndex]
 
 	// Fire onselect event if provided
 	if (opts.onselect && row) {
@@ -42,14 +54,14 @@ export function selectDropdownOption<T>(
 	ctx.justSelected = true
 	ctx.isCommittingFromKeyboard = true
 	removeDropdown(ctx)
-	ctx.grid.commitEdit(editingCell.rowIndex, editingCell.field, value, commitEmptyRow)
+	ctx.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
 
 	if (moveAfterSelect) {
 		// Move focus to next row in same column (like Enter does for other editors)
-		ctx.moveFocusAfterCommit(editingCell.rowIndex, editingCell.field, 'down')
+		ctx.moveFocusAfterCommit(rowIndex, field, 'down')
 	} else {
 		// Stay on current cell with focused state - re-render to show new value
-		renderCell(ctx, editingCell.rowIndex, colIndex)
+		renderCell(ctx, rowIndex, colIndex)
 	}
 
 	// Reset justSelected after focus moves
@@ -96,12 +108,40 @@ export function updateLoadingIndicator<T>(ctx: GridContext<T>, show: boolean): v
 
 /**
  * Open dropdown for current editor
+ * Works with both editingCell (normal edit mode) and focusedCell ('always' edit mode)
  */
 export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
+	console.log('[openDropdown] Start, justSelected:', ctx.justSelected)
 	if (ctx.justSelected) return
 
-	const column = ctx.getCurrentEditingColumn()
-	if (!column) return
+	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
+	const editingCell = ctx.grid.editingCell
+	const focusedCell = ctx.grid.focusedCell
+	console.log('[openDropdown] editingCell:', editingCell, 'focusedCell:', focusedCell)
+	const cellInfo = editingCell
+		? { rowIndex: editingCell.rowIndex, field: editingCell.field }
+		: focusedCell
+			? { rowIndex: focusedCell.rowIndex, field: String(ctx.grid.columns[focusedCell.colIndex]?.field) }
+			: null
+
+	if (!cellInfo) {
+		console.log('[openDropdown] No cellInfo, returning')
+		return
+	}
+
+	const { rowIndex, field } = cellInfo
+	console.log('[openDropdown] rowIndex:', rowIndex, 'field:', field)
+
+	// Get column - try editingCell method first, then fall back to field lookup
+	let column = ctx.getCurrentEditingColumn()
+	if (!column) {
+		column = ctx.grid.columns.find(c => String(c.field) === field) || null
+	}
+	if (!column) {
+		console.log('[openDropdown] No column found, returning')
+		return
+	}
+	console.log('[openDropdown] column:', column.field, 'editor:', column.editor)
 
 	const opts = column.editorOptions || {}
 	const editor = column.editor
@@ -122,17 +162,12 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 		} else {
 			ctx.dropdownOptions = allOptions
 			// Calculate highlight index for current value
-			const editingCell = ctx.grid.editingCell
-			if (editingCell) {
-				const item = ctx.grid.displayItems[editingCell.rowIndex]
-				const currentValue = item ? (item as Record<string, unknown>)[editingCell.field] : undefined
-				const currentIdx = ctx.dropdownOptions.findIndex(
-					opt => getOptionValue(opt, opts) === currentValue
-				)
-				targetIndex = currentIdx >= 0 ? currentIdx : 0
-			} else {
-				targetIndex = ctx.dropdownOptions.length > 0 ? 0 : -1
-			}
+			const item = ctx.grid.displayItems[rowIndex]
+			const currentValue = item ? (item as Record<string, unknown>)[field] : undefined
+			const currentIdx = ctx.dropdownOptions.findIndex(
+				opt => getOptionValue(opt, opts) === currentValue
+			)
+			targetIndex = currentIdx >= 0 ? currentIdx : 0
 		}
 	} else if (editor === 'combobox' || editor === 'autocomplete') {
 		const baseOptions = editor === 'autocomplete'
@@ -140,12 +175,8 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 			: (opts.options || [])
 
 		// Get current cell value
-		const editingCell = ctx.grid.editingCell
-		let currentValue: unknown = undefined
-		if (editingCell) {
-			const item = ctx.grid.displayItems[editingCell.rowIndex]
-			currentValue = item ? (item as Record<string, unknown>)[editingCell.field] : undefined
-		}
+		const item = ctx.grid.displayItems[rowIndex]
+		const currentValue = item ? (item as Record<string, unknown>)[field] : undefined
 
 		// Check if current value exists in options
 		const currentIdx = baseOptions.findIndex(
@@ -177,17 +208,13 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 			targetIndex = baseOptions.length > 0 ? 0 : -1
 		}
 	}
-
-	// Use specific selector with row and field to avoid finding stale editor elements
-	const editingCellInfo = ctx.grid.editingCell
-	if (!editingCellInfo) return
-
-	const { rowIndex, field } = editingCellInfo
+	console.log('[openDropdown] Looking for wrapper with rowIndex:', rowIndex, 'field:', field)
 	const wrapper = ctx.shadow.querySelector(
 		`.wg__editor--select[data-row="${rowIndex}"][data-field="${field}"],
 		 .wg__editor--combobox[data-row="${rowIndex}"][data-field="${field}"],
 		 .wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
 	) as HTMLElement
+	console.log('[openDropdown] wrapper:', wrapper, 'dropdownOptions.length:', ctx.dropdownOptions.length)
 	if (wrapper && ctx.dropdownOptions.length > 0) {
 		// Save filterText before renderDropdown (which calls removeDropdown that clears it)
 		const savedFilterText = ctx.filterText
