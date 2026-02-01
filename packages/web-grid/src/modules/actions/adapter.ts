@@ -13,12 +13,14 @@ import { renderExecutor } from './executors/render-executor.js'
 import { dropdownExecutor } from './executors/dropdown-executor.js'
 import { checkboxExecutor } from './executors/checkbox-executor.js'
 import { datepickerExecutor } from './executors/datepicker-executor.js'
+import { editExecutor } from './executors/edit-executor.js'
+import { selectionExecutor } from './executors/selection-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
 import type { CellCoordinates } from './types.js'
 
 /**
  * Adapter that bridges GridElement event handlers with the action pipeline.
- * For Phase 1, only handles 'always' editTrigger mode.
+ * Handles all editTrigger modes: always, navigate, click, dblclick
  */
 export class ActionPipelineAdapter<T = unknown> {
 	private pipeline: ActionPipeline<T>
@@ -36,16 +38,35 @@ export class ActionPipelineAdapter<T = unknown> {
 		this.pipeline.registerExecutor(dropdownExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(checkboxExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(datepickerExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(editExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(selectionExecutor as ActionExecutor<T>)
+	}
+
+	/**
+	 * Get the effective editTrigger for a column
+	 */
+	private getEditTrigger(colIndex: number): 'always' | 'navigate' | 'click' | 'dblclick' {
+		const column = this.ctx.grid.columns[colIndex]
+		if (!column) return 'navigate'
+		return (column.editTrigger ?? this.ctx.grid.editTrigger) as 'always' | 'navigate' | 'click' | 'dblclick'
 	}
 
 	/**
 	 * Check if a cell is in 'always' editTrigger mode
 	 */
 	private isAlwaysMode(colIndex: number): boolean {
+		return this.getEditTrigger(colIndex) === 'always'
+	}
+
+	/**
+	 * Check if a specific cell is currently being edited
+	 */
+	private isEditingCell(rowIndex: number, colIndex: number): boolean {
+		const editingCell = this.ctx.grid.editingCell
+		if (!editingCell) return false
 		const column = this.ctx.grid.columns[colIndex]
 		if (!column) return false
-		const effectiveTrigger = column.editTrigger ?? this.ctx.grid.editTrigger
-		return effectiveTrigger === 'always'
+		return editingCell.rowIndex === rowIndex && editingCell.field === String(column.field)
 	}
 
 	/**
@@ -102,31 +123,150 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		if (!cell) return false
 
-		// Only handle 'always' mode cells for Phase 1
-		if (!this.isAlwaysMode(cell.colIndex)) return false
-
+		const editTrigger = this.getEditTrigger(cell.colIndex)
+		const isAlways = editTrigger === 'always'
+		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)
 		const dropdownOpen = this.ctx.dropdownOpen
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 		const isCheckbox = this.isCheckboxEditor(cell.colIndex)
+		const isDate = this.isDateEditor(cell.colIndex)
 
-		// Check if this key should be handled by the pipeline
-		if (!isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)) return false
+		// For 'always' mode, use full pipeline key handling
+		if (isAlways) {
+			if (!isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)) return false
 
-		// Map the event to an action
-		const action = mapKeyDownToAction(e, {
-			currentCell: cell,
-			dropdownOpen,
-			isDropdownEditor: isDropdown,
-			isCheckboxEditor: isCheckbox
-		})
-		if (!action) return false
+			const action = mapKeyDownToAction(e, {
+				currentCell: cell,
+				dropdownOpen,
+				isDropdownEditor: isDropdown,
+				isCheckboxEditor: isCheckbox
+			})
+			if (!action) return false
 
-		// Prevent default and dispatch
-		e.preventDefault()
-		e.stopPropagation()
-		this.pipeline.dispatch(action)
+			e.preventDefault()
+			e.stopPropagation()
+			this.pipeline.dispatch(action)
+			return true
+		}
 
-		return true
+		// For other modes, behavior depends on whether we're editing
+		if (isEditing) {
+			// While editing: handle navigation/commit/cancel keys
+			if (!isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)) return false
+
+			const action = mapKeyDownToAction(e, {
+				currentCell: cell,
+				dropdownOpen,
+				isDropdownEditor: isDropdown,
+				isCheckboxEditor: isCheckbox
+			})
+			if (!action) return false
+
+			e.preventDefault()
+			e.stopPropagation()
+			this.pipeline.dispatch(action)
+			return true
+		}
+
+		// Not editing (navigate mode): handle navigation and edit-start keys
+		// Navigation keys move focus between cells
+		const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End', 'PageUp', 'PageDown']
+		if (navKeys.includes(e.key)) {
+			const action = mapKeyDownToAction(e, {
+				currentCell: cell,
+				dropdownOpen: false,
+				isDropdownEditor: false,
+				isCheckboxEditor: false
+			})
+			if (!action) return false
+
+			e.preventDefault()
+			e.stopPropagation()
+			this.pipeline.dispatch(action)
+			return true
+		}
+
+		// F2 starts edit
+		if (e.key === 'F2') {
+			e.preventDefault()
+			e.stopPropagation()
+			this.pipeline.dispatch({
+				type: 'startEdit',
+				target: cell
+			})
+			// Open dropdown for dropdown editors
+			if (isDropdown) {
+				this.pipeline.dispatch({ type: 'openDropdown' })
+			} else if (isDate) {
+				this.pipeline.dispatch({ type: 'openDatePicker' })
+			}
+			return true
+		}
+
+		// Enter starts edit for dropdown/date editors, or moves down for others
+		if (e.key === 'Enter') {
+			if (isDropdown || isDate || isCheckbox) {
+				e.preventDefault()
+				e.stopPropagation()
+				if (isCheckbox) {
+					this.pipeline.dispatch({ type: 'toggleCheckbox', target: cell })
+				} else {
+					this.pipeline.dispatch({ type: 'startEdit', target: cell })
+					if (isDropdown) {
+						this.pipeline.dispatch({ type: 'openDropdown' })
+					} else if (isDate) {
+						this.pipeline.dispatch({ type: 'openDatePicker' })
+					}
+				}
+				return true
+			}
+			// For text editors, Enter moves down (standard navigation)
+			return false
+		}
+
+		// Space starts edit for dropdown/date/checkbox editors
+		if (e.key === ' ') {
+			if (isDropdown || isDate || isCheckbox) {
+				e.preventDefault()
+				e.stopPropagation()
+				if (isCheckbox) {
+					this.pipeline.dispatch({ type: 'toggleCheckbox', target: cell })
+				} else {
+					this.pipeline.dispatch({ type: 'startEdit', target: cell })
+					if (isDropdown) {
+						this.pipeline.dispatch({ type: 'openDropdown' })
+					} else if (isDate) {
+						this.pipeline.dispatch({ type: 'openDatePicker' })
+					}
+				}
+				return true
+			}
+		}
+
+		// Delete clears cell content
+		if (e.key === 'Delete') {
+			e.preventDefault()
+			e.stopPropagation()
+			this.pipeline.dispatch({ type: 'deleteCell', target: cell })
+			return true
+		}
+
+		// Printable character starts edit with initial value
+		if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			e.preventDefault()
+			e.stopPropagation()
+			this.pipeline.dispatch({
+				type: 'startEdit',
+				target: cell,
+				initialSearchQuery: e.key
+			})
+			if (isDropdown) {
+				this.pipeline.dispatch({ type: 'openDropdown' })
+			}
+			return true
+		}
+
+		return false
 	}
 
 	/**
@@ -213,18 +353,60 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		if (!cell) return false
 
-		// Only handle 'always' mode cells
-		if (!this.isAlwaysMode(cell.colIndex)) return false
+		const editTrigger = this.getEditTrigger(cell.colIndex)
+		const isAlways = editTrigger === 'always'
+		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)
 
 		// Handle toggle clicks, date trigger clicks, checkbox clicks, and cell clicks
 		if (!isToggleClick && !isDateTriggerClick && !isCheckboxClick && !isCellClick) {
 			return false
 		}
 
+		// For 'always' mode or when editing: use full mouse handling
+		if (isAlways || isEditing) {
+			const dropdownOpen = this.ctx.dropdownOpen
+			const isDropdown = this.isDropdownEditor(cell.colIndex)
+
+			const actions = mapMouseDownToActions(e, {
+				cell,
+				dropdownOpen,
+				isDropdownEditor: isDropdown,
+				isDateEditor: this.isDateEditor(cell.colIndex),
+				isCheckboxEditor: this.isCheckboxEditor(cell.colIndex),
+				isToggleClick,
+				isDateTriggerClick,
+				isCheckboxClick,
+				isCellClick
+			})
+
+			if (actions.length === 0) return false
+
+			e.preventDefault()
+			e.stopPropagation()
+
+			for (const action of actions) {
+				this.pipeline.dispatch(action)
+			}
+
+			return true
+		}
+
+		// For non-always modes when not editing: just focus the cell on mousedown
+		// (Click/dblclick modes handle edit start separately)
+		if (isCellClick && !isToggleClick && !isDateTriggerClick && !isCheckboxClick) {
+			this.pipeline.dispatch({
+				type: 'focusCell',
+				target: cell,
+				selectText: false
+			})
+			// Don't prevent default - allow normal cell focus behavior
+			return false
+		}
+
+		// Map the event to actions for other cases
 		const dropdownOpen = this.ctx.dropdownOpen
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 
-		// Map the event to actions
 		const actions = mapMouseDownToActions(e, {
 			cell,
 			dropdownOpen,
@@ -245,6 +427,81 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		for (const action of actions) {
 			this.pipeline.dispatch(action)
+		}
+
+		return true
+	}
+
+	/**
+	 * Try to handle a click event via the pipeline (for 'click' editTrigger mode).
+	 * Returns true if the event was handled, false to fall through.
+	 */
+	tryHandleClick(e: MouseEvent): boolean {
+		const target = e.target as HTMLElement
+		const cell = this.getCellFromTarget(target)
+
+		if (!cell) return false
+
+		const editTrigger = this.getEditTrigger(cell.colIndex)
+		if (editTrigger !== 'click') return false
+
+		// Already editing this cell - don't re-start
+		if (this.isEditingCell(cell.rowIndex, cell.colIndex)) return false
+
+		// Start edit on click
+		e.preventDefault()
+
+		const isDropdown = this.isDropdownEditor(cell.colIndex)
+		const isDate = this.isDateEditor(cell.colIndex)
+
+		this.pipeline.dispatch({
+			type: 'startEdit',
+			target: cell
+		})
+
+		// Open dropdown/datepicker for those editor types
+		if (isDropdown) {
+			this.pipeline.dispatch({ type: 'openDropdown' })
+		} else if (isDate) {
+			this.pipeline.dispatch({ type: 'openDatePicker' })
+		}
+
+		return true
+	}
+
+	/**
+	 * Try to handle a dblclick event via the pipeline (for 'dblclick' or 'navigate' editTrigger mode).
+	 * Returns true if the event was handled, false to fall through.
+	 */
+	tryHandleDblClick(e: MouseEvent): boolean {
+		const target = e.target as HTMLElement
+		const cell = this.getCellFromTarget(target)
+
+		if (!cell) return false
+
+		const editTrigger = this.getEditTrigger(cell.colIndex)
+		// dblclick starts edit for both 'dblclick' and 'navigate' modes
+		if (editTrigger !== 'dblclick' && editTrigger !== 'navigate') return false
+
+		// Already editing this cell - don't re-start
+		if (this.isEditingCell(cell.rowIndex, cell.colIndex)) return false
+
+		// Start edit on double-click
+		e.preventDefault()
+
+		const isDropdown = this.isDropdownEditor(cell.colIndex)
+		const isDate = this.isDateEditor(cell.colIndex)
+
+		this.pipeline.dispatch({
+			type: 'startEdit',
+			target: cell
+		})
+
+		// Open dropdown/datepicker for those editor types
+		if (isDropdown) {
+			this.pipeline.dispatch({ type: 'openDropdown' })
+		} else if (isDate) {
+			this.pipeline.dispatch({ type: 'openDatePicker' })
 		}
 
 		return true

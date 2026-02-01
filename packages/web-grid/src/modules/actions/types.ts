@@ -91,6 +91,91 @@ export type ClearSelectionAction = {
 }
 
 /**
+ * Select a row
+ */
+export type SelectRowAction = {
+	type: 'selectRow'
+	rowIndex: number
+	/** Add to existing selection (Ctrl+click) */
+	addToSelection?: boolean
+	/** Extend selection (Shift+click) */
+	extendSelection?: boolean
+}
+
+/**
+ * Select a column
+ */
+export type SelectColumnAction = {
+	type: 'selectColumn'
+	colIndex: number
+	/** Add to existing selection (Ctrl+click) */
+	addToSelection?: boolean
+	/** Extend selection (Shift+click) */
+	extendSelection?: boolean
+}
+
+/**
+ * Delete/clear cell content
+ */
+export type DeleteCellAction = {
+	type: 'deleteCell'
+	target?: CellCoordinates
+}
+
+/**
+ * Copy selection to clipboard
+ */
+export type CopyAction = {
+	type: 'copy'
+}
+
+/**
+ * Paste from clipboard
+ */
+export type PasteAction = {
+	type: 'paste'
+}
+
+/**
+ * Open context menu
+ */
+export type OpenContextMenuAction = {
+	type: 'openContextMenu'
+	position: { x: number; y: number }
+	target?: CellCoordinates
+}
+
+/**
+ * Close context menu
+ */
+export type CloseContextMenuAction = {
+	type: 'closeContextMenu'
+}
+
+/**
+ * Start fill handle drag
+ */
+export type StartFillDragAction = {
+	type: 'startFillDrag'
+	start: CellCoordinates
+}
+
+/**
+ * Update fill handle drag extent
+ */
+export type UpdateFillDragAction = {
+	type: 'updateFillDrag'
+	end: CellCoordinates
+}
+
+/**
+ * Complete fill handle drag and apply fill
+ */
+export type CompleteFillDragAction = {
+	type: 'completeFillDrag'
+}
+
+/**
  * Navigate from current position in a direction
  */
 export type NavigateAction = {
@@ -215,9 +300,14 @@ export type GridAction =
 	| CommitEditAction
 	| CancelEditAction
 	| SelectCellRangeAction
+	| SelectRowAction
+	| SelectColumnAction
 	| ClearSelectionAction
 	| NavigateAction
 	| ToggleCheckboxAction
+	| DeleteCellAction
+	| CopyAction
+	| PasteAction
 	// Effect actions
 	| OpenDropdownAction
 	| CloseDropdownAction
@@ -227,5 +317,10 @@ export type GridAction =
 	| OpenDatePickerAction
 	| CloseDatePickerAction
 	| RenderCellAction
+	| OpenContextMenuAction
+	| CloseContextMenuAction
+	| StartFillDragAction
+	| UpdateFillDragAction
+	| CompleteFillDragAction
 	// Compound actions
 	| TransitionCellAction

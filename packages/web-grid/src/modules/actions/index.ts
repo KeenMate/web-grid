@@ -12,9 +12,14 @@ export type {
 	CommitEditAction,
 	CancelEditAction,
 	SelectCellRangeAction,
+	SelectRowAction,
+	SelectColumnAction,
 	ClearSelectionAction,
 	NavigateAction,
 	ToggleCheckboxAction,
+	DeleteCellAction,
+	CopyAction,
+	PasteAction,
 	OpenDropdownAction,
 	CloseDropdownAction,
 	ToggleDropdownAction,
@@ -23,6 +28,11 @@ export type {
 	OpenDatePickerAction,
 	CloseDatePickerAction,
 	RenderCellAction,
+	OpenContextMenuAction,
+	CloseContextMenuAction,
+	StartFillDragAction,
+	UpdateFillDragAction,
+	CompleteFillDragAction,
 	TransitionCellAction,
 	GridAction
 } from './types.js'
@@ -46,3 +56,5 @@ export { renderExecutor } from './executors/render-executor.js'
 export { dropdownExecutor } from './executors/dropdown-executor.js'
 export { checkboxExecutor } from './executors/checkbox-executor.js'
 export { datepickerExecutor } from './executors/datepicker-executor.js'
+export { editExecutor } from './executors/edit-executor.js'
+export { selectionExecutor } from './executors/selection-executor.js'
