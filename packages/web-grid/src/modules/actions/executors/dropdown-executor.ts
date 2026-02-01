@@ -23,12 +23,9 @@ export const dropdownExecutor: ActionExecutor = {
 	handles: ['openDropdown', 'closeDropdown', 'toggleDropdown', 'dropdownNavigate', 'dropdownSelect'],
 
 	execute(ctx: ExecutorContext, action: GridAction): GridAction[] | void {
-		console.log('[DropdownExecutor] execute:', action.type, 'dropdownOpen:', ctx.dropdownOpen)
 		switch (action.type) {
 			case 'openDropdown':
-				console.log('[DropdownExecutor] Opening dropdown, focusedCell:', ctx.grid.focusedCell)
 				openDropdownForCurrentEditor(ctx)
-				console.log('[DropdownExecutor] After open, dropdownOpen:', ctx.dropdownOpen)
 				break
 			case 'closeDropdown':
 				removeDropdown(ctx)

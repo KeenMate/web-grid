@@ -89,30 +89,17 @@ export class ActionPipelineAdapter<T = unknown> {
 		const target = e.target as HTMLElement
 		const cell = this.getCellFromTarget(target)
 
-		console.log('[Pipeline] tryHandleKeyDown:', e.key, 'target:', target.className, 'cell:', cell)
-
-		if (!cell) {
-			console.log('[Pipeline] No cell found, returning false')
-			return false
-		}
+		if (!cell) return false
 
 		// Only handle 'always' mode cells for Phase 1
-		if (!this.isAlwaysMode(cell.colIndex)) {
-			console.log('[Pipeline] Not always mode, returning false')
-			return false
-		}
+		if (!this.isAlwaysMode(cell.colIndex)) return false
 
 		const dropdownOpen = this.ctx.dropdownOpen
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 		const isCheckbox = this.isCheckboxEditor(cell.colIndex)
 
-		console.log('[Pipeline] dropdownOpen:', dropdownOpen, 'isDropdown:', isDropdown, 'isCheckbox:', isCheckbox)
-
 		// Check if this key should be handled by the pipeline
-		if (!isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)) {
-			console.log('[Pipeline] Not a pipeline key, returning false')
-			return false
-		}
+		if (!isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)) return false
 
 		// Map the event to an action
 		const action = mapKeyDownToAction(e, {
@@ -121,13 +108,11 @@ export class ActionPipelineAdapter<T = unknown> {
 			isDropdownEditor: isDropdown,
 			isCheckboxEditor: isCheckbox
 		})
-		console.log('[Pipeline] Mapped action:', action)
 		if (!action) return false
 
 		// Prevent default and dispatch
 		e.preventDefault()
 		e.stopPropagation()
-		console.log('[Pipeline] Dispatching action:', action.type)
 		this.pipeline.dispatch(action)
 
 		return true
@@ -203,15 +188,10 @@ export class ActionPipelineAdapter<T = unknown> {
 			cell = this.getCellFromTarget(target)
 		}
 
-		console.log('[Pipeline] tryHandleMouseDown: isToggle:', isToggleClick, 'isCheckbox:', isCheckboxClick, 'isCellClick:', isCellClick, 'cell:', cell)
-
 		if (!cell) return false
 
 		// Only handle 'always' mode cells
-		if (!this.isAlwaysMode(cell.colIndex)) {
-			console.log('[Pipeline] Not always mode, returning false')
-			return false
-		}
+		if (!this.isAlwaysMode(cell.colIndex)) return false
 
 		// Handle toggle clicks, checkbox clicks, and cell clicks
 		if (!isToggleClick && !isCheckboxClick && !isCellClick) {
@@ -231,8 +211,6 @@ export class ActionPipelineAdapter<T = unknown> {
 			isCheckboxClick,
 			isCellClick
 		})
-
-		console.log('[Pipeline] Mapped mouse actions:', actions.map(a => a.type))
 
 		if (actions.length === 0) return false
 

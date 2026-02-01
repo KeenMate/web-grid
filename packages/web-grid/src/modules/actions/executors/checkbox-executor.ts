@@ -37,8 +37,6 @@ function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxActio
 	const currentValue = (item as Record<string, unknown>)[field]
 	const newValue = currentValue === trueValue ? falseValue : trueValue
 
-	console.log('[CheckboxExecutor] Toggle:', { rowIndex, colIndex, field, currentValue, newValue })
-
 	// Commit the toggle
 	ctx.grid.commitEdit(rowIndex, field, newValue)
 
