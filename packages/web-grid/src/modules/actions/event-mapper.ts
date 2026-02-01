@@ -175,8 +175,10 @@ export type MouseMapperContext = {
 	cell: CellCoordinates
 	dropdownOpen: boolean
 	isDropdownEditor: boolean
+	isDateEditor?: boolean
 	isCheckboxEditor?: boolean
 	isToggleClick: boolean
+	isDateTriggerClick?: boolean
 	isCheckboxClick?: boolean
 	isCellClick?: boolean
 }
@@ -189,7 +191,7 @@ export function mapMouseDownToActions(
 	_e: MouseEvent,
 	context: MouseMapperContext
 ): GridAction[] {
-	const { cell, dropdownOpen, isToggleClick, isCheckboxClick, isCellClick } = context
+	const { cell, dropdownOpen, isToggleClick, isDateTriggerClick, isCheckboxClick, isCellClick } = context
 	const actions: GridAction[] = []
 
 	// For checkbox clicks, just toggle - don't need to focus first
@@ -198,6 +200,17 @@ export function mapMouseDownToActions(
 			type: 'toggleCheckbox',
 			target: cell
 		})
+		return actions
+	}
+
+	// For date trigger clicks, focus cell then open date picker
+	if (isDateTriggerClick) {
+		actions.push({
+			type: 'focusCell',
+			target: cell,
+			selectText: false
+		})
+		actions.push({ type: 'openDatePicker' })
 		return actions
 	}
 

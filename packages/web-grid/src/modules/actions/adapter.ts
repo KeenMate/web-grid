@@ -12,6 +12,7 @@ import { transitionExecutor } from './executors/transition-executor.js'
 import { renderExecutor } from './executors/render-executor.js'
 import { dropdownExecutor } from './executors/dropdown-executor.js'
 import { checkboxExecutor } from './executors/checkbox-executor.js'
+import { datepickerExecutor } from './executors/datepicker-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
 import type { CellCoordinates } from './types.js'
 
@@ -34,6 +35,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		this.pipeline.registerExecutor(renderExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(dropdownExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(checkboxExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(datepickerExecutor as ActionExecutor<T>)
 	}
 
 	/**
@@ -63,6 +65,15 @@ export class ActionPipelineAdapter<T = unknown> {
 		const column = this.ctx.grid.columns[colIndex]
 		if (!column) return false
 		return column.editor === 'checkbox'
+	}
+
+	/**
+	 * Check if a column has a date editor
+	 */
+	private isDateEditor(colIndex: number): boolean {
+		const column = this.ctx.grid.columns[colIndex]
+		if (!column) return false
+		return column.editor === 'date'
 	}
 
 	/**
@@ -164,8 +175,9 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// Check what kind of click this is
 		const isToggleClick = target.matches('.wg__combobox-toggle, .wg__select-toggle')
+		const isDateTriggerClick = !!target.closest('.wg__date-trigger')
 		const isCheckboxClick = target.matches('.wg__checkbox-input, input[type="checkbox"]')
-		const isCellClick = !isToggleClick && !isCheckboxClick && (
+		const isCellClick = !isToggleClick && !isDateTriggerClick && !isCheckboxClick && (
 			target.matches('.wg__cell') ||
 			target.closest('.wg__cell') !== null
 		)
@@ -184,6 +196,17 @@ export class ActionPipelineAdapter<T = unknown> {
 					cell = { rowIndex, colIndex }
 				}
 			}
+		} else if (isDateTriggerClick) {
+			// For date trigger clicks, get cell info from date editor container
+			const editorContainer = target.closest('.wg__editor--date') as HTMLElement
+			if (editorContainer) {
+				const rowIndex = parseInt(editorContainer.dataset.row || '', 10)
+				const field = editorContainer.dataset.field || ''
+				const colIndex = this.ctx.grid.columns.findIndex(c => String(c.field) === field)
+				if (!isNaN(rowIndex) && colIndex >= 0) {
+					cell = { rowIndex, colIndex }
+				}
+			}
 		} else {
 			cell = this.getCellFromTarget(target)
 		}
@@ -193,8 +216,8 @@ export class ActionPipelineAdapter<T = unknown> {
 		// Only handle 'always' mode cells
 		if (!this.isAlwaysMode(cell.colIndex)) return false
 
-		// Handle toggle clicks, checkbox clicks, and cell clicks
-		if (!isToggleClick && !isCheckboxClick && !isCellClick) {
+		// Handle toggle clicks, date trigger clicks, checkbox clicks, and cell clicks
+		if (!isToggleClick && !isDateTriggerClick && !isCheckboxClick && !isCellClick) {
 			return false
 		}
 
@@ -206,8 +229,10 @@ export class ActionPipelineAdapter<T = unknown> {
 			cell,
 			dropdownOpen,
 			isDropdownEditor: isDropdown,
+			isDateEditor: this.isDateEditor(cell.colIndex),
 			isCheckboxEditor: this.isCheckboxEditor(cell.colIndex),
 			isToggleClick,
+			isDateTriggerClick,
 			isCheckboxClick,
 			isCellClick
 		})

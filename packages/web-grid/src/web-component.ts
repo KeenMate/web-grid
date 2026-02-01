@@ -282,8 +282,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get tooltipHideDelay(): number { return this._tooltipHideDelay }
 	set tooltipHideDelay(value: number) { this._tooltipHideDelay = value }
 
-	// DatePicker instance (for date editor)
-	private datepicker: DatePicker | null = null
+	// DatePicker instance (for date editor) - exposed via GridContext for pipeline access
+	datepicker: DatePicker | null = null
 
 	// Context menu element (rendered to document.body)
 	private contextMenuElement: HTMLElement | null = null

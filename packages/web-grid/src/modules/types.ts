@@ -6,6 +6,7 @@ import type { WebGrid } from '../grid.js'
 import type { Column, EditorOption, EditorOptions } from '../types.js'
 import type { ScrollEventManager } from './scroll-events/index.js'
 import type { FocusEventManager } from './focus-events/index.js'
+import type { DatePicker } from './datepicker/datepicker.js'
 
 /**
  * GridElement context interface for module functions
@@ -27,6 +28,9 @@ export interface GridContext<T = unknown> {
 	justSelected: boolean
 	isOpeningDropdown: boolean
 	isCommittingFromKeyboard: boolean
+
+	// Datepicker state
+	datepicker: DatePicker | null
 
 	// Autocomplete async state
 	searchDebounceTimer: ReturnType<typeof setTimeout> | null
