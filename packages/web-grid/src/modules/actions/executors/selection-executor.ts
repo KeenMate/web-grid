@@ -7,6 +7,7 @@
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, SelectRowAction, SelectColumnAction } from '../types.js'
 import { removeRangeBorder } from '../../cell-selection/index.js'
+import { removeRowSelectionBorders, removeColumnSelectionBorders } from '../../selection-border/index.js'
 
 /**
  * Selection executor - handles selection actions
@@ -96,12 +97,14 @@ function executeClearSelection(ctx: ExecutorContext): void {
 	// Clear row selection
 	if (ctx.grid.selectedRows.length > 0) {
 		ctx.grid.clearSelection()
+		removeRowSelectionBorders()
 		updateRowSelectionVisual(ctx)
 	}
 
 	// Clear column selection
 	if (ctx.grid.selectedColumns.length > 0) {
 		ctx.grid.clearColumnSelection()
+		removeColumnSelectionBorders()
 		updateColumnSelectionVisual(ctx)
 	}
 

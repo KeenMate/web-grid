@@ -18,6 +18,7 @@ import { selectionExecutor } from './executors/selection-executor.js'
 import { clipboardExecutor } from './executors/clipboard-executor.js'
 import { contextMenuExecutor } from './executors/context-menu-executor.js'
 import { fillHandleExecutor } from './executors/fill-handle-executor.js'
+import { cellSelectionExecutor } from './executors/cell-selection-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
 import type { CellCoordinates } from './types.js'
 
@@ -46,6 +47,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		this.pipeline.registerExecutor(clipboardExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(contextMenuExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(fillHandleExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(cellSelectionExecutor as ActionExecutor<T>)
 	}
 
 	/**
@@ -405,16 +407,48 @@ export class ActionPipelineAdapter<T = unknown> {
 			return true
 		}
 
-		// For non-always modes when not editing: just focus the cell on mousedown
+		// For non-always modes when not editing: focus the cell and optionally start cell selection
 		// (Click/dblclick modes handle edit start separately)
 		if (isCellClick && !isToggleClick && !isDateTriggerClick && !isCheckboxClick) {
+			// Must preventDefault to stop browser from stealing focus after our programmatic focus
+			// Note: Don't stopPropagation() - it can interfere with dblclick detection
+			e.preventDefault()
+
+			// Clear row/column/cell selections when clicking on a cell
+			if (this.ctx.grid.selectedRows.length > 0 ||
+				this.ctx.grid.selectedColumns.length > 0 ||
+				this.ctx.grid.selectedCellRange) {
+				this.pipeline.dispatch({ type: 'clearSelection' })
+			}
+
+			// Focus the cell
 			this.pipeline.dispatch({
 				type: 'focusCell',
 				target: cell,
 				selectText: false
 			})
-			// Don't prevent default - allow normal cell focus behavior
-			return false
+
+			// Start cell selection tracking (for drag-to-select)
+			const selectionMode = this.ctx.grid.cellSelectionMode
+			const isShiftClick = e.shiftKey
+			const shouldSelectRange =
+				selectionMode !== 'disabled' && (
+					(selectionMode === 'click' && !isShiftClick) ||
+					(selectionMode === 'shift' && isShiftClick)
+				)
+
+			if (shouldSelectRange) {
+				this.pipeline.dispatch({
+					type: 'startCellSelection',
+					rowIndex: cell.rowIndex,
+					colIndex: cell.colIndex,
+					clientX: e.clientX,
+					clientY: e.clientY,
+					shiftKey: e.shiftKey
+				})
+			}
+
+			return true
 		}
 
 		// Map the event to actions for other cases

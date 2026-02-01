@@ -20,6 +20,7 @@ export type {
 	DeleteCellAction,
 	CopyAction,
 	PasteAction,
+	StartCellSelectionAction,
 	OpenDropdownAction,
 	CloseDropdownAction,
 	ToggleDropdownAction,
@@ -27,6 +28,7 @@ export type {
 	DropdownSelectAction,
 	OpenDatePickerAction,
 	CloseDatePickerAction,
+	ToggleDatePickerAction,
 	RenderCellAction,
 	OpenContextMenuAction,
 	CloseContextMenuAction,
@@ -61,3 +63,4 @@ export { selectionExecutor } from './executors/selection-executor.js'
 export { clipboardExecutor } from './executors/clipboard-executor.js'
 export { contextMenuExecutor } from './executors/context-menu-executor.js'
 export { fillHandleExecutor } from './executors/fill-handle-executor.js'
+export { cellSelectionExecutor } from './executors/cell-selection-executor.js'

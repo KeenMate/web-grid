@@ -248,6 +248,13 @@ export type CloseDatePickerAction = {
 }
 
 /**
+ * Toggle date picker open/closed
+ */
+export type ToggleDatePickerAction = {
+	type: 'toggleDatePicker'
+}
+
+/**
  * Re-render a single cell's DOM
  */
 export type RenderCellAction = {
@@ -290,6 +297,18 @@ export type ToggleCheckboxAction = {
 }
 
 /**
+ * Start cell range selection (mousedown tracking for drag-to-select)
+ */
+export type StartCellSelectionAction = {
+	type: 'startCellSelection'
+	rowIndex: number
+	colIndex: number
+	clientX: number
+	clientY: number
+	shiftKey: boolean
+}
+
+/**
  * All possible actions in the grid event pipeline
  */
 export type GridAction =
@@ -308,6 +327,7 @@ export type GridAction =
 	| DeleteCellAction
 	| CopyAction
 	| PasteAction
+	| StartCellSelectionAction
 	// Effect actions
 	| OpenDropdownAction
 	| CloseDropdownAction
@@ -316,6 +336,7 @@ export type GridAction =
 	| DropdownSelectAction
 	| OpenDatePickerAction
 	| CloseDatePickerAction
+	| ToggleDatePickerAction
 	| RenderCellAction
 	| OpenContextMenuAction
 	| CloseContextMenuAction

@@ -365,14 +365,38 @@ export function getCursorPositionFromClick(
 
 /**
  * Handle focus leaving the table
+ * Uses double requestAnimationFrame to ensure DOM and focus have stabilized
  */
 export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void {
 	const relatedTarget = e.relatedTarget as HTMLElement
 	const table = ctx.shadow.querySelector('.wg__table')
-	if (!relatedTarget || !table?.contains(relatedTarget)) {
-		const oldFocus = ctx.grid.focusedCell
-		ctx.grid.clearFocusedCell()
-		updateFocusVisual(ctx, oldFocus, null)
-		removeFillHandle()
+
+	// If relatedTarget is in the table, focus is staying - no action needed
+	if (relatedTarget && table?.contains(relatedTarget)) {
+		return
 	}
+
+	// Check if focus is still within the component
+	const activeElement = ctx.shadow.activeElement as HTMLElement
+	const activeIsInTable = activeElement && table?.contains(activeElement)
+
+	// If activeElement is still in the table, don't clear focus
+	if (activeIsInTable) {
+		return
+	}
+
+	// Check if the web component (shadow host) still has focus
+	const host = ctx.shadow.host as HTMLElement
+	const componentHasFocus = document.activeElement === host ||
+		host.contains(document.activeElement as Node)
+
+	if (componentHasFocus) {
+		return
+	}
+
+	// Focus truly left the component - clear focus state
+	const oldFocus = ctx.grid.focusedCell
+	ctx.grid.clearFocusedCell()
+	updateFocusVisual(ctx, oldFocus, null)
+	removeFillHandle()
 }

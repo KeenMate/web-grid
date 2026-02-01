@@ -14,7 +14,7 @@ import { clearEditingVisual } from '../../navigation/focus.js'
  * DatePicker executor - handles date picker open/close actions
  */
 export const datepickerExecutor: ActionExecutor = {
-	handles: ['openDatePicker', 'closeDatePicker'],
+	handles: ['openDatePicker', 'closeDatePicker', 'toggleDatePicker'],
 
 	execute(ctx: ExecutorContext, action: GridAction): GridAction[] | void {
 		switch (action.type) {
@@ -23,6 +23,9 @@ export const datepickerExecutor: ActionExecutor = {
 				break
 			case 'closeDatePicker':
 				executeCloseDatePicker(ctx)
+				break
+			case 'toggleDatePicker':
+				executeToggleDatePicker(ctx)
 				break
 		}
 	}
@@ -146,5 +149,19 @@ function executeCloseDatePicker(ctx: ExecutorContext): void {
 	if (ctx.datepicker) {
 		ctx.datepicker.close(true)
 		ctx.datepicker = null
+	}
+}
+
+/**
+ * Toggle date picker - close if open, open if closed
+ */
+function executeToggleDatePicker(ctx: ExecutorContext): void {
+	if (ctx.datepicker) {
+		// Datepicker is open - close it
+		ctx.datepicker.close(true)
+		ctx.datepicker = null
+	} else {
+		// Datepicker is closed - open it
+		executeOpenDatePicker(ctx)
 	}
 }

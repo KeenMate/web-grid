@@ -203,14 +203,16 @@ export function mapMouseDownToActions(
 		return actions
 	}
 
-	// For date trigger clicks, focus cell then open date picker
+	// For date trigger clicks, focus cell, start edit, then toggle date picker
 	if (isDateTriggerClick) {
 		actions.push({
 			type: 'focusCell',
 			target: cell,
 			selectText: false
 		})
-		actions.push({ type: 'openDatePicker' })
+		// Must dispatch startEdit so editingCell is set for keyboard handling
+		actions.push({ type: 'startEdit', target: cell })
+		actions.push({ type: 'toggleDatePicker' })
 		return actions
 	}
 
@@ -221,11 +223,13 @@ export function mapMouseDownToActions(
 		selectText: !isToggleClick && !isCellClick  // Select text on editor focus, not on toggle/cell click
 	})
 
-	// Toggle click → toggle dropdown
+	// Toggle click → start edit (if not already editing) and toggle dropdown
 	if (isToggleClick) {
 		if (dropdownOpen) {
 			actions.push({ type: 'closeDropdown' })
 		} else {
+			// Must dispatch startEdit so editingCell is set for keyboard handling
+			actions.push({ type: 'startEdit', target: cell })
 			actions.push({ type: 'openDropdown' })
 		}
 	}

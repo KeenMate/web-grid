@@ -2425,10 +2425,18 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				this.clickEvents.subscribe('sortClick', (ctx) => {
 					// Skip if reordering was just performed (prevents sort on drop)
 					if (isReordering()) return
-					// Clear cell selection when sorting (like other header interactions)
+					// Clear all selections when sorting
 					if (this.grid.selectedCellRange) {
 						this.grid.clearCellSelection()
 						removeRangeBorder()
+					}
+					if (this.grid.selectedRows.length > 0) {
+						this.grid.clearSelection()
+						removeRowSelectionBorders()
+					}
+					if (this.grid.selectedColumns.length > 0) {
+						this.grid.clearColumnSelection()
+						removeColumnSelectionBorders()
 					}
 					// Pass field directly - ctx.event.target is retargeted when crossing shadow DOM
 					handleSortClick(this, ctx.event, ctx.field)
