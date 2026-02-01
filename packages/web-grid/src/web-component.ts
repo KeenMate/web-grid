@@ -1665,6 +1665,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Double-click to edit
 		table.addEventListener('dblclick', (e: Event) => {
+			// Try pipeline first
+			if (this.pipelineAdapter?.tryHandleDblClick(e as MouseEvent)) {
+				return
+			}
+
 			e.preventDefault()
 			const target = e.target as HTMLElement
 			const cell = target.closest('.wg__cell') as HTMLElement
@@ -1696,6 +1701,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Single click to edit (for editTrigger = 'click')
 		table.addEventListener('click', (e: Event) => {
+			// Try pipeline first
+			if (this.pipelineAdapter?.tryHandleClick(e as MouseEvent)) {
+				return
+			}
+
 			const target = e.target as HTMLElement
 			const cell = target.closest('.wg__cell') as HTMLElement
 			if (cell && !cell.classList.contains('wg__cell--editing')) {
