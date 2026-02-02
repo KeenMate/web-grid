@@ -2014,6 +2014,52 @@ export class WebGrid<T = unknown> {
 		// NOTE: No requestUpdate() - caller handles surgical DOM update
 	}
 
+	/**
+	 * Update a cell value in the draft row without exiting edit mode.
+	 * Used for checkbox toggling where user may want to toggle multiple times.
+	 * Fires onrowchange but does NOT clear _editingCell.
+	 */
+	updateDraftValue(rowIndex: number, field: string, newValue: unknown): void {
+		const column = this._columns.find(c => String(c.field) === field)
+		if (!column) return
+
+		const item = this.displayItems[rowIndex]
+		if (!item) return
+
+		const oldValue = this.getCellRawValue(item, rowIndex, field)
+
+		// Handle empty row
+		if (this.isEmptyRowIndex(rowIndex)) {
+			if (!this._emptyRowDraft) {
+				this._emptyRowDraft = { ...item }
+			}
+			(this._emptyRowDraft as Record<string, unknown>)[field] = newValue
+		} else {
+			// Update draft row (create if needed)
+			let draftRow = this._draftRows.get(rowIndex)
+			if (!draftRow) {
+				draftRow = { ...item }
+				this._draftRows.set(rowIndex, draftRow)
+			}
+			(draftRow as Record<string, unknown>)[field] = newValue
+		}
+
+		// Fire onrowchange event
+		const draftRow = this._draftRows.get(rowIndex) || this._emptyRowDraft || item
+		this._onrowchange?.({
+			row: item,
+			draftRow,
+			rowIndex,
+			field,
+			oldValue,
+			newValue,
+			isValid: true,
+			validationError: null
+		})
+
+		// NOTE: Do NOT clear _editingCell - stay in edit mode
+	}
+
 	// ==========================================================================
 	// Cell Editability Helpers
 	// ==========================================================================

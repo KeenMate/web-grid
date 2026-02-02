@@ -179,24 +179,32 @@ export function updateFocusVisual<T>(
 	// Re-render new cell (will add --focused class)
 	// Skip if this cell is currently being edited (don't disrupt editor)
 	// Also skip for 'always' mode cells (editor always visible, don't disrupt it)
+	// Also skip for 'click'/'dblclick' modes - re-rendering between mousedown and click
+	// would remove the original target element, preventing the click event from firing
 	if (newFocus) {
 		const column = ctx.grid.columns[newFocus.colIndex]
 		const effectiveTrigger = column?.editTrigger ?? ctx.grid.editTrigger
 		const isAlwaysMode = effectiveTrigger === 'always'
+		const isClickOrDblClickMode = effectiveTrigger === 'click' || effectiveTrigger === 'dblclick'
 
 		const isNewCellEditing = editingCell &&
 			editingCell.rowIndex === newFocus.rowIndex &&
 			ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === newFocus.colIndex
 
-		if (!isNewCellEditing && !isAlwaysMode) {
+		if (!isNewCellEditing && !isAlwaysMode && !isClickOrDblClickMode) {
 			renderCell(ctx, newFocus.rowIndex, newFocus.colIndex)
-		} else if (isAlwaysMode) {
-			// Just update CSS classes, don't re-render content (would lose typed input)
+		} else if (isAlwaysMode || isClickOrDblClickMode) {
+			// Just update CSS classes, don't re-render content
+			// For 'always' mode: would lose typed input
+			// For 'click'/'dblclick': would prevent click event from firing
 			const cell = ctx.shadow.querySelector(
 				`td[data-row="${newFocus.rowIndex}"][data-col="${newFocus.colIndex}"]`
 			) as HTMLElement
 			if (cell) {
-				cell.classList.add('wg__cell--focused', 'wg__cell--always-edit-focused')
+				cell.classList.add('wg__cell--focused')
+				if (isAlwaysMode) {
+					cell.classList.add('wg__cell--always-edit-focused')
+				}
 			}
 		}
 	}
@@ -296,12 +304,16 @@ export function tryStartEdit<T>(
 		removeDropdown(ctx)
 	}
 
-	// Clear old focus visual if editing a different cell
-	const oldFocus = ctx.grid.focusedCell
-	if (oldFocus && (oldFocus.rowIndex !== rowIndex || oldFocus.colIndex !== colIndex)) {
-		// Clear focus state BEFORE re-rendering so cell renders without focus visual
-		ctx.grid.clearFocusedCell()
-		renderCell(ctx, oldFocus.rowIndex, oldFocus.colIndex)
+	// Clear old editing cell if editing a different cell
+	// Must check editingCell, not focusedCell, because focusedCell is already updated
+	// by the focusCell action that runs before startEdit
+	const oldEditing = ctx.grid.editingCell
+	if (oldEditing) {
+		const oldColIndex = ctx.grid.columns.findIndex(c => String(c.field) === oldEditing.field)
+		if (oldEditing.rowIndex !== rowIndex || oldColIndex !== colIndex) {
+			// Re-render old cell to remove editor
+			renderCell(ctx, oldEditing.rowIndex, oldColIndex)
+		}
 	}
 
 	// Update state (no longer triggers requestUpdate)

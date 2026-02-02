@@ -455,15 +455,8 @@ async function applyFill<T>(ctx: GridContext<T>): Promise<void> {
 
 			const field = String(column.field)
 
-			// Check if cell is editable
-			const rowData = ctx.grid.displayItems[row]
-			if (!rowData) continue
-
-			// Check column-level editable
-			const isEditable = column.isEditable !== false && ctx.grid.isEditable
-
-			// Skip non-editable cells
-			if (!isEditable) continue
+			// Check if cell is editable (column editability + row locking)
+			if (!ctx.grid.canEditCell(row, field)) continue
 
 			// Check if source value is compatible with target column's editor type
 			if (!isValueCompatible(sourceValue, column)) continue

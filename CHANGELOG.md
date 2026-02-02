@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Editor alignment**: Text and number editors now respect column alignment settings
+- **Checkbox scale variable**: `--wg-checkbox-scale` CSS variable to control checkbox size (default: 1.2)
+  - `horizontalAlign` is inherited by editors (number editor no longer hardcoded to right)
+  - `verticalAlign` positions the editor input at top/middle/bottom of cell
+  - Note: Text inside `<input>` elements is always vertically centered by CSS spec; the editor element itself is positioned
+
 ### Fixed
 
 - **Number editor type-to-start**: Typing multiple characters (e.g., "1234") now captures all characters instead of only the first
@@ -14,6 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed adapter to not dispatch `startEdit` when cell is already being edited (allows native input handling)
 - **Number editor formatting**: Values entered via keyboard are now saved as numbers (not strings), so `formatCallback` works correctly
 - **'Always' mode focus**: Focus visual updates no longer re-render cells in `editTrigger: 'always'` mode (preserves typed content)
+- **Click/dblclick editTrigger modes**: Fixed click and double-click edit triggers not working
+  - Focus visual updates no longer re-render click/dblclick mode cells (prevents DOM replacement between mousedown and click)
+  - Click events now calculate cursor position for `editStartSelection: 'mousePosition'`
+  - Fixed "every 3rd click ignored" bug by checking `editingCell` instead of `focusedCell` when cleaning up old editor
+  - Fixed blue editing border lingering on old cell when clicking to new cell (cancel edit before re-rendering)
+- **Text/number editor vertical text shift**: Fixed text shifting down 1-2px when entering edit mode
+  - Root cause: `--valign-middle` used `top: 50%; transform: translateY(-50%)` which centered the input box, but input text is always vertically centered within the input's height, causing a mismatch with display mode
+  - Fix: Changed to `top: 0; bottom: 0` so input fills the cell height; input's natural text centering now matches table cell's `vertical-align: middle`
+  - Affected CSS: `_editors.css` `.wg__editor--valign-middle`
+- **Fill handle drag**: Now respects row locking - locked/read-only rows are skipped during fill operations
 - Filler column cells now fire `cellClick` events with correct `rowIndex` (and `colIndex: -1`)
 - **Datepicker keyboard navigation**: Arrow keys, Page Up/Down, Home/End, Enter, Escape, and Tab now work correctly when the calendar is open (previously intercepted by grid's table listener)
   - Fixed pipeline `Object.create` pattern shadowing property mutations - changed to `Proxy` so `ctx.datepicker` is set on the original context
@@ -30,8 +48,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Row selection focus cleanup**: Clicking row numbers now clears cell focus visual
 - **Navigation keys when dropdown open**: Navigation keys no longer move between cells when a dropdown is open
   - ArrowLeft/ArrowRight: For autocomplete, fall through to browser for cursor movement; for select/combobox, consumed via `noop`
+- **Checkbox editor click mode**: Clicking checkbox to toggle value no longer exits edit mode immediately
+  - Added `updateDraftValue()` method to update cell value without exiting edit mode
+  - Checkbox can now be toggled multiple times while staying in edit mode
+  - Standard exit methods (click elsewhere, Tab, Enter, Escape) still work as expected
   - Home/End: For autocomplete, cursor movement; for select/combobox, jump to first/last option
   - PageUp/PageDown: Jump through dropdown options by 10 items (all dropdown editors)
+- **Dropdown not opening on first click**: Fixed dropdown editors (select/combobox/autocomplete/date) not opening on first click in `editTrigger: 'click'` mode
+  - Root cause: Multiple click handlers on table element - adapter opened dropdown, then legacy handler toggled it closed
+  - Fix: Use `stopImmediatePropagation()` to prevent other listeners on same element from firing
+- **Checkbox editor display**: Fixed checkbox rendering issues
+  - Checkbox now vertically and horizontally centered in cell (was positioned at top)
+  - Display mode now renders checkbox instead of "true"/"false" text
+- **Autocomplete editor improvements**:
+  - Cursor position now calculated correctly when clicking (was always at end)
+  - Local filtering now works when no `searchCallback` is provided (filters `initialOptions` like combobox)
+- **Dropdown display value consistency**: Display mode and edit mode now show the same value
+  - Display mode now uses proper fallback chain: `getDisplayCallback` → `displayMember` → `label` → raw value
+  - Previously display mode showed raw value ("USA") while edit mode showed label ("United States")
+  - Escape key now compares against display value for consistent restore behavior
 
 ---
 

@@ -21,6 +21,8 @@ export const checkboxExecutor: ActionExecutor = {
 
 /**
  * Toggle checkbox value
+ * Updates the draft row directly WITHOUT exiting edit mode.
+ * This allows users to toggle the checkbox multiple times before committing.
  */
 function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxAction): void {
 	const { rowIndex, colIndex } = action.target
@@ -34,11 +36,13 @@ function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxActio
 	const opts = column.editorOptions || {}
 	const trueValue = opts.trueValue ?? true
 	const falseValue = opts.falseValue ?? false
-	const currentValue = (item as Record<string, unknown>)[field]
+	// Use getCellRawValue to get value from draft row if it exists
+	const currentValue = ctx.grid.getCellRawValue(item, rowIndex, field)
 	const newValue = currentValue === trueValue ? falseValue : trueValue
 
-	// Commit the toggle
-	ctx.grid.commitEdit(rowIndex, field, newValue)
+	// Update draft row directly WITHOUT exiting edit mode
+	// This allows checkbox to be toggled multiple times while staying in edit mode
+	ctx.grid.updateDraftValue(rowIndex, field, newValue)
 
 	// Re-render the cell to show new checkbox state
 	renderCell(ctx, rowIndex, colIndex)

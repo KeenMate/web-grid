@@ -1723,6 +1723,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Single click to edit (for editTrigger = 'click')
 		table.addEventListener('click', (e: Event) => {
+			console.log('[web-component click] target:', e.target, 'editTrigger:', this.grid.editTrigger)
 			// Try pipeline first
 			if (this.pipelineAdapter?.tryHandleClick(e as MouseEvent)) {
 				return

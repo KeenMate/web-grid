@@ -43,6 +43,14 @@ export function renderCellEditor<T>(
 }
 
 /**
+ * Get vertical alignment CSS class for editor positioning
+ */
+function getVerticalAlignClass<T>(column: Column<T>): string {
+	const vAlign = column.verticalAlign || 'middle'
+	return `wg__editor--valign-${vAlign}`
+}
+
+/**
  * Render text input editor
  */
 export function renderTextEditor<T>(
@@ -56,11 +64,12 @@ export function renderTextEditor<T>(
 	const initialQuery = ctx.grid.editingCell?.initialSearchQuery
 	// If user typed a character to start editing, use that as initial value
 	const strValue = initialQuery !== undefined ? initialQuery : (value != null ? String(value) : '')
+	const vAlignClass = getVerticalAlignClass(column)
 
 	return `
 		<input
 			type="text"
-			class="wg__editor wg__editor--text"
+			class="wg__editor wg__editor--text ${vAlignClass}"
 			value="${ctx.escapeHtml(strValue)}"
 			data-row="${rowIndex}"
 			data-field="${field}"
@@ -85,12 +94,13 @@ export function renderNumberEditor<T>(
 	const initialQuery = ctx.grid.editingCell?.initialSearchQuery
 	// If user typed a digit to start editing, use that as initial value
 	const numValue = initialQuery !== undefined ? initialQuery : (value != null ? String(value) : '')
+	const vAlignClass = getVerticalAlignClass(column)
 
 	return `
 		<input
 			type="text"
 			inputmode="numeric"
-			class="wg__editor wg__editor--number"
+			class="wg__editor wg__editor--number ${vAlignClass}"
 			value="${numValue}"
 			data-row="${rowIndex}"
 			data-field="${field}"

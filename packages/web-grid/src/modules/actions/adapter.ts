@@ -21,6 +21,7 @@ import { contextMenuExecutor } from './executors/context-menu-executor.js'
 import { fillHandleExecutor } from './executors/fill-handle-executor.js'
 import { cellSelectionExecutor } from './executors/cell-selection-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
+import { getCursorPositionFromClick } from '../navigation/focus.js'
 import type { CellCoordinates } from './types.js'
 
 /**
@@ -538,9 +539,14 @@ export class ActionPipelineAdapter<T = unknown> {
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 		const isDate = this.isDateEditor(cell.colIndex)
 
+		// Calculate cursor position from click for editStartSelection: 'mousePosition'
+		const cellElement = target.closest('.wg__cell') as HTMLElement
+		const cursorPosition = cellElement ? getCursorPositionFromClick(e, cellElement) : null
+
 		this.pipeline.dispatch({
 			type: 'startEdit',
-			target: cell
+			target: cell,
+			cursorPosition: cursorPosition ?? undefined
 		})
 
 		// Open dropdown/datepicker for those editor types
@@ -576,9 +582,14 @@ export class ActionPipelineAdapter<T = unknown> {
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 		const isDate = this.isDateEditor(cell.colIndex)
 
+		// Calculate cursor position from click for editStartSelection: 'mousePosition'
+		const cellElement = target.closest('.wg__cell') as HTMLElement
+		const cursorPosition = cellElement ? getCursorPositionFromClick(e, cellElement) : null
+
 		this.pipeline.dispatch({
 			type: 'startEdit',
-			target: cell
+			target: cell,
+			cursorPosition: cursorPosition ?? undefined
 		})
 
 		// Open dropdown/datepicker for those editor types

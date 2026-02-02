@@ -31,9 +31,25 @@
   text-align: inherit;
 }
 
-/* Number Editor */
+/* Number Editor - inherits text-align from cell (column.horizontalAlign) */
 .wg__editor--number {
-  text-align: right;
+  text-align: inherit;
+}
+
+/* Vertical alignment for text/number editors */
+/* Since text inside <input> is always centered, we position the input itself */
+.wg__editor--valign-top {
+  top: 0;
+  bottom: auto;
+}
+.wg__editor--valign-middle {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+.wg__editor--valign-bottom {
+  top: auto;
+  bottom: 0;
 }
 
 /* Date Editor */

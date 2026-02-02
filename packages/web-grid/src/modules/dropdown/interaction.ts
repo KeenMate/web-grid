@@ -111,13 +111,11 @@ export function updateLoadingIndicator<T>(ctx: GridContext<T>, show: boolean): v
  * Works with both editingCell (normal edit mode) and focusedCell ('always' edit mode)
  */
 export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
-	console.log('[openDropdown] Start, justSelected:', ctx.justSelected)
 	if (ctx.justSelected) return
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
 	const editingCell = ctx.grid.editingCell
 	const focusedCell = ctx.grid.focusedCell
-	console.log('[openDropdown] editingCell:', editingCell, 'focusedCell:', focusedCell)
 	const cellInfo = editingCell
 		? { rowIndex: editingCell.rowIndex, field: editingCell.field }
 		: focusedCell
@@ -125,12 +123,10 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 			: null
 
 	if (!cellInfo) {
-		console.log('[openDropdown] No cellInfo, returning')
 		return
 	}
 
 	const { rowIndex, field } = cellInfo
-	console.log('[openDropdown] rowIndex:', rowIndex, 'field:', field)
 
 	// Get column - try editingCell method first, then fall back to field lookup
 	let column = ctx.getCurrentEditingColumn()
@@ -138,10 +134,8 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 		column = ctx.grid.columns.find(c => String(c.field) === field) || null
 	}
 	if (!column) {
-		console.log('[openDropdown] No column found, returning')
 		return
 	}
-	console.log('[openDropdown] column:', column.field, 'editor:', column.editor)
 
 	const opts = column.editorOptions || {}
 	const editor = column.editor
@@ -208,13 +202,11 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 			targetIndex = baseOptions.length > 0 ? 0 : -1
 		}
 	}
-	console.log('[openDropdown] Looking for wrapper with rowIndex:', rowIndex, 'field:', field)
 	const wrapper = ctx.shadow.querySelector(
 		`.wg__editor--select[data-row="${rowIndex}"][data-field="${field}"],
 		 .wg__editor--combobox[data-row="${rowIndex}"][data-field="${field}"],
 		 .wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
 	) as HTMLElement
-	console.log('[openDropdown] wrapper:', wrapper, 'dropdownOptions.length:', ctx.dropdownOptions.length)
 	if (wrapper && ctx.dropdownOptions.length > 0) {
 		// Save filterText before renderDropdown (which calls removeDropdown that clears it)
 		const savedFilterText = ctx.filterText
