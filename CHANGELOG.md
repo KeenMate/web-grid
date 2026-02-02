@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Filler column cells now fire `cellClick` events with correct `rowIndex` (and `colIndex: -1`)
+- **Datepicker keyboard navigation**: Arrow keys, Page Up/Down, Home/End, Enter, Escape, and Tab now work correctly when the calendar is open (previously intercepted by grid's table listener)
+  - Fixed pipeline `Object.create` pattern shadowing property mutations - changed to `Proxy` so `ctx.datepicker` is set on the original context
+  - Fixed async dispatch not working in callbacks - `ctx.dispatch()` now triggers new dispatch cycles for async scenarios like datepicker's `onSelect`
+  - Added keyboard bypass in both adapter and table listener when datepicker is open
+  - Focus now restored to cell after closing datepicker with Escape
+- **Read-only cells**: Dropdown/date toggles no longer appear on non-editable cells (column `isEditable: false` or locked rows)
+  - Toggle visibility now respects both column editability and row locking via `canEditCell()`
+  - Clicking where toggle would be on read-only cells no longer opens editors
+- **Autocomplete Escape key**: Fixed needing multiple Escape presses to cancel edit
+  - First Escape: Closes dropdown and clears search text (stays in edit mode)
+  - Second Escape: Cancels edit and returns to display mode
+- **Row selection focus cleanup**: Clicking row numbers now clears cell focus visual
 
 ---
 

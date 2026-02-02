@@ -270,12 +270,12 @@ export function tryStartEdit<T>(
 	const column = ctx.grid.columns[colIndex]
 	if (!column) return
 
-	// Check if cell is editable
-	if (!ctx.grid.isCellEditable(column)) {
+	const field = String(column.field)
+
+	// Check if cell can be edited (column editability + row locking)
+	if (!ctx.grid.canEditCell(rowIndex, field)) {
 		return
 	}
-
-	const field = String(column.field)
 
 	// Remove any open dropdown before transitioning to new cell
 	if (ctx.dropdownOpen) {

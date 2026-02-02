@@ -261,7 +261,8 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			const value = ctx.grid.getCellValue(item, column, rowIndex)
 			const align = column.horizontalAlign || 'left'
 			const vAlign = column.verticalAlign || 'middle'
-			const isEditable = ctx.grid.isCellEditable(column)
+			// Use canEditCell to check both column editability AND row locking
+			const isEditable = ctx.grid.canEditCell(rowIndex, field)
 			// Use originalIndex for focus check (navigation uses original indices)
 			const isFocused = ctx.grid.isCellFocused(rowIndex, originalIndex)
 			const isFrozen = ctx.grid.isColumnFrozen(visualIndex)
@@ -371,7 +372,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 				>
 					${shouldShowEditor
 						? renderCellEditor(ctx, rowIndex, originalIndex, column)
-						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused)}
+						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused, isEditable)}
 				</td>
 			`
 		}).join('')
@@ -563,7 +564,8 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			const value = ctx.grid.getCellValue(item, column, rowIndex)
 			const align = column.horizontalAlign || 'left'
 			const vAlign = column.verticalAlign || 'middle'
-			const isEditable = ctx.grid.isCellEditable(column)
+			// Use canEditCell to check both column editability AND row locking
+			const isEditable = ctx.grid.canEditCell(rowIndex, field)
 			// Use originalIndex for focus check (navigation uses original indices)
 			const isFocused = ctx.grid.isCellFocused(rowIndex, originalIndex)
 			const isFrozen = ctx.grid.isColumnFrozen(visualIndex)
@@ -672,7 +674,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 				>
 					${shouldShowEditor
 						? renderCellEditor(ctx, rowIndex, originalIndex, column)
-						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused)}
+						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused, isEditable)}
 				</td>
 			`
 		}).join('')

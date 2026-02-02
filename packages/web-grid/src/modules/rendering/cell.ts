@@ -47,7 +47,8 @@ export function renderCell<T>(
 	const shouldShowEditor = ctx.grid.shouldShowEditor(rowIndex, colIndex)
 	const isActivelyEditing = ctx.grid.isEditing(rowIndex, field)  // Only the ONE tracked cell
 	const isFocused = ctx.grid.isCellFocused(rowIndex, colIndex)
-	const isEditable = ctx.grid.isCellEditable(column)
+	// Use canEditCell to check both column editability AND row locking
+	const isEditable = ctx.grid.canEditCell(rowIndex, field)
 	const isInvalid = ctx.grid.isCellInvalid(rowIndex, field)
 
 	// Find visual index for frozen column checks
@@ -92,7 +93,7 @@ export function renderCell<T>(
 		}
 	} else {
 		const value = ctx.grid.getCellValue(item, column, rowIndex)
-		cell.innerHTML = renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused)
+		cell.innerHTML = renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused, isEditable)
 	}
 }
 

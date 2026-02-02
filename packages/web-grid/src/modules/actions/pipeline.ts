@@ -69,11 +69,23 @@ export class ActionPipeline<T = unknown> {
 			}
 
 			// Create executor context with dispatch capability
-			// Use Object.create to preserve prototype chain (methods like escapeHtml)
-			const execCtx = Object.create(this.ctx) as ExecutorContext<T>
-			execCtx.dispatch = (childAction: GridAction) => {
-				queue.push(childAction)
-			}
+			// Use Proxy to delegate all property access/mutation to the original context
+			// while adding the dispatch method
+			// Note: dispatch calls this.dispatch() to support async callbacks (like datepicker onSelect)
+			// that may call dispatch after the current dispatch cycle has completed
+			const execCtx = new Proxy(this.ctx as ExecutorContext<T>, {
+				get: (target, prop) => {
+					if (prop === 'dispatch') {
+						return (childAction: GridAction) => this.dispatch(childAction)
+					}
+					return target[prop as keyof typeof target]
+				},
+				set: (target, prop, value) => {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					(target as any)[prop] = value
+					return true
+				}
+			})
 
 			// Execute and collect child actions
 			const childActions = executor.execute(execCtx, current)

@@ -131,6 +131,19 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		if (!cell) return false
 
+		// If datepicker is open, let navigation keys pass through to datepicker
+		// The datepicker has its own document-level keyboard handler
+		if (this.ctx.datepicker) {
+			const datepickerKeys = [
+				'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+				'PageUp', 'PageDown', 'Home', 'End',
+				'Enter', 'Escape', 'Tab'
+			]
+			if (datepickerKeys.includes(e.key)) {
+				return false  // Let datepicker handle it
+			}
+		}
+
 		const editTrigger = this.getEditTrigger(cell.colIndex)
 		const isAlways = editTrigger === 'always'
 		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)
@@ -553,6 +566,14 @@ export class ActionPipelineAdapter<T = unknown> {
 		}
 
 		return true
+	}
+
+	/**
+	 * Check if datepicker is currently open
+	 * Note: This checks the original context, not the Object.create'd executor context
+	 */
+	isDatepickerOpen(): boolean {
+		return !!this.ctx.datepicker
 	}
 }
 

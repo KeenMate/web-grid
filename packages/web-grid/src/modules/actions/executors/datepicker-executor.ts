@@ -139,6 +139,14 @@ function handleDatePickerClose(ctx: ExecutorContext, rowIndex: number, colIndex:
 		clearEditingVisual(ctx)
 		ctx.grid.cancelEdit()
 		renderCell(ctx, rowIndex, colIndex)
+
+		// Focus the cell after cancelling edit (so user doesn't lose focus)
+		const cell = ctx.shadow.querySelector(
+			`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
+		) as HTMLElement
+		if (cell) {
+			cell.focus()
+		}
 	}
 }
 
@@ -157,9 +165,9 @@ function executeCloseDatePicker(ctx: ExecutorContext): void {
  */
 function executeToggleDatePicker(ctx: ExecutorContext): void {
 	if (ctx.datepicker) {
-		// Datepicker is open - close it
-		ctx.datepicker.close(true)
-		ctx.datepicker = null
+		// Datepicker is open - close it (non-silent so onClose callback runs)
+		ctx.datepicker.close(false)
+		// Note: onClose callback sets ctx.datepicker = null and cleans up edit state
 	} else {
 		// Datepicker is closed - open it
 		executeOpenDatePicker(ctx)

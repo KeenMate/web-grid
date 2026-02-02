@@ -1522,14 +1522,27 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			case 'Escape':
 				e.preventDefault()
 				e.stopPropagation()
+				// First Escape: close dropdown/datepicker but stay in edit mode
+				// Second Escape: cancel edit entirely
 				if (this.dropdownOpen) {
 					removeDropdown(this)
+					// For autocomplete/combobox, clear search text and refocus input
+					if (editorType === 'autocomplete' || editorType === 'combobox') {
+						this.filterText = ''
+						if (editor instanceof HTMLInputElement) {
+							editor.value = ''
+							editor.focus()
+						}
+					}
+					return  // Stay in edit mode
 				}
-				// Close datepicker if open
+				// Close datepicker if open (first Escape)
 				if (this.datepicker) {
 					this.datepicker.close(true)
 					this.datepicker = null
+					return  // Stay in edit mode
 				}
+				// Second Escape (or no dropdown/datepicker): cancel edit
 				this.isCommittingFromKeyboard = true
 				clearEditingVisual(this)
 				this.grid.cancelEdit()
@@ -1640,6 +1653,15 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			// Try action pipeline first (handles 'always' editTrigger mode)
 			if (this.pipelineAdapter?.tryHandleKeyDown(e as KeyboardEvent)) {
 				return
+			}
+
+			// If datepicker is open, let navigation keys bubble to datepicker's document handler
+			if (this.datepicker) {
+				const key = (e as KeyboardEvent).key
+				const datepickerKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', 'Enter', 'Escape', 'Tab']
+				if (datepickerKeys.includes(key)) {
+					return
+				}
 			}
 
 			if (target.matches('.wg__editor, .wg__combobox-input, .wg__autocomplete-input, .wg__date-input')) {
@@ -3218,6 +3240,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				// Re-render the cell to restore display mode content
 				if (rowIndex >= 0 && colIndex >= 0) {
 					restoreEditingCellToDisplayMode(this, rowIndex, colIndex)
+
+					// Focus the cell after cancelling edit (so user doesn't lose focus)
+					const cell = this.shadow.querySelector(
+						`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
+					) as HTMLElement
+					if (cell) {
+						cell.focus()
+					}
 				}
 			}
 		})

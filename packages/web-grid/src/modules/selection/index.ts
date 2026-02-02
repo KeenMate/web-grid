@@ -61,6 +61,16 @@ export function handleRowNumberMouseDown<T>(ctx: GridContext<T>, rowIndex: numbe
 		removeRangeBorder()
 	}
 
+	// Clear focused cell when selecting rows
+	if (ctx.grid.focusedCell) {
+		const { rowIndex: focusedRow, colIndex: focusedCol } = ctx.grid.focusedCell
+		const focusedCellEl = ctx.shadow.querySelector(
+			`.wg__cell[data-row="${focusedRow}"][data-col="${focusedCol}"]`
+		)
+		focusedCellEl?.classList.remove('wg__cell--focused')
+		ctx.grid.clearFocusedCell()
+	}
+
 	// Determine selection mode based on modifier keys
 	if (event.ctrlKey || event.metaKey) {
 		// Ctrl+Click: Toggle selection

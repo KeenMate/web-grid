@@ -111,16 +111,16 @@ export function handleKeyDown(
 		return true
 	}
 
-	// Tab selects the focused date (move next) and lets the event bubble
+	// Tab selects the focused date (move next)
 	if (key === 'Tab') {
-		// Select focused date if available, otherwise keep current selection
+		event.preventDefault()
+		// Select focused date if available, otherwise just close
 		if (state.focusedDate) {
 			callbacks.onSelect?.(state.focusedDate, 'next')
 		} else {
 			callbacks.onClose?.()
 		}
-		// Don't preventDefault - let Tab bubble to grid for cell navigation
-		return false
+		return true
 	}
 
 	// Home/End for quick navigation

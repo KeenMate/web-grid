@@ -265,6 +265,11 @@
         grid.tooltipShowDelay = 0
         grid.tooltipHideDelay = 100
 
+        // Lock rows that are On Leave or Inactive
+        grid.rowLocking = {
+            isLockedCallback: (row) => row.status === 'On Leave' || row.status === 'Inactive'
+        }
+
         // Inject custom styles for dynamic classes (Shadow DOM requires this)
         grid.customStylesCallback = () => `
             .salary-highlight { background-color: #fef9c3 !important; }
