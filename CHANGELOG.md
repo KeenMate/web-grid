@@ -18,9 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Read-only cells**: Dropdown/date toggles no longer appear on non-editable cells (column `isEditable: false` or locked rows)
   - Toggle visibility now respects both column editability and row locking via `canEditCell()`
   - Clicking where toggle would be on read-only cells no longer opens editors
-- **Autocomplete Escape key**: Fixed needing multiple Escape presses to cancel edit
-  - First Escape: Closes dropdown and clears search text (stays in edit mode)
-  - Second Escape: Cancels edit and returns to display mode
+- **Dropdown Escape key behavior**: Improved two-phase Escape handling for all dropdown editors
+  - **Select**: First Escape clears type-to-filter and shows all options; second Escape exits edit mode
+  - **Autocomplete/Combobox**: First Escape restores original value and shows all options; second Escape exits edit mode
+  - Implemented via new `escapeEdit` action in event pipeline
 - **Row selection focus cleanup**: Clicking row numbers now clears cell focus visual
 
 ---

@@ -75,6 +75,17 @@ export type CancelEditAction = {
 }
 
 /**
+ * Escape key handling - two-phase behavior
+ * Phase 'dropdown': Close dropdown, clear search text, stay in edit mode
+ * Phase 'edit': Cancel edit entirely and return to display mode
+ */
+export type EscapeEditAction = {
+	type: 'escapeEdit'
+	/** Which phase of escape to execute */
+	phase: 'dropdown' | 'edit'
+}
+
+/**
  * Select a range of cells
  */
 export type SelectCellRangeAction = {
@@ -318,6 +329,7 @@ export type GridAction =
 	| StartEditAction
 	| CommitEditAction
 	| CancelEditAction
+	| EscapeEditAction
 	| SelectCellRangeAction
 	| SelectRowAction
 	| SelectColumnAction

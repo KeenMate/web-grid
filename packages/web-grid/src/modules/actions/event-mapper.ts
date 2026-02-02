@@ -45,9 +45,15 @@ export function mapKeyDownToAction(
 					thenNavigate: e.shiftKey ? 'tab-back' : 'tab'
 				} as GridAction
 			case 'Escape':
-				return { type: 'closeDropdown' }
+				// Close dropdown and clear search (first phase of escape)
+				return { type: 'escapeEdit', phase: 'dropdown' } as GridAction
 			// Let other keys fall through to normal handling
 		}
+	}
+
+	// Escape when not in dropdown - cancel edit entirely
+	if (e.key === 'Escape') {
+		return { type: 'escapeEdit', phase: 'edit' } as GridAction
 	}
 
 	// Checkbox editor - Space toggles checkbox
@@ -149,8 +155,10 @@ export function isPipelineKey(key: string, dropdownOpen: boolean, isDropdownEdit
 
 	if (navKeys.includes(key)) return true
 
+	// Escape is always handled by pipeline (two-phase escape behavior)
+	if (key === 'Escape') return true
+
 	// Dropdown-specific keys
-	if (dropdownOpen && key === 'Escape') return true
 	if (isDropdownEditor && !dropdownOpen && (key === ' ' || key === 'F2')) return true
 
 	// Checkbox-specific keys

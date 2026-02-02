@@ -4,8 +4,8 @@
 // =============================================================================
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
-import type { GridAction, StartEditAction, DeleteCellAction } from '../types.js'
-import { tryStartEdit, clearEditingVisual } from '../../navigation/focus.js'
+import type { GridAction, StartEditAction, DeleteCellAction, EscapeEditAction } from '../types.js'
+import { tryStartEdit, clearEditingVisual, focusCellElement } from '../../navigation/focus.js'
 import { removeDropdown } from '../../dropdown/rendering.js'
 import { renderCell } from '../../rendering/index.js'
 
@@ -13,7 +13,7 @@ import { renderCell } from '../../rendering/index.js'
  * Edit executor - handles edit lifecycle actions
  */
 export const editExecutor: ActionExecutor = {
-	handles: ['startEdit', 'commitEdit', 'cancelEdit', 'deleteCell'],
+	handles: ['startEdit', 'commitEdit', 'cancelEdit', 'escapeEdit', 'deleteCell'],
 
 	execute(ctx: ExecutorContext, action: GridAction): GridAction[] | void {
 		switch (action.type) {
@@ -26,6 +26,8 @@ export const editExecutor: ActionExecutor = {
 			case 'cancelEdit':
 				executeCancelEdit(ctx)
 				break
+			case 'escapeEdit':
+				return executeEscapeEdit(ctx, action)
 			case 'deleteCell':
 				executeDeleteCell(ctx, action)
 				break
@@ -122,6 +124,103 @@ function executeCancelEdit(ctx: ExecutorContext): void {
 
 	// Re-render the cell if we have valid coordinates
 	if (colIndex >= 0) {
+		renderCell(ctx, rowIndex, colIndex)
+	}
+}
+
+/**
+ * Handle Escape key - behavior depends on search text state
+ * Phase 'dropdown': If search text exists, clear it and keep dropdown open; otherwise close and exit
+ * Phase 'edit': Cancel edit entirely and return to display mode
+ */
+function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): GridAction[] | void {
+	const editingCell = ctx.grid.editingCell
+	const focusedCell = ctx.grid.focusedCell
+
+	if (action.phase === 'dropdown') {
+		// Get cell info and editor type
+		const cellInfo = editingCell || focusedCell
+		if (!cellInfo) return
+
+		const colIndex = editingCell
+			? ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+			: focusedCell?.colIndex ?? -1
+		const column = ctx.grid.columns[colIndex]
+		const editorType = column?.editor
+
+		// For select: check if there's filter text (type-to-filter)
+		if (editorType === 'select' && ctx.filterText) {
+			ctx.filterText = ''
+			// Refresh dropdown by closing and reopening (shows all options)
+			removeDropdown(ctx)
+			ctx.dispatch({ type: 'openDropdown' })
+			return // Stay in edit mode with dropdown open
+		}
+
+		// For autocomplete/combobox: check if input has search text (different from original)
+		if (editorType === 'autocomplete' || editorType === 'combobox') {
+			const cell = ctx.shadow.querySelector(
+				`.wg__cell[data-row="${cellInfo.rowIndex}"][data-col="${colIndex}"]`
+			) as HTMLElement
+			const input = cell?.querySelector('.wg__combobox-input, .wg__autocomplete-input') as HTMLInputElement
+
+			// Get original value from row data
+			const row = ctx.grid.displayItems[cellInfo.rowIndex]
+			const field = column?.field
+			const originalValue = row && field ? String((row as Record<string, unknown>)[field as string] ?? '') : ''
+			const currentValue = input?.value ?? ''
+
+			// If input has been modified (different from original), restore original and refresh dropdown
+			if (input && currentValue !== originalValue) {
+				ctx.filterText = ''
+				input.value = originalValue  // Restore original, not clear to empty
+				input.focus()
+				input.select()  // Select all so user can easily retype
+				// Refresh dropdown by closing and reopening (shows all options with empty filter)
+				removeDropdown(ctx)
+				ctx.dispatch({ type: 'openDropdown' })
+				return // Stay in edit mode with dropdown open
+			}
+		}
+
+		// No search text OR select editor: close dropdown AND exit edit mode
+		removeDropdown(ctx)
+		if (editingCell) {
+			clearEditingVisual(ctx)
+			ctx.grid.cancelEdit()
+			renderCell(ctx, cellInfo.rowIndex, colIndex)
+			focusCellElement(ctx, cellInfo.rowIndex, colIndex)
+		}
+		return
+	}
+
+	// Phase 2: Cancel edit entirely
+	if (editingCell) {
+		const { rowIndex, field } = editingCell
+		const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
+
+		// Close dropdown/datepicker if open
+		if (ctx.dropdownOpen) {
+			removeDropdown(ctx)
+		}
+		if (ctx.datepicker) {
+			ctx.datepicker.close(true)
+			ctx.datepicker = null
+		}
+
+		// Clear visual state and cancel edit
+		clearEditingVisual(ctx)
+		ctx.grid.cancelEdit()
+
+		// Re-render the cell and focus it
+		if (colIndex >= 0) {
+			renderCell(ctx, rowIndex, colIndex)
+			focusCellElement(ctx, rowIndex, colIndex)
+		}
+	} else if (focusedCell) {
+		// No active edit, just clear focus
+		const { rowIndex, colIndex } = focusedCell
+		ctx.grid.clearFocusedCell()
 		renderCell(ctx, rowIndex, colIndex)
 	}
 }
