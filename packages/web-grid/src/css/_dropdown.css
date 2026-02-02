@@ -50,12 +50,13 @@
 }
 
 /* Dropdown cell in display mode (read-only, same layout as editor) */
+/* pointer-events: none ensures clicks pass through to the cell for dblclick to work */
 .wg__cell-dropdown-display {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  cursor: pointer;
+  pointer-events: none;
 }
 
 /* Toggle visibility: on-focus mode - hide by default, show on hover/focus */
@@ -72,12 +73,13 @@
 }
 
 /* Date cell in display mode (same pattern as dropdown) */
+/* pointer-events: none ensures clicks pass through to the cell for dblclick to work */
 .wg__cell-date-display {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  cursor: pointer;
+  pointer-events: none;
 }
 
 .wg__cell-date-display .wg__date-trigger {
@@ -92,6 +94,7 @@
   align-items: center;
   justify-content: center;
   color: inherit;
+  pointer-events: auto;
 }
 
 /* Larger invisible hitbox for easier clicking */
