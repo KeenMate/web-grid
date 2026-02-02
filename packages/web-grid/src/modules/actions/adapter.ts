@@ -434,8 +434,12 @@ export class ActionPipelineAdapter<T = unknown> {
 
 			if (actions.length === 0) return false
 
-			e.preventDefault()
-			e.stopPropagation()
+			// Allow native cursor positioning for text/number inputs
+			const isTextInput = target.matches('.wg__editor--text, .wg__editor--number')
+			if (!isTextInput) {
+				e.preventDefault()
+				e.stopPropagation()
+			}
 
 			for (const action of actions) {
 				this.pipeline.dispatch(action)
