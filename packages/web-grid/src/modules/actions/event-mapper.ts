@@ -35,6 +35,12 @@ export function mapKeyDownToAction(
 				return { type: 'dropdownNavigate', direction: 'up' } as GridAction
 			case 'ArrowDown':
 				return { type: 'dropdownNavigate', direction: 'down' } as GridAction
+			case 'ArrowLeft':
+			case 'ArrowRight':
+				// Don't navigate cells - consume event but do nothing
+				// This lets native input handle cursor movement (autocomplete)
+				// while preventing cell navigation
+				return { type: 'noop' }
 			case 'Enter':
 				return { type: 'dropdownSelect', moveAfterSelect: true, commitEmptyRow: true } as GridAction
 			case 'Tab':

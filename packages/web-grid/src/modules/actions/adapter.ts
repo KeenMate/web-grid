@@ -11,6 +11,7 @@ import { navigateExecutor } from './executors/navigate-executor.js'
 import { transitionExecutor } from './executors/transition-executor.js'
 import { renderExecutor } from './executors/render-executor.js'
 import { dropdownExecutor } from './executors/dropdown-executor.js'
+import { noopExecutor } from './executors/noop-executor.js'
 import { checkboxExecutor } from './executors/checkbox-executor.js'
 import { datepickerExecutor } from './executors/datepicker-executor.js'
 import { editExecutor } from './executors/edit-executor.js'
@@ -48,6 +49,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		this.pipeline.registerExecutor(contextMenuExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(fillHandleExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(cellSelectionExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(noopExecutor as ActionExecutor<T>)
 	}
 
 	/**

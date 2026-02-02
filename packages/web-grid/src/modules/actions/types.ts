@@ -75,6 +75,14 @@ export type CancelEditAction = {
 }
 
 /**
+ * No-op action - consume the event but do nothing
+ * Used to prevent keys from propagating to other handlers
+ */
+export type NoopAction = {
+	type: 'noop'
+}
+
+/**
  * Escape key handling - two-phase behavior
  * Phase 'dropdown': Close dropdown, clear search text, stay in edit mode
  * Phase 'edit': Cancel edit entirely and return to display mode
@@ -330,6 +338,7 @@ export type GridAction =
 	| CommitEditAction
 	| CancelEditAction
 	| EscapeEditAction
+	| NoopAction
 	| SelectCellRangeAction
 	| SelectRowAction
 	| SelectColumnAction
