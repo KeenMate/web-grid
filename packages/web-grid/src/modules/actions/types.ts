@@ -232,11 +232,11 @@ export type ToggleDropdownAction = {
 }
 
 /**
- * Navigate within dropdown (up/down through options)
+ * Navigate within dropdown (up/down/page-up/page-down/home/end through options)
  */
 export type DropdownNavigateAction = {
 	type: 'dropdownNavigate'
-	direction: 'up' | 'down'
+	direction: 'up' | 'down' | 'page-up' | 'page-down' | 'home' | 'end'
 }
 
 /**

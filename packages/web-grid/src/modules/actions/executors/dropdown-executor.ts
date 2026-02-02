@@ -45,29 +45,75 @@ export const dropdownExecutor: ActionExecutor = {
 	}
 }
 
+/** Number of items to jump for page-up/page-down */
+const PAGE_JUMP_SIZE = 10
+
 /**
- * Execute dropdown navigate action (up/down through options)
+ * Execute dropdown navigate action (up/down/page-up/page-down through options)
  */
 function executeDropdownNavigate(ctx: ExecutorContext, action: DropdownNavigateAction): void {
 	if (!ctx.dropdownOpen) return
 
 	const opts = ctx.getCurrentEditorOptions()
 	let newIndex = ctx.highlightedIndex
+	const optionsCount = ctx.dropdownOptions.length
 
-	if (action.direction === 'up') {
-		newIndex = ctx.highlightedIndex - 1
-		// Find previous non-disabled option
-		while (newIndex >= 0 && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
-			newIndex--
-		}
-		if (newIndex < 0) return // No valid option above
-	} else {
-		newIndex = ctx.highlightedIndex + 1
-		// Find next non-disabled option
-		while (newIndex < ctx.dropdownOptions.length && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
-			newIndex++
-		}
-		if (newIndex >= ctx.dropdownOptions.length) return // No valid option below
+	switch (action.direction) {
+		case 'up':
+			newIndex = ctx.highlightedIndex - 1
+			// Find previous non-disabled option
+			while (newIndex >= 0 && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+				newIndex--
+			}
+			if (newIndex < 0) return // No valid option above
+			break
+
+		case 'down':
+			newIndex = ctx.highlightedIndex + 1
+			// Find next non-disabled option
+			while (newIndex < optionsCount && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+				newIndex++
+			}
+			if (newIndex >= optionsCount) return // No valid option below
+			break
+
+		case 'page-up':
+			newIndex = Math.max(0, ctx.highlightedIndex - PAGE_JUMP_SIZE)
+			// Find nearest non-disabled option at or after target
+			while (newIndex < ctx.highlightedIndex && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+				newIndex++
+			}
+			// If all options up to current are disabled, stay put
+			if (newIndex >= ctx.highlightedIndex) return
+			break
+
+		case 'page-down':
+			newIndex = Math.min(optionsCount - 1, ctx.highlightedIndex + PAGE_JUMP_SIZE)
+			// Find nearest non-disabled option at or before target
+			while (newIndex > ctx.highlightedIndex && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+				newIndex--
+			}
+			// If all options down to current are disabled, stay put
+			if (newIndex <= ctx.highlightedIndex) return
+			break
+
+		case 'home':
+			newIndex = 0
+			// Find first non-disabled option
+			while (newIndex < optionsCount && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+				newIndex++
+			}
+			if (newIndex >= optionsCount) return // All options disabled
+			break
+
+		case 'end':
+			newIndex = optionsCount - 1
+			// Find last non-disabled option
+			while (newIndex >= 0 && isOptionDisabled(ctx.dropdownOptions[newIndex], opts)) {
+				newIndex--
+			}
+			if (newIndex < 0) return // All options disabled
+			break
 	}
 
 	ctx.highlightedIndex = newIndex

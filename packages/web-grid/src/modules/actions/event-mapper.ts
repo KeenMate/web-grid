@@ -13,6 +13,8 @@ export type EventMapperContext = {
 	dropdownOpen: boolean
 	isDropdownEditor: boolean
 	isCheckboxEditor?: boolean
+	/** Editor type for dropdown editors: 'select' | 'combobox' | 'autocomplete' */
+	editorType?: 'select' | 'combobox' | 'autocomplete'
 }
 
 /**
@@ -37,10 +39,30 @@ export function mapKeyDownToAction(
 				return { type: 'dropdownNavigate', direction: 'down' } as GridAction
 			case 'ArrowLeft':
 			case 'ArrowRight':
-				// Don't navigate cells - consume event but do nothing
-				// This lets native input handle cursor movement (autocomplete)
-				// while preventing cell navigation
+				// For autocomplete: return null to let native cursor movement work
+				// For select/combobox: return noop to consume event without action
+				if (context.editorType === 'autocomplete') {
+					return null  // Let browser handle cursor movement
+				}
 				return { type: 'noop' }
+			case 'Home':
+				// For autocomplete: return null to let native cursor movement work
+				// For select/combobox: jump to first option
+				if (context.editorType === 'autocomplete') {
+					return null
+				}
+				return { type: 'dropdownNavigate', direction: 'home' } as GridAction
+			case 'End':
+				// For autocomplete: return null to let native cursor movement work
+				// For select/combobox: jump to last option
+				if (context.editorType === 'autocomplete') {
+					return null
+				}
+				return { type: 'dropdownNavigate', direction: 'end' } as GridAction
+			case 'PageUp':
+				return { type: 'dropdownNavigate', direction: 'page-up' } as GridAction
+			case 'PageDown':
+				return { type: 'dropdownNavigate', direction: 'page-down' } as GridAction
 			case 'Enter':
 				return { type: 'dropdownSelect', moveAfterSelect: true, commitEmptyRow: true } as GridAction
 			case 'Tab':

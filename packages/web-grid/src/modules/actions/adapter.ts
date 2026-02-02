@@ -108,6 +108,19 @@ export class ActionPipelineAdapter<T = unknown> {
 	}
 
 	/**
+	 * Get the dropdown editor type for a column
+	 */
+	private getDropdownEditorType(colIndex: number): 'select' | 'combobox' | 'autocomplete' | undefined {
+		const column = this.ctx.grid.columns[colIndex]
+		if (!column) return undefined
+		const editor = column.editor
+		if (editor === 'select' || editor === 'combobox' || editor === 'autocomplete') {
+			return editor
+		}
+		return undefined
+	}
+
+	/**
 	 * Get the current cell coordinates from the event target
 	 */
 	private getCellFromTarget(target: HTMLElement): CellCoordinates | null {
@@ -162,7 +175,8 @@ export class ActionPipelineAdapter<T = unknown> {
 				currentCell: cell,
 				dropdownOpen,
 				isDropdownEditor: isDropdown,
-				isCheckboxEditor: isCheckbox
+				isCheckboxEditor: isCheckbox,
+				editorType: this.getDropdownEditorType(cell.colIndex)
 			})
 			if (!action) return false
 
@@ -181,7 +195,8 @@ export class ActionPipelineAdapter<T = unknown> {
 				currentCell: cell,
 				dropdownOpen,
 				isDropdownEditor: isDropdown,
-				isCheckboxEditor: isCheckbox
+				isCheckboxEditor: isCheckbox,
+				editorType: this.getDropdownEditorType(cell.colIndex)
 			})
 			if (!action) return false
 

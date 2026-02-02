@@ -23,10 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Autocomplete/Combobox**: First Escape restores original value and shows all options; second Escape exits edit mode
   - Implemented via new `escapeEdit` action in event pipeline
 - **Row selection focus cleanup**: Clicking row numbers now clears cell focus visual
-- **Arrow keys when dropdown open**: ArrowLeft/ArrowRight no longer navigate cells when a dropdown is open
-  - For autocomplete: allows cursor movement within input field
-  - For select/combobox: keys are consumed without action (dropdown stays open)
-  - Implemented via new `noop` action type in event pipeline
+- **Navigation keys when dropdown open**: Navigation keys no longer move between cells when a dropdown is open
+  - ArrowLeft/ArrowRight: For autocomplete, fall through to browser for cursor movement; for select/combobox, consumed via `noop`
+  - Home/End: For autocomplete, cursor movement; for select/combobox, jump to first/last option
+  - PageUp/PageDown: Jump through dropdown options by 10 items (all dropdown editors)
 
 ---
 
