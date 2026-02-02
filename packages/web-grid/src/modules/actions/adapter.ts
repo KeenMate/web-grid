@@ -299,6 +299,12 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// Printable character starts edit with initial value
 		if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			// Don't dispatch startEdit if we're already editing this cell
+			// (Let native input handle subsequent keystrokes)
+			if (this.isEditingCell(cell.rowIndex, cell.colIndex)) {
+				return false  // Already editing, let native input handle it
+			}
+
 			e.preventDefault()
 			e.stopPropagation()
 			this.pipeline.dispatch({

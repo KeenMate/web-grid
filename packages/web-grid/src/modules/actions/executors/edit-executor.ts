@@ -49,7 +49,7 @@ function executeStartEdit(ctx: ExecutorContext, action: StartEditAction): void {
 /**
  * Commit the current editor and optionally navigate
  */
-function executeCommitEdit(ctx: ExecutorContext, commitEmptyRow?: boolean): void {
+async function executeCommitEdit(ctx: ExecutorContext, commitEmptyRow?: boolean): Promise<void> {
 	const editingCell = ctx.grid.editingCell
 	if (!editingCell) return
 
@@ -76,6 +76,15 @@ function executeCommitEdit(ctx: ExecutorContext, commitEmptyRow?: boolean): void
 		} else if (editor.classList.contains('wg__date-input')) {
 			// Date editor - use the stored date value
 			value = editor.dataset.dateValue || editor.value
+		} else if (editor.classList.contains('wg__editor--number')) {
+			// Number editor - parse to number
+			const strValue = editor.value.trim()
+			if (strValue === '') {
+				value = null
+			} else {
+				const num = parseFloat(strValue)
+				value = isNaN(num) ? strValue : num
+			}
 		} else {
 			value = editor.value
 		}
@@ -94,10 +103,10 @@ function executeCommitEdit(ctx: ExecutorContext, commitEmptyRow?: boolean): void
 	// Clear visual state
 	clearEditingVisual(ctx)
 
-	// Commit the edit
-	ctx.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
+	// Commit the edit and await it (may be async with validation callbacks)
+	await ctx.grid.commitEdit(rowIndex, field, value, commitEmptyRow)
 
-	// Re-render the cell
+	// Re-render the cell (now has correct value with formatCallback applied)
 	renderCell(ctx, rowIndex, colIndex)
 }
 

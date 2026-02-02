@@ -20,19 +20,32 @@ export const transitionExecutor: ActionExecutor = {
 
 /**
  * Execute transitionCell action
- * Produces child actions to: 1) re-render old cell, 2) focus new cell
+ * Produces child actions to: 1) commit edit if editing, 2) re-render old cell, 3) focus new cell
  */
-function executeTransition(_ctx: ExecutorContext, action: TransitionCellAction): GridAction[] {
+function executeTransition(ctx: ExecutorContext, action: TransitionCellAction): GridAction[] {
 	const { from, to, selectText } = action
 	const childActions: GridAction[] = []
 
-	// If moving to a different cell, re-render the old one to remove focus visual
+	// Check if we're transitioning FROM an editing cell
+	const editingCell = ctx.grid.editingCell
+	const isFromEditing = editingCell &&
+		editingCell.rowIndex === from.rowIndex &&
+		ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === from.colIndex
+
+	// If moving to a different cell
 	if (from.rowIndex !== to.rowIndex || from.colIndex !== to.colIndex) {
-		const renderOld: RenderCellAction = {
-			type: 'renderCell',
-			target: from
+		// If the old cell was being edited, commit the edit first
+		// This saves the value from the DOM input before re-rendering destroys it
+		if (isFromEditing) {
+			childActions.push({ type: 'commitEdit' })
+		} else {
+			// Just re-render the old one to remove focus visual
+			const renderOld: RenderCellAction = {
+				type: 'renderCell',
+				target: from
+			}
+			childActions.push(renderOld)
 		}
-		childActions.push(renderOld)
 	}
 
 	// Focus the new cell

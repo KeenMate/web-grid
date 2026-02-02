@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Number editor type-to-start**: Typing multiple characters (e.g., "1234") now captures all characters instead of only the first
+  - Fixed transition executor to commit edit before re-rendering when navigating away from editing cell
+  - Fixed adapter to not dispatch `startEdit` when cell is already being edited (allows native input handling)
+- **Number editor formatting**: Values entered via keyboard are now saved as numbers (not strings), so `formatCallback` works correctly
+- **'Always' mode focus**: Focus visual updates no longer re-render cells in `editTrigger: 'always'` mode (preserves typed content)
 - Filler column cells now fire `cellClick` events with correct `rowIndex` (and `colIndex: -1`)
 - **Datepicker keyboard navigation**: Arrow keys, Page Up/Down, Home/End, Enter, Escape, and Tab now work correctly when the calendar is open (previously intercepted by grid's table listener)
   - Fixed pipeline `Object.create` pattern shadowing property mutations - changed to `Proxy` so `ctx.datepicker` is set on the original context

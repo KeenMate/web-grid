@@ -178,12 +178,26 @@ export function updateFocusVisual<T>(
 
 	// Re-render new cell (will add --focused class)
 	// Skip if this cell is currently being edited (don't disrupt editor)
+	// Also skip for 'always' mode cells (editor always visible, don't disrupt it)
 	if (newFocus) {
+		const column = ctx.grid.columns[newFocus.colIndex]
+		const effectiveTrigger = column?.editTrigger ?? ctx.grid.editTrigger
+		const isAlwaysMode = effectiveTrigger === 'always'
+
 		const isNewCellEditing = editingCell &&
 			editingCell.rowIndex === newFocus.rowIndex &&
 			ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === newFocus.colIndex
-		if (!isNewCellEditing) {
+
+		if (!isNewCellEditing && !isAlwaysMode) {
 			renderCell(ctx, newFocus.rowIndex, newFocus.colIndex)
+		} else if (isAlwaysMode) {
+			// Just update CSS classes, don't re-render content (would lose typed input)
+			const cell = ctx.shadow.querySelector(
+				`td[data-row="${newFocus.rowIndex}"][data-col="${newFocus.colIndex}"]`
+			) as HTMLElement
+			if (cell) {
+				cell.classList.add('wg__cell--focused', 'wg__cell--always-edit-focused')
+			}
 		}
 	}
 }
