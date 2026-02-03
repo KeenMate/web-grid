@@ -229,7 +229,7 @@ export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
 			 .wg__autocomplete-input[data-row="${rowIndex}"][data-field="${field}"]`
 		) as HTMLElement
 		const focusTarget = selectTrigger || input
-		if (focusTarget) {
+		if (focusTarget && focusTarget !== ctx.shadow.activeElement) {
 			focusTarget.focus()
 		}
 		// Clear flag after next frame to allow scroll events again
