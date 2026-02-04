@@ -43,9 +43,9 @@
   bottom: auto;
 }
 .wg__editor--valign-middle {
-  top: 50%;
-  bottom: auto;
-  transform: translateY(-50%);
+  top: 0;
+  bottom: 0;
+  /* Input fills cell height; text naturally centers within input */
 }
 .wg__editor--valign-bottom {
   top: auto;
@@ -94,11 +94,37 @@
   background: var(--wg-hover-bg, rgba(0, 0, 0, 0.05));
 }
 
-/* Checkbox Editor */
+/* Checkbox Editor (edit mode) */
 .wg__editor--checkbox {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(var(--wg-checkbox-scale, 1.2));
   width: auto;
   height: auto;
-  margin: 0 auto;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Checkbox Display (non-edit mode) - matches edit mode positioning */
+.wg__checkbox-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(var(--wg-checkbox-scale, 1.2));
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: none;  /* Click goes to cell, not checkbox directly */
+}
+
+/* Readonly checkbox (non-editable column or locked row) */
+.wg__checkbox-display--readonly {
+  cursor: default;
+  opacity: 0.5;
 }
 
 /* Custom Editor */

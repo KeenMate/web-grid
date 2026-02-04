@@ -28,6 +28,7 @@ export interface GridContext<T = unknown> {
 	justSelected: boolean
 	isOpeningDropdown: boolean
 	isCommittingFromKeyboard: boolean
+	isTransitioningCells: boolean
 
 	// Datepicker state
 	datepicker: DatePicker | null

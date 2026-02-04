@@ -543,6 +543,12 @@ export class ActionPipelineAdapter<T = unknown> {
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 		const isDate = this.isDateEditor(cell.colIndex)
 
+		// Stop immediate propagation for dropdown/date editors to prevent
+		// other click listeners on the same table from calling toggleDropdown/toggleDatePicker
+		if (isDropdown || isDate) {
+			e.stopImmediatePropagation()
+		}
+
 		// Calculate cursor position from click for editStartSelection: 'mousePosition'
 		const cellElement = target.closest('.wg__cell') as HTMLElement
 		const cursorPosition = cellElement ? getCursorPositionFromClick(e, cellElement) : null

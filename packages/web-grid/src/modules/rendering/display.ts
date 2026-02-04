@@ -5,6 +5,7 @@
 
 import type { Column } from '../../types.js'
 import type { GridContext } from '../types.js'
+import { getOptionDisplayValue } from '../dropdown/options.js'
 
 /**
  * Render a cell in display mode (not editing)
@@ -21,9 +22,39 @@ export function renderCellDisplay<T>(
 ): string {
 	const isDropdown = column.editor === 'select' || column.editor === 'combobox' || column.editor === 'autocomplete'
 	const isDate = column.editor === 'date'
+	const isCheckbox = column.editor === 'checkbox'
 	const field = String(column.field)
 
+	if (isCheckbox) {
+		// Always render checkbox as a checkbox, not text
+		const item = ctx.grid.displayItems[rowIndex]
+		const rawValue = item ? ctx.grid.getCellRawValue(item, rowIndex, field) : false
+		const opts = column.editorOptions || {}
+		const trueValue = opts.trueValue !== undefined ? opts.trueValue : true
+		const isChecked = rawValue === trueValue
+		// Display-mode checkbox: always disabled (click on cell handles toggling)
+		// Non-editable cells get additional visual styling via CSS
+		return `
+			<input
+				type="checkbox"
+				class="wg__checkbox-display${isEditable ? '' : ' wg__checkbox-display--readonly'}"
+				${isChecked ? 'checked' : ''}
+				disabled
+				tabindex="-1"
+				data-row="${rowIndex}"
+				data-field="${field}"
+			/>
+		`
+	}
+
 	if (isDropdown) {
+		// Get display value using proper fallback chain (getDisplayCallback -> displayMember -> label -> raw value)
+		const item = ctx.grid.displayItems[rowIndex]
+		const rawValue = item ? ctx.grid.getCellRawValue(item, rowIndex, field) : undefined
+		const opts = column.editorOptions || {}
+		const options = opts.initialOptions || opts.options || []
+		const displayValue = getOptionDisplayValue(rawValue, options, opts)
+
 		// Add modifier class for on-focus visibility (CSS handles hover/focus show)
 		const visibility = ctx.grid.getEffectiveToggleVisibility(column)
 		const toggleClass = visibility === 'on-focus' ? 'wg__cell-dropdown-display--toggle-on-focus' : ''
@@ -31,7 +62,7 @@ export function renderCellDisplay<T>(
 		const toggleHtml = isEditable ? '<span class="wg__select-toggle">▼</span>' : ''
 		return `
 			<div class="wg__cell-dropdown-display ${toggleClass}" data-row="${rowIndex}" data-field="${field}">
-				<span class="wg__select-value">${ctx.escapeHtml(value)}</span>
+				<span class="wg__select-value">${ctx.escapeHtml(displayValue)}</span>
 				${toggleHtml}
 			</div>
 		`

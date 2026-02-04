@@ -166,13 +166,23 @@ export function updateFocusVisual<T>(
 	const editingCell = ctx.grid.editingCell
 
 	// Re-render old cell (will remove --focused class)
-	// Skip if this cell is currently being edited (don't disrupt editor)
+	// Skip re-render if this cell is currently being edited (don't disrupt editor)
+	// But still remove focus CSS class
 	if (oldFocus) {
 		const isOldCellEditing = editingCell &&
 			editingCell.rowIndex === oldFocus.rowIndex &&
 			ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === oldFocus.colIndex
 		if (!isOldCellEditing) {
 			renderCell(ctx, oldFocus.rowIndex, oldFocus.colIndex)
+		} else {
+			// Old cell is being edited - just remove focus class
+			// Editor will be cleaned up later by tryStartEdit when click fires
+			const cell = ctx.shadow.querySelector(
+				`td[data-row="${oldFocus.rowIndex}"][data-col="${oldFocus.colIndex}"]`
+			) as HTMLElement
+			if (cell) {
+				cell.classList.remove('wg__cell--focused', 'wg__cell--always-edit-focused')
+			}
 		}
 	}
 
@@ -311,7 +321,13 @@ export function tryStartEdit<T>(
 	if (oldEditing) {
 		const oldColIndex = ctx.grid.columns.findIndex(c => String(c.field) === oldEditing.field)
 		if (oldEditing.rowIndex !== rowIndex || oldColIndex !== colIndex) {
-			// Re-render old cell to remove editor
+			// Set transition flag to prevent blur handlers from clearing focus
+			ctx.isTransitioningCells = true
+			// Cancel old edit FIRST so renderCell shows display mode
+			// (editingCell must be null before re-rendering, otherwise the cell
+			// will still render with the editing visual)
+			ctx.grid.cancelEdit()
+			// Now re-render - will show display mode since editingCell is null
 			renderCell(ctx, oldEditing.rowIndex, oldColIndex)
 		}
 	}
@@ -325,6 +341,13 @@ export function tryStartEdit<T>(
 		cursorPosition: options?.cursorPosition,
 		initialSearchQuery: options?.initialSearchQuery
 	})
+
+	// Clear transition flag after rendering completes
+	if (ctx.isTransitioningCells) {
+		requestAnimationFrame(() => {
+			ctx.isTransitioningCells = false
+		})
+	}
 }
 
 /**
@@ -334,8 +357,9 @@ export function getCursorPositionFromClick(
 	event: MouseEvent,
 	cell: HTMLElement
 ): number | null {
-	// Find the text span inside the cell (matches v3's .cell-content > span pattern)
-	const textSpan = cell.querySelector('.wg__cell-text') as HTMLElement
+	// Find the text span inside the cell
+	// Check multiple selectors: regular text, dropdown display value, date display value
+	const textSpan = cell.querySelector('.wg__cell-text, .wg__select-value, .wg__date-value') as HTMLElement
 	if (!textSpan) return null
 
 	const text = textSpan.textContent || ''
@@ -394,6 +418,11 @@ export function getCursorPositionFromClick(
  * Uses double requestAnimationFrame to ensure DOM and focus have stabilized
  */
 export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void {
+	// Skip if we're transitioning between cells (editor removal triggers blur)
+	if (ctx.isTransitioningCells) {
+		return
+	}
+
 	const relatedTarget = e.relatedTarget as HTMLElement
 	const table = ctx.shadow.querySelector('.wg__table')
 

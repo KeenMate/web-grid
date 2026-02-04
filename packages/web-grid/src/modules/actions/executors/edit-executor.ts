@@ -6,7 +6,7 @@
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, StartEditAction, DeleteCellAction, EscapeEditAction } from '../types.js'
 import { tryStartEdit, clearEditingVisual, focusCellElement } from '../../navigation/focus.js'
-import { removeDropdown } from '../../dropdown/rendering.js'
+import { removeDropdown, getOptionDisplayValue } from '../../dropdown/index.js'
 import { renderCell } from '../../rendering/index.js'
 
 /**
@@ -173,16 +173,19 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 			) as HTMLElement
 			const input = cell?.querySelector('.wg__combobox-input, .wg__autocomplete-input') as HTMLInputElement
 
-			// Get original value from row data
+			// Get original display value (using displayMember lookup)
 			const row = ctx.grid.displayItems[cellInfo.rowIndex]
 			const field = column?.field
-			const originalValue = row && field ? String((row as Record<string, unknown>)[field as string] ?? '') : ''
+			const rawValue = row && field ? (row as Record<string, unknown>)[field as string] : undefined
+			const opts = column?.editorOptions || {}
+			const options = opts.initialOptions || opts.options || []
+			const originalDisplayValue = getOptionDisplayValue(rawValue, options, opts)
 			const currentValue = input?.value ?? ''
 
-			// If input has been modified (different from original), restore original and refresh dropdown
-			if (input && currentValue !== originalValue) {
+			// If input has been modified (different from original display), restore and refresh dropdown
+			if (input && currentValue !== originalDisplayValue) {
 				ctx.filterText = ''
-				input.value = originalValue  // Restore original, not clear to empty
+				input.value = originalDisplayValue  // Restore original display value
 				input.focus()
 				input.select()  // Select all so user can easily retype
 				// Refresh dropdown by closing and reopening (shows all options with empty filter)

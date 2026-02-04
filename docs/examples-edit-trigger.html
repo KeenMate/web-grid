@@ -146,41 +146,50 @@
                 <thead>
                     <tr style="background: #f3f4f6;">
                         <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">Column</th>
-                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">column.isEditable</th>
                         <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">column.editor</th>
-                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">Result</th>
+                        <th style="padding: 8px; border: 1px solid #e2e8f0; text-align: left;">Notes</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td style="padding: 8px; border: 1px solid #e2e8f0;">ID</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>false</code></td>
                         <td style="padding: 8px; border: 1px solid #e2e8f0;">-</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">NOT editable</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">NOT editable (<code>isEditable: false</code>)</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px; border: 1px solid #e2e8f0;">Name</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">(not set)</td>
                         <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'text'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Editable (has editor)</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Email</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">(not set)</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'text'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Editable (has editor)</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Salary</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">(not set)</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'number'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Editable (has editor)</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Standard text input</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px; border: 1px solid #e2e8f0;">Status</td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">(not set)</td>
                         <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'select'</code></td>
-                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Editable (has editor)</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Dropdown with fixed options</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Dept</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'combobox'</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Dropdown with text input</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Country</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'autocomplete'</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Searchable dropdown</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Start Date</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'date'</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Date picker</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Active</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'checkbox'</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Boolean toggle</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Salary</td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;"><code>'number'</code></td>
+                        <td style="padding: 8px; border: 1px solid #e2e8f0;">Numeric input</td>
                     </tr>
                 </tbody>
             </table>
@@ -195,11 +204,11 @@
         import '@keenmate/web-grid'
 
         const sampleData = [
-            { id: 1, name: 'Alice Johnson', email: 'alice@example.com', salary: 95000, status: 'active' },
-            { id: 2, name: 'Bob Smith', email: 'bob@example.com', salary: 72000, status: 'pending' },
-            { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', salary: 88000, status: 'active' },
-            { id: 4, name: 'Diana Ross', email: 'diana@example.com', salary: 67000, status: 'inactive' },
-            { id: 5, name: 'Eve Wilson', email: 'eve@example.com', salary: 105000, status: 'active' }
+            { id: 1, name: 'Alice Johnson', email: 'alice@example.com', salary: 95000, status: 'active', department: 'Engineering', country: 'USA', startDate: '2023-01-15', isActive: true },
+            { id: 2, name: 'Bob Smith', email: 'bob@example.com', salary: 72000, status: 'pending', department: 'Marketing', country: 'Canada', startDate: '2023-03-20', isActive: true },
+            { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', salary: 88000, status: 'active', department: 'Sales', country: 'UK', startDate: '2022-11-01', isActive: false },
+            { id: 4, name: 'Diana Ross', email: 'diana@example.com', salary: 67000, status: 'inactive', department: 'HR', country: 'Germany', startDate: '2024-02-10', isActive: true },
+            { id: 5, name: 'Eve Wilson', email: 'eve@example.com', salary: 105000, status: 'active', department: 'Engineering', country: 'France', startDate: '2021-06-05', isActive: false }
         ]
 
         const statusOptions = [
@@ -208,23 +217,32 @@
             { value: 'inactive', label: 'Inactive' }
         ]
 
+        const departmentOptions = [
+            { value: 'Engineering', label: 'Engineering' },
+            { value: 'Marketing', label: 'Marketing' },
+            { value: 'Sales', label: 'Sales' },
+            { value: 'HR', label: 'HR' },
+            { value: 'Finance', label: 'Finance' }
+        ]
+
+        const countryOptions = [
+            { value: 'USA', label: 'United States' },
+            { value: 'Canada', label: 'Canada' },
+            { value: 'UK', label: 'United Kingdom' },
+            { value: 'Germany', label: 'Germany' },
+            { value: 'France', label: 'France' },
+            { value: 'Spain', label: 'Spain' },
+            { value: 'Italy', label: 'Italy' }
+        ]
+
         // Column definitions - NO explicit isEditable:true on columns
         // They should inherit from grid.isEditable = true
         const columns = [
             { field: 'id', title: 'ID', width: '60px', isEditable: false },
             { field: 'name', title: 'Name', width: '150px', editor: 'text' },
-            { field: 'email', title: 'Email', width: '180px', editor: 'text', editorOptions: { editStartSelection: 'selectAll' } },
-            {
-                field: 'salary',
-                title: 'Salary',
-                width: '100px',
-                horizontalAlign: 'right',
-                editor: 'number',
-                formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : ''
-            },
             {
                 field: 'status',
-                title: 'Status',
+                title: 'Status (select)',
                 width: '120px',
                 editor: 'select',
                 editorOptions: {
@@ -232,6 +250,50 @@
                     valueMember: 'value',
                     displayMember: 'label'
                 }
+            },
+            {
+                field: 'department',
+                title: 'Dept (combobox)',
+                width: '140px',
+                editor: 'combobox',
+                editorOptions: {
+                    options: departmentOptions,
+                    valueMember: 'value',
+                    displayMember: 'label'
+                }
+            },
+            {
+                field: 'country',
+                title: 'Country (autocomplete)',
+                width: '160px',
+                editor: 'autocomplete',
+                editorOptions: {
+                    initialOptions: countryOptions,
+                    valueMember: 'value',
+                    displayMember: 'label',
+                    editStartSelection: 'selectAll'
+                }
+            },
+            {
+                field: 'startDate',
+                title: 'Start Date',
+                width: '130px',
+                editor: 'date'
+            },
+            {
+                field: 'isActive',
+                title: 'Active',
+                width: '80px',
+                horizontalAlign: 'center',
+                editor: 'checkbox'
+            },
+            {
+                field: 'salary',
+                title: 'Salary',
+                width: '100px',
+                horizontalAlign: 'right',
+                editor: 'number',
+                formatCallback: (val) => val != null ? `$${val.toLocaleString()}` : ''
             }
         ]
 
@@ -239,13 +301,24 @@
         grid.items = sampleData
         grid.columns = columns
         grid.isEditable = true
-        grid.editTrigger = 'click'
         grid.isStriped = true
         grid.isHoverable = true
 
-        // Wire up controls
+        // Load settings from localStorage
+        const savedEditTrigger = localStorage.getItem('editTrigger.value') || 'click'
+        const savedEditStartSelection = localStorage.getItem('editStartSelection.value') || 'mousePosition'
+
+        grid.editTrigger = savedEditTrigger
+        grid.editStartSelection = savedEditStartSelection
+
+        // Update UI controls to match
+        document.getElementById('editTrigger').value = savedEditTrigger
+        document.getElementById('editStartSelection').value = savedEditStartSelection
+
+        // Wire up controls with localStorage persistence
         document.getElementById('editTrigger').addEventListener('change', (e) => {
             grid.editTrigger = e.target.value
+            localStorage.setItem('editTrigger.value', e.target.value)
             console.log('editTrigger changed to:', e.target.value)
         })
 
@@ -256,6 +329,7 @@
 
         document.getElementById('editStartSelection').addEventListener('change', (e) => {
             grid.editStartSelection = e.target.value
+            localStorage.setItem('editStartSelection.value', e.target.value)
             console.log('editStartSelection changed to:', e.target.value)
         })
 

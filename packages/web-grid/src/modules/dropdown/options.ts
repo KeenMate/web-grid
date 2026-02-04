@@ -7,6 +7,11 @@ import type { EditorOption, EditorOptions } from '../../types.js'
 
 /**
  * Get display value for a selected value from options list
+ * Fallback chain:
+ * 1. Find option by value, then use getDisplayCallback if provided
+ * 2. Find option by value, then use displayMember
+ * 3. Find option by value, then use 'label' property
+ * 4. If no option found, return raw value as string
  */
 export function getOptionDisplayValue(
 	value: unknown,
@@ -14,11 +19,12 @@ export function getOptionDisplayValue(
 	opts: EditorOptions
 ): string {
 	const valueMember = opts.valueMember || 'value'
-	const displayMember = opts.displayMember || 'label'
 	const opt = options.find(o => (o as Record<string, unknown>)[valueMember] === value)
 	if (opt) {
-		return String((opt as Record<string, unknown>)[displayMember] ?? '')
+		// Use the same logic as getOptionLabel for consistency
+		return getOptionLabel(opt, opts)
 	}
+	// No matching option - return raw value
 	return value != null ? String(value) : ''
 }
 

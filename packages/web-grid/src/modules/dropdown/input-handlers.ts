@@ -96,6 +96,7 @@ export function handleAutocompleteInput<T>(ctx: GridContext<T>, e: Event): void 
 
 /**
  * Perform async autocomplete search
+ * If no searchCallback is provided, falls back to local filtering of initialOptions
  */
 export async function performAutocompleteSearch<T>(
 	ctx: GridContext<T>,
@@ -103,7 +104,31 @@ export async function performAutocompleteSearch<T>(
 	column: Column<T>
 ): Promise<void> {
 	const opts = column.editorOptions || {}
-	if (!opts.searchCallback) return
+
+	// If no searchCallback, fall back to local filtering (like combobox)
+	if (!opts.searchCallback) {
+		const allOptions = opts.initialOptions || opts.options || []
+		const searchLower = query.toLowerCase()
+		ctx.dropdownOptions = allOptions.filter(opt => {
+			const label = getOptionLabel(opt, opts)
+			return label.toLowerCase().includes(searchLower)
+		})
+		ctx.highlightedIndex = ctx.dropdownOptions.length > 0 ? 0 : -1
+
+		const editingCell = ctx.grid.editingCell
+		if (editingCell) {
+			const { rowIndex, field } = editingCell
+			const wrapper = ctx.shadow.querySelector(
+				`.wg__editor--autocomplete[data-row="${rowIndex}"][data-field="${field}"]`
+			) as HTMLElement
+			if (wrapper) {
+				const dropdown = renderDropdown(ctx, wrapper, ctx.dropdownOptions, opts)
+				attachDropdownListeners(ctx, dropdown)
+				updateDropdownHighlight(ctx)
+			}
+		}
+		return
+	}
 
 	// Cancel previous request
 	if (ctx.searchAbortController) {

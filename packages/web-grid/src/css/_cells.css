@@ -23,8 +23,10 @@
 
 
 /* Cell text - prevent selection flash on double-click */
+/* pointer-events: none ensures clicks pass through to the cell for dblclick to work */
 .wg__cell-text {
   user-select: none;
+  pointer-events: none;
 }
 
 /* Text overflow ellipsis - applied to inner text element */
