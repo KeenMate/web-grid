@@ -381,11 +381,14 @@ export class ActionPipelineAdapter<T = unknown> {
 		let cell: CellCoordinates | null = null
 
 		if (isToggleClick) {
-			// For toggle clicks, get cell info from editor container
-			const editorContainer = target.closest('.wg__editor--select, .wg__editor--combobox, .wg__editor--autocomplete') as HTMLElement
-			if (editorContainer) {
-				const rowIndex = parseInt(editorContainer.dataset.row || '', 10)
-				const field = editorContainer.dataset.field || ''
+			// For toggle clicks, get cell info from editor or display container
+			const container = (
+				target.closest('.wg__editor--select, .wg__editor--combobox, .wg__editor--autocomplete') ||
+				target.closest('.wg__cell-dropdown-display')
+			) as HTMLElement
+			if (container) {
+				const rowIndex = parseInt(container.dataset.row || '', 10)
+				const field = container.dataset.field || ''
 				const colIndex = this.ctx.grid.columns.findIndex(c => String(c.field) === field)
 				if (!isNaN(rowIndex) && colIndex >= 0) {
 					cell = { rowIndex, colIndex }
@@ -452,6 +455,31 @@ export class ActionPipelineAdapter<T = unknown> {
 			for (const action of actions) {
 				this.pipeline.dispatch(action)
 			}
+
+			return true
+		}
+
+		// Toggle click in non-editing mode: start edit and open dropdown via pipeline
+		if (isToggleClick) {
+			e.preventDefault()
+			e.stopPropagation()
+
+			if (this.ctx.grid.editingCell) {
+				this.pipeline.dispatch({ type: 'cancelEdit' })
+			}
+
+			this.pipeline.dispatch({
+				type: 'focusCell',
+				target: cell,
+				selectText: false
+			})
+
+			this.pipeline.dispatch({
+				type: 'startEdit',
+				target: cell
+			})
+
+			this.pipeline.dispatch({ type: 'openDropdown' })
 
 			return true
 		}

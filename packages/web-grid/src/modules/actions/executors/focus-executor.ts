@@ -6,6 +6,7 @@
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, FocusCellAction, BlurCellAction } from '../types.js'
 import { updateFocusVisual } from '../../navigation/index.js'
+import { updateFillHandle } from '../../fill-handle/index.js'
 
 /**
  * Focus executor - handles cell focus/blur actions
@@ -69,6 +70,9 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): void {
 
 	// Scroll into view if needed
 	cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+
+	// Update fill handle position for the newly focused cell
+	updateFillHandle(ctx)
 }
 
 /**

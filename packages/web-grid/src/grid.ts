@@ -954,6 +954,12 @@ export class WebGrid<T = unknown> {
 		}
 	}
 
+	/** Clear row selection state without triggering re-render (caller handles visuals) */
+	clearSelection_noRender(): void {
+		this._selectedRows.clear()
+		this._lastSelectedRowIndex = null
+	}
+
 	getSelectedRowsData(): T[] {
 		return this.selectedRows.map(idx => this.displayItems[idx]).filter(Boolean)
 	}
@@ -1156,6 +1162,16 @@ export class WebGrid<T = unknown> {
 		}
 	}
 
+	/** Clear cell selection state without triggering re-render (caller handles visuals) */
+	clearCellSelection_noRender(): void {
+		if (this._selectedCellRange) {
+			this._selectedCellRange = null
+			if (this._oncellselectionchange) {
+				this._oncellselectionchange({ range: null, cellCount: 0 })
+			}
+		}
+	}
+
 	/**
 	 * Select all cells in the grid (entire visible data range)
 	 */
@@ -1225,6 +1241,12 @@ export class WebGrid<T = unknown> {
 		this._selectedColumns.clear()
 		this._lastSelectedColumnIndex = -1
 		this.requestUpdate()
+	}
+
+	/** Clear column selection state without triggering re-render (caller handles visuals) */
+	clearColumnSelection_noRender(): void {
+		this._selectedColumns.clear()
+		this._lastSelectedColumnIndex = -1
 	}
 
 	/**

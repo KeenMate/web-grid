@@ -94,6 +94,7 @@ export function toggleCheckboxAndMove<T>(
 	rowIndex: number,
 	colIndex: number
 ): void {
+	console.log('[LEGACY] toggleCheckboxAndMove')
 	const column = ctx.grid.columns[colIndex]
 	if (!column) return
 

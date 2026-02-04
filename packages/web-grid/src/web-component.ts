@@ -3182,17 +3182,31 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Clear all selections (cell range, row, column) and their visual borders
 	 */
 	private clearAllSelections(): void {
+		// Clear state and visuals surgically WITHOUT triggering requestUpdate/render.
+		// A full re-render would replace all DOM elements, making any references
+		// captured after this call (e.g., resize headerCell) point to detached nodes.
 		if (this.grid.selectedCellRange) {
-			this.grid.clearCellSelection()
+			this.grid.clearCellSelection_noRender()
 			removeRangeBorder()
+			// Remove in-range highlighting
+			const inRange = this.shadow.querySelectorAll('.wg__cell--in-range')
+			inRange.forEach(c => c.classList.remove('wg__cell--in-range'))
 		}
 		if (this.grid.selectedRows.length > 0) {
-			this.grid.clearSelection()
+			this.grid.clearSelection_noRender()
 			removeRowSelectionBorders()
+			// Remove row selection highlighting
+			const selectedRows = this.shadow.querySelectorAll('.wg__row--selected')
+			selectedRows.forEach(r => r.classList.remove('wg__row--selected'))
 		}
 		if (this.grid.selectedColumns.length > 0) {
-			this.grid.clearColumnSelection()
+			this.grid.clearColumnSelection_noRender()
 			removeColumnSelectionBorders()
+			// Remove column selection highlighting
+			const selectedCells = this.shadow.querySelectorAll('.wg__cell--column-selected')
+			selectedCells.forEach(c => c.classList.remove('wg__cell--column-selected'))
+			const selectedHeaders = this.shadow.querySelectorAll('.wg__header--selected')
+			selectedHeaders.forEach(h => h.classList.remove('wg__header--selected'))
 		}
 	}
 
@@ -3217,6 +3231,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Open the date picker for a date input
 	 */
 	private openDatePicker(input: HTMLInputElement, anchor: HTMLElement): void {
+		console.log('[LEGACY] openDatePicker')
 		// Close any existing datepicker silently (don't trigger onClose - we're opening a new one)
 		if (this.datepicker) {
 			this.datepicker.close(true)
@@ -3272,6 +3287,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Handle date selection from the date picker
 	 */
 	private handleDatePickerSelect(input: HTMLInputElement, date: Date, direction?: 'down' | 'next'): void {
+		console.log('[LEGACY] handleDatePickerSelect')
 		const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
 		const formatInfo = parseFormat(dateFormat)
 
@@ -3298,6 +3314,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * @param commitEmptyRow - If true and editing empty row, add it to items (Enter key behavior)
 	 */
 	private async commitDateEditor(input: HTMLInputElement, commitEmptyRow: boolean = false): Promise<void> {
+		console.log('[LEGACY] commitDateEditor')
 		if (!this.grid.editingCell) return
 
 		const rowIndex = parseInt(input.dataset.row || '0', 10)
@@ -3455,6 +3472,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Open custom editor by calling the cellEditCallback
 	 */
 	private openCustomEditor(rowIndex: number, colIndex: number): void {
+		console.log('[LEGACY] openCustomEditor', { rowIndex, colIndex })
 		const column = this.grid.columns[colIndex]
 		if (!column || column.editor !== 'custom' || !column.cellEditCallback) {
 			return

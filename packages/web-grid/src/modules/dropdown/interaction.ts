@@ -111,6 +111,7 @@ export function updateLoadingIndicator<T>(ctx: GridContext<T>, show: boolean): v
  * Works with both editingCell (normal edit mode) and focusedCell ('always' edit mode)
  */
 export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
+	console.log('[LEGACY] openDropdownForCurrentEditor')
 	if (ctx.justSelected) return
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode

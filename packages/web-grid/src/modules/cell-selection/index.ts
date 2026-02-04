@@ -41,6 +41,10 @@ let selectionState: CellSelectionState = {
 // Store the current context for document-level handlers
 let activeContext: GridContext | null = null
 
+// rAF throttle state for mousemove
+let pendingMouseEvent: MouseEvent | null = null
+let dragRafId: number | null = null
+
 /**
  * Check if cell selection drag is in progress
  */
@@ -138,12 +142,14 @@ export function handleCellShiftClick<T>(ctx: GridContext<T>, rowIndex: number, c
 }
 
 /**
- * Handle mouse move during selection drag
+ * Handle mouse move during selection drag (rAF-throttled)
+ * Mousemove fires faster than the screen refreshes, so we batch updates
+ * to once per animation frame to avoid repeated forced reflows.
  */
 function handleDocumentMouseMove(e: MouseEvent): void {
 	if (!activeContext) return
 
-	// If pending, check if threshold exceeded
+	// Threshold check is cheap (no DOM reads), do it immediately
 	if (selectionState.isPending) {
 		const dx = e.clientX - selectionState.startX
 		const dy = e.clientY - selectionState.startY
@@ -155,18 +161,37 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 		return
 	}
 
-	// If not actually dragging, nothing to do
 	if (!selectionState.isDragging) return
+
+	// Store latest event and schedule processing for next frame
+	pendingMouseEvent = e
+	if (!dragRafId) {
+		dragRafId = requestAnimationFrame(processDragUpdate)
+	}
+}
+
+/**
+ * Process the batched drag update (runs once per animation frame)
+ */
+function processDragUpdate(): void {
+	dragRafId = null
+	if (!pendingMouseEvent || !activeContext) return
+
+	const e = pendingMouseEvent
+	pendingMouseEvent = null
 
 	// Find which cell the mouse is over
 	const cellInfo = findCellAtPoint(activeContext, e.clientX, e.clientY)
 	if (cellInfo && (cellInfo.rowIndex !== selectionState.currentRowIndex || cellInfo.colIndex !== selectionState.currentColIndex)) {
 		selectionState.currentRowIndex = cellInfo.rowIndex
 		selectionState.currentColIndex = cellInfo.colIndex
-		
-		// Update both cell highlighting and border
+
+		// Read border positions BEFORE writing CSS classes (avoids forced reflow)
+		const borderPositions = computeRangeBorderPositions(activeContext)
+
+		// Write phase: update cell classes and border element
 		updateCellHighlighting(activeContext)
-		updateRangeBorderDuringDrag(activeContext)
+		applyRangeBorder(activeContext, borderPositions)
 	}
 }
 
@@ -310,26 +335,20 @@ function handleDocumentKeyDown(e: KeyboardEvent): void {
 }
 
 /**
- * Find which cell is at a given point
+ * Find which cell is at a given point using elementFromPoint (O(1) hit-test)
  */
 function findCellAtPoint<T>(ctx: GridContext<T>, x: number, y: number): { rowIndex: number; colIndex: number } | null {
-	const container = ctx.shadow.querySelector('.wg') as HTMLElement
-	if (!container) return null
+	const element = ctx.shadow.elementFromPoint(x, y) as HTMLElement
+	if (!element) return null
 
-	// Get all cells and find which one contains the point
-	const cells = ctx.shadow.querySelectorAll('.wg__cell[data-row][data-col]')
+	const cell = element.closest('.wg__cell[data-row][data-col]') as HTMLElement
+	if (!cell) return null
 
-	for (const cell of cells) {
-		const rect = (cell as HTMLElement).getBoundingClientRect()
-		if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-			const rowIndex = parseInt((cell as HTMLElement).dataset.row || '-1', 10)
-			const colIndex = parseInt((cell as HTMLElement).dataset.col || '-1', 10)
-			if (rowIndex >= 0 && colIndex >= 0) {
-				return { rowIndex, colIndex }
-			}
-		}
+	const rowIndex = parseInt(cell.dataset.row || '-1', 10)
+	const colIndex = parseInt(cell.dataset.col || '-1', 10)
+	if (rowIndex >= 0 && colIndex >= 0) {
+		return { rowIndex, colIndex }
 	}
-
 	return null
 }
 
@@ -367,22 +386,30 @@ function applySelection<T>(ctx: GridContext<T>): void {
 }
 
 /**
- * Create/update range border during drag using selectionState
+ * Border position data computed from DOM reads (before any writes)
  */
-function createRangeBorderDuringDrag<T>(ctx: GridContext<T>): void {
-	// Remove existing border
-	removeRangeBorder()
+interface BorderPositions {
+	container: HTMLElement
+	left: number
+	top: number
+	width: number
+	height: number
+}
 
+/**
+ * Compute range border positions from current selectionState (READ-ONLY, no DOM writes).
+ * Call this BEFORE updateCellHighlighting to avoid forced reflow.
+ */
+function computeRangeBorderPositions<T>(ctx: GridContext<T>): BorderPositions | null {
 	const { startRowIndex, startColIndex, currentRowIndex, currentColIndex } = selectionState
 	const container = ctx.shadow.querySelector('.wg') as HTMLElement
-	if (!container) return
+	if (!container) return null
 
 	const minRow = Math.min(startRowIndex, currentRowIndex)
 	const maxRow = Math.max(startRowIndex, currentRowIndex)
 	const minCol = Math.min(startColIndex, currentColIndex)
 	const maxCol = Math.max(startColIndex, currentColIndex)
 
-	// Find the bounding cells
 	const startCell = ctx.shadow.querySelector(
 		`[data-row="${minRow}"][data-col="${minCol}"]`
 	) as HTMLElement
@@ -390,39 +417,54 @@ function createRangeBorderDuringDrag<T>(ctx: GridContext<T>): void {
 		`[data-row="${maxRow}"][data-col="${maxCol}"]`
 	) as HTMLElement
 
-	if (!startCell || !endCell) return
+	if (!startCell || !endCell) return null
 
 	const containerRect = container.getBoundingClientRect()
 	const startRect = startCell.getBoundingClientRect()
 	const endRect = endCell.getBoundingClientRect()
-
-	// Account for scroll and container border
-	// getBoundingClientRect measures from border edge, but position:absolute is from padding edge
 	const scrollLeft = container.scrollLeft
 	const scrollTop = container.scrollTop
 
-	const left = startRect.left - containerRect.left + scrollLeft - container.clientLeft
-	const top = startRect.top - containerRect.top + scrollTop - container.clientTop
-	const width = endRect.right - startRect.left
-	const height = endRect.bottom - startRect.top
-
-	// Create border
-	const border = document.createElement('div')
-	border.className = 'wg__cell-range-border'
-	border.style.left = `${left}px`
-	border.style.top = `${top}px`
-	border.style.width = `${width}px`
-	border.style.height = `${height}px`
-	container.appendChild(border)
-
-	selectionState.rangeBorder = border
+	return {
+		container,
+		left: startRect.left - containerRect.left + scrollLeft - container.clientLeft,
+		top: startRect.top - containerRect.top + scrollTop - container.clientTop,
+		width: endRect.right - startRect.left,
+		height: endRect.bottom - startRect.top
+	}
 }
 
 /**
- * Update range border during drag (alias for consistency)
+ * Apply pre-computed border positions to DOM (WRITE-ONLY).
+ * Reuses existing border element when possible to avoid DOM churn.
  */
-function updateRangeBorderDuringDrag<T>(ctx: GridContext<T>): void {
-	createRangeBorderDuringDrag(ctx)
+function applyRangeBorder<T>(_ctx: GridContext<T>, positions: BorderPositions | null): void {
+	if (!positions) {
+		removeRangeBorder()
+		return
+	}
+
+	// Reuse existing border element to avoid remove/create DOM churn
+	let border = selectionState.rangeBorder
+	if (!border) {
+		border = document.createElement('div')
+		border.className = 'wg__cell-range-border'
+		positions.container.appendChild(border)
+		selectionState.rangeBorder = border
+	}
+
+	border.style.left = `${positions.left}px`
+	border.style.top = `${positions.top}px`
+	border.style.width = `${positions.width}px`
+	border.style.height = `${positions.height}px`
+}
+
+/**
+ * Create range border during drag (combined read+write for initial creation)
+ */
+function createRangeBorderDuringDrag<T>(ctx: GridContext<T>): void {
+	const positions = computeRangeBorderPositions(ctx)
+	applyRangeBorder(ctx, positions)
 }
 
 /**
@@ -516,6 +558,13 @@ function cleanup<T>(ctx: GridContext<T>): void {
 	// Remove selecting class
 	const container = ctx.shadow.querySelector('.wg')
 	container?.classList.remove('wg--selecting-cells')
+
+	// Cancel pending rAF
+	if (dragRafId) {
+		cancelAnimationFrame(dragRafId)
+		dragRafId = null
+	}
+	pendingMouseEvent = null
 
 	// Remove document listeners
 	document.removeEventListener('mousemove', handleDocumentMouseMove)

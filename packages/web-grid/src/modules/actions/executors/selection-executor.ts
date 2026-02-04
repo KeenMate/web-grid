@@ -8,6 +8,7 @@ import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, SelectRowAction, SelectColumnAction } from '../types.js'
 import { removeRangeBorder } from '../../cell-selection/index.js'
 import { removeRowSelectionBorders, removeColumnSelectionBorders } from '../../selection-border/index.js'
+import { removeFillHandle } from '../../fill-handle/index.js'
 
 /**
  * Selection executor - handles selection actions
@@ -43,6 +44,7 @@ function executeSelectRow(ctx: ExecutorContext, action: SelectRowAction): void {
 	if (ctx.grid.selectedCellRange) {
 		ctx.grid.clearCellSelection()
 		removeRangeBorder()
+		removeFillHandle()
 	}
 
 	if (extendSelection && ctx.grid.selectedRows.length > 0) {
@@ -73,6 +75,7 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
 	if (ctx.grid.selectedCellRange) {
 		ctx.grid.clearCellSelection()
 		removeRangeBorder()
+		removeFillHandle()
 	}
 
 	if (extendSelection && ctx.grid.selectedColumns.length > 0) {
@@ -112,6 +115,9 @@ function executeClearSelection(ctx: ExecutorContext): void {
 	if (ctx.grid.selectedCellRange) {
 		ctx.grid.clearCellSelection()
 		removeRangeBorder()
+		// Remove fill handle that was hidden by CSS while range border existed
+		// (without this, the old fill handle becomes visible at its stale position)
+		removeFillHandle()
 		updateCellRangeVisual(ctx)
 	}
 }
