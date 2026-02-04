@@ -57,6 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dropdown not opening on first click**: Fixed dropdown editors (select/combobox/autocomplete/date) not opening on first click in `editTrigger: 'click'` mode
   - Root cause: Multiple click handlers on table element - adapter opened dropdown, then legacy handler toggled it closed
   - Fix: Use `stopImmediatePropagation()` to prevent other listeners on same element from firing
+- **Double-click edit for complex editors**: Fixed double-click not entering edit mode on dropdown, date, combobox, and autocomplete cells
+  - Display containers now use `pointer-events: none` so clicks pass through to the cell
+  - Toggle buttons retain `pointer-events: auto` so they remain directly clickable
+- **Cursor repositioning in text/number editors**: Single clicks inside text and number inputs now correctly reposition the cursor instead of being blocked by `preventDefault()`
+- **Combobox/autocomplete text selection**: Double-clicking to edit combobox/autocomplete cells now selects all text by default, regardless of grid-level `editStartSelection` setting
+  - Dropdown-type inputs default to `selectAll` since cursor positioning doesn't apply to filter inputs
+  - Can still be overridden per-column via `editorOptions.editStartSelection`
 - **Checkbox editor display**: Fixed checkbox rendering issues
   - Checkbox now vertically and horizontally centered in cell (was positioned at top)
   - Display mode now renders checkbox instead of "true"/"false" text

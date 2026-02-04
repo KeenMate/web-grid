@@ -118,7 +118,10 @@ function focusEditorInCell<T>(
 	// Set cursor position for text inputs
 	if (editor instanceof HTMLInputElement && editor.type === 'text') {
 		const cursorPos = options.cursorPosition
-		const editStartSelection = column.editorOptions?.editStartSelection || ctx.grid.editStartSelection
+		// Combobox/autocomplete default to selectAll (cursor positioning doesn't apply to filter inputs)
+		const isDropdownInput = editor.classList.contains('wg__combobox-input') || editor.classList.contains('wg__autocomplete-input')
+		const defaultSelection = isDropdownInput ? 'selectAll' : undefined
+		const editStartSelection = column.editorOptions?.editStartSelection || defaultSelection || ctx.grid.editStartSelection
 
 		if (options.initialSearchQuery !== undefined) {
 			// Type-to-start: always cursor at end
