@@ -6,7 +6,7 @@
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction } from '../types.js'
 import { DatePicker } from '../../datepicker/datepicker.js'
-import { toISODateString, formatDate, parseFormat } from '../../datepicker/formatting.js'
+import { toISODateString } from '../../datepicker/formatting.js'
 import { renderCell } from '../../rendering/index.js'
 import { clearEditingVisual } from '../../navigation/focus.js'
 
@@ -66,16 +66,21 @@ function executeOpenDatePicker(ctx: ExecutorContext): void {
 	const maxDateStr = input.dataset.maxDate
 	const currentValue = input.dataset.dateValue || ''
 
+	// Capture stable values for callbacks (don't capture DOM refs — they go stale on re-render)
+	const capturedRowIndex = rowIndex
+	const capturedColIndex = colIndex
+	const capturedField = field
+
 	// Create and open the date picker
 	ctx.datepicker = new DatePicker({
 		dateFormat,
 		minDate: minDateStr || undefined,
 		maxDate: maxDateStr || undefined,
 		onSelect: (date, direction) => {
-			handleDateSelect(ctx, input, date, direction)
+			handleDateSelect(ctx, capturedRowIndex, capturedColIndex, capturedField, date, direction)
 		},
 		onClose: () => {
-			handleDatePickerClose(ctx, rowIndex, colIndex)
+			handleDatePickerClose(ctx, capturedRowIndex, capturedColIndex)
 		}
 	})
 
@@ -83,34 +88,33 @@ function executeOpenDatePicker(ctx: ExecutorContext): void {
 }
 
 /**
- * Handle date selection from the picker
+ * Handle date selection from the picker.
+ * Uses captured rowIndex/colIndex/field instead of DOM refs (which go stale on re-render).
  */
 function handleDateSelect(
 	ctx: ExecutorContext,
-	input: HTMLInputElement,
+	rowIndex: number,
+	colIndex: number,
+	field: string,
 	date: Date,
 	direction?: 'down' | 'next'
 ): void {
-	// Get the date format from input
-	const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
-
-	// Format and update the input value
-	const formatInfo = parseFormat(dateFormat)
-	input.value = formatDate(date, formatInfo)
-	input.dataset.dateValue = toISODateString(date)
-
 	// Clear datepicker reference
 	ctx.datepicker = null
 
-	// Get cell info from input's parent
-	const editorContainer = input.closest('.wg__editor--date') as HTMLElement
-	if (!editorContainer) return
-
-	const rowIndex = parseInt(editorContainer.dataset.row || '0', 10)
-	const field = editorContainer.dataset.field || ''
-
-	// Commit the date value
+	// Commit the date value (clears editingCell state)
 	ctx.grid.commitEdit(rowIndex, field, toISODateString(date))
+
+	// Re-render cell in display mode with the committed value
+	renderCell(ctx, rowIndex, colIndex)
+
+	// Focus the cell so user doesn't lose keyboard position
+	const cell = ctx.shadow.querySelector(
+		`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
+	) as HTMLElement
+	if (cell) {
+		cell.focus()
+	}
 
 	// Navigate based on direction (Enter goes down, Tab goes next)
 	if (direction === 'down') {

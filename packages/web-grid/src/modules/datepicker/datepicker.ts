@@ -613,8 +613,11 @@ export class DatePicker {
 	private handleClickOutside(e: MouseEvent): void {
 		if (!this.element || !this.anchor) return
 
-		const target = e.target as Node
-		if (!this.element.contains(target) && !this.anchor.contains(target)) {
+		// Use composedPath() to correctly detect clicks across shadow DOM boundaries.
+		// e.target is retargeted to the shadow host at the document level, so
+		// anchor.contains(e.target) would fail for clicks inside the shadow DOM.
+		const path = e.composedPath()
+		if (!path.includes(this.element) && !path.includes(this.anchor)) {
 			this.close()
 		}
 	}

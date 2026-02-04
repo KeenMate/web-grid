@@ -5,6 +5,7 @@
 
 import type { GridContext } from '../types.js'
 import type { CellRange, Column } from '../../types.js'
+import { updateFocusVisual, focusCellElement } from '../navigation/index.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -180,17 +181,14 @@ function startActualDrag<T>(ctx: GridContext<T>): void {
 	const container = ctx.shadow.querySelector('.wg')
 	container?.classList.add('wg--selecting-cells')
 
-	// Hide focus border on starting cell during drag (visual only, focus state remains)
-	const startCell = ctx.shadow.querySelector(
-		`[data-row="${selectionState.startRowIndex}"][data-col="${selectionState.startColIndex}"]`
-	) as HTMLElement
-	if (startCell) {
-		startCell.classList.add('wg__cell--dragging-from')
-	}
+	// Clear focused cell so focus outline disappears immediately when drag begins
+	const oldFocus = ctx.grid.focusedCell
+	ctx.grid.clearFocusedCell()
+	updateFocusVisual(ctx, oldFocus, null)
 
 	// Apply cell highlighting immediately
 	updateCellHighlighting(ctx)
-	
+
 	// Create range border (shown during drag, not just after)
 	createRangeBorderDuringDrag(ctx)
 }
@@ -253,24 +251,23 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 	// If not dragging, nothing to do
 	if (!selectionState.isDragging) return
 
-	// Remove dragging-from class from starting cell
-	const startCell = ctx.shadow.querySelector(
-		`[data-row="${selectionState.startRowIndex}"][data-col="${selectionState.startColIndex}"]`
-	) as HTMLElement
-	if (startCell) {
-		startCell.classList.remove('wg__cell--dragging-from')
-	}
-
 	// Check if user returned to starting cell (no actual selection made)
-	const returnedToStart = 
+	const returnedToStart =
 		selectionState.startRowIndex === selectionState.currentRowIndex &&
 		selectionState.startColIndex === selectionState.currentColIndex
 
 	if (returnedToStart) {
-		// User canceled selection by returning to start - keep focus, clear highlighting
+		// User canceled selection by returning to start - restore focus, clear highlighting
 		const allCells = ctx.shadow.querySelectorAll('.wg__cell--in-range')
 		allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
 		removeRangeBorder()
+
+		// Restore focus on the start cell (was cleared when drag began)
+		const { startRowIndex, startColIndex } = selectionState
+		ctx.grid.setFocusedCell(startRowIndex, startColIndex)
+		updateFocusVisual(ctx, null, { rowIndex: startRowIndex, colIndex: startColIndex })
+		focusCellElement(ctx, startRowIndex, startColIndex)
+
 		cleanup(ctx)
 	} else {
 		// Actual multi-cell selection made - apply it (this clears focus)
@@ -294,7 +291,21 @@ function handleDocumentMouseUp(e: MouseEvent): void {
 function handleDocumentKeyDown(e: KeyboardEvent): void {
 	if (e.key === 'Escape' && activeContext) {
 		e.preventDefault()
-		cleanup(activeContext)
+		const ctx = activeContext
+
+		// If dragging, restore focus on the start cell (was cleared when drag began)
+		if (selectionState.isDragging) {
+			const allCells = ctx.shadow.querySelectorAll('.wg__cell--in-range')
+			allCells.forEach(cell => cell.classList.remove('wg__cell--in-range'))
+			removeRangeBorder()
+
+			const { startRowIndex, startColIndex } = selectionState
+			ctx.grid.setFocusedCell(startRowIndex, startColIndex)
+			updateFocusVisual(ctx, null, { rowIndex: startRowIndex, colIndex: startColIndex })
+			focusCellElement(ctx, startRowIndex, startColIndex)
+		}
+
+		cleanup(ctx)
 	}
 }
 
@@ -505,16 +516,6 @@ function cleanup<T>(ctx: GridContext<T>): void {
 	// Remove selecting class
 	const container = ctx.shadow.querySelector('.wg')
 	container?.classList.remove('wg--selecting-cells')
-
-	// Safety: Remove dragging-from class from starting cell (in case not already removed)
-	if (selectionState.startRowIndex >= 0 && selectionState.startColIndex >= 0) {
-		const startCell = ctx.shadow.querySelector(
-			`[data-row="${selectionState.startRowIndex}"][data-col="${selectionState.startColIndex}"]`
-		) as HTMLElement
-		if (startCell) {
-			startCell.classList.remove('wg__cell--dragging-from')
-		}
-	}
 
 	// Remove document listeners
 	document.removeEventListener('mousemove', handleDocumentMouseMove)

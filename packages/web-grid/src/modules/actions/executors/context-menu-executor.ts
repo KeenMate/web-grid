@@ -5,6 +5,7 @@
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
 import type { GridAction, OpenContextMenuAction } from '../types.js'
+import { closeContextMenu } from '../../contextmenu/index.js'
 
 /**
  * Context menu executor - handles context menu actions
@@ -47,9 +48,15 @@ function executeOpenContextMenu(ctx: ExecutorContext, action: OpenContextMenuAct
 }
 
 /**
- * Close the context menu
+ * Close all open context menus (cell and header)
  */
-function executeCloseContextMenu(_ctx: ExecutorContext): void {
-	// The actual context menu closing is handled by the existing context-menu module
-	// This is a placeholder for future pipeline-based context menu control
+function executeCloseContextMenu(ctx: ExecutorContext): void {
+	if (ctx.contextMenuElement) {
+		closeContextMenu(ctx.contextMenuElement)
+		ctx.contextMenuElement = null
+	}
+	if (ctx.headerContextMenuElement) {
+		closeContextMenu(ctx.headerContextMenuElement)
+		ctx.headerContextMenuElement = null
+	}
 }

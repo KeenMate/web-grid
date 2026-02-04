@@ -32,11 +32,6 @@
   display: none;
 }
 
-/* Hide focus border when dragging FROM this cell (visual only, focus state remains) */
-.wg--navigate-mode .wg__cell--dragging-from.wg__cell--focused {
-  outline: none;
-}
-
 /* ==============================================================================
    ROW FOCUS (master/detail patterns)
    ==============================================================================

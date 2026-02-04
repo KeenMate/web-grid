@@ -20,6 +20,7 @@ import { clipboardExecutor } from './executors/clipboard-executor.js'
 import { contextMenuExecutor } from './executors/context-menu-executor.js'
 import { fillHandleExecutor } from './executors/fill-handle-executor.js'
 import { cellSelectionExecutor } from './executors/cell-selection-executor.js'
+import { macroExecutor } from './executors/macro-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
 import { getCursorPositionFromClick } from '../navigation/focus.js'
 import type { CellCoordinates } from './types.js'
@@ -50,6 +51,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		this.pipeline.registerExecutor(contextMenuExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(fillHandleExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(cellSelectionExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(macroExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(noopExecutor as ActionExecutor<T>)
 	}
 
@@ -390,11 +392,11 @@ export class ActionPipelineAdapter<T = unknown> {
 				}
 			}
 		} else if (isDateTriggerClick) {
-			// For date trigger clicks, get cell info from date editor container
-			const editorContainer = target.closest('.wg__editor--date') as HTMLElement
-			if (editorContainer) {
-				const rowIndex = parseInt(editorContainer.dataset.row || '', 10)
-				const field = editorContainer.dataset.field || ''
+			// For date trigger clicks, get cell info from date editor or display container
+			const container = (target.closest('.wg__editor--date') || target.closest('.wg__cell-date-display')) as HTMLElement
+			if (container) {
+				const rowIndex = parseInt(container.dataset.row || '', 10)
+				const field = container.dataset.field || ''
 				const colIndex = this.ctx.grid.columns.findIndex(c => String(c.field) === field)
 				if (!isNaN(rowIndex) && colIndex >= 0) {
 					cell = { rowIndex, colIndex }
@@ -417,6 +419,14 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// For 'always' mode or when editing: use full mouse handling
 		if (isAlways || isEditing) {
+			// For text-like inputs in the same editing cell, let native behavior handle
+			// cursor repositioning. Don't dispatch focusCell (which would call cell.focus()
+			// and trigger focusout on the input — closing the datepicker for date editors).
+			const isTextInput = target.matches('.wg__editor--text, .wg__editor--number, .wg__date-input')
+			if (isTextInput && isEditing && isCellClick) {
+				return true
+			}
+
 			const dropdownOpen = this.ctx.dropdownOpen
 			const isDropdown = this.isDropdownEditor(cell.colIndex)
 
@@ -434,8 +444,6 @@ export class ActionPipelineAdapter<T = unknown> {
 
 			if (actions.length === 0) return false
 
-			// Allow native cursor positioning for text/number inputs
-			const isTextInput = target.matches('.wg__editor--text, .wg__editor--number')
 			if (!isTextInput) {
 				e.preventDefault()
 				e.stopPropagation()
@@ -448,12 +456,42 @@ export class ActionPipelineAdapter<T = unknown> {
 			return true
 		}
 
+		// Date trigger click in non-editing mode: start edit and open datepicker via pipeline
+		if (isDateTriggerClick) {
+			e.preventDefault()
+			e.stopPropagation()
+
+			if (this.ctx.grid.editingCell) {
+				this.pipeline.dispatch({ type: 'cancelEdit' })
+			}
+
+			this.pipeline.dispatch({
+				type: 'focusCell',
+				target: cell,
+				selectText: false
+			})
+
+			this.pipeline.dispatch({
+				type: 'startEdit',
+				target: cell
+			})
+
+			this.pipeline.dispatch({ type: 'openDatePicker' })
+
+			return true
+		}
+
 		// For non-always modes when not editing: focus the cell and optionally start cell selection
 		// (Click/dblclick modes handle edit start separately)
-		if (isCellClick && !isToggleClick && !isDateTriggerClick && !isCheckboxClick) {
+		if (isCellClick && !isToggleClick && !isCheckboxClick) {
 			// Must preventDefault to stop browser from stealing focus after our programmatic focus
 			// Note: Don't stopPropagation() - it can interfere with dblclick detection
 			e.preventDefault()
+
+			// Cancel any active edit on a different cell before focusing
+			if (this.ctx.grid.editingCell) {
+				this.pipeline.dispatch({ type: 'cancelEdit' })
+			}
 
 			// Clear row/column/cell selections when clicking on a cell
 			if (this.ctx.grid.selectedRows.length > 0 ||

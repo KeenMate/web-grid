@@ -285,9 +285,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// DatePicker instance (for date editor) - exposed via GridContext for pipeline access
 	datepicker: DatePicker | null = null
 
-	// Context menu element (rendered to document.body)
-	private contextMenuElement: HTMLElement | null = null
-	private headerContextMenuElement: HTMLElement | null = null
+	// Context menu element (rendered to document.body) - exposed via GridContext for pipeline access
+	contextMenuElement: HTMLElement | null = null
+	headerContextMenuElement: HTMLElement | null = null
 
 	// Virtual scroll state
 	private virtualScrollStart = 0
@@ -1855,6 +1855,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							clearEditingVisual(this)
 							this.grid.cancelEdit()
 
+							// Move focus to the new cell BEFORE re-rendering so the old cell
+							// renders without the focused class
+							this.grid.setFocusedCell(rowIndex, colIndex)
+
 							// Re-render old cell to remove editor HTML
 							if (oldColIndex >= 0) {
 								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
@@ -1895,6 +1899,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							removeDropdown(this)
 							clearEditingVisual(this)
 							this.grid.cancelEdit()
+							// Move focus to the new cell BEFORE re-rendering so the old cell
+							// renders without the focused class
+							this.grid.setFocusedCell(rowIndex, colIndex)
 							// Re-render old cell AFTER cancelEdit so it renders in display mode
 							if (oldColIndex >= 0) {
 								renderCell(this, oldRowIndex, oldColIndex)
@@ -1953,6 +1960,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							removeDropdown(this)
 							clearEditingVisual(this)
 							this.grid.cancelEdit()
+							// Move focus to the new cell BEFORE re-rendering so the old cell
+							// renders without the focused class
+							this.grid.setFocusedCell(rowIndex, colIndex)
 							// Re-render old cell AFTER cancelEdit so it renders in display mode
 							if (oldColIndex >= 0) {
 								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
@@ -1989,6 +1999,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							removeDropdown(this)
 							clearEditingVisual(this)
 							this.grid.cancelEdit()
+							// Move focus to the new cell BEFORE re-rendering so the old cell
+							// renders without the focused class
+							this.grid.setFocusedCell(rowIndex, colIndex)
 							// Re-render old cell AFTER cancelEdit so it renders in display mode
 							if (oldColIndex >= 0) {
 								renderCell(this, oldEditingCell.rowIndex, oldColIndex)

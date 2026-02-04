@@ -288,6 +288,26 @@ export type RenderCellAction = {
 }
 
 // =============================================================================
+// Macro Actions (expand into primitive sub-actions)
+// =============================================================================
+
+/**
+ * Reset grid state - macro that expands into primitive cleanup actions.
+ * Each flag defaults to true (comprehensive cleanup) except focus which defaults to false.
+ */
+export type ResetStateAction = {
+	type: 'resetState'
+	/** Cancel active edit (default: true) */
+	edit?: boolean
+	/** Clear row/column/cell selections (default: true) */
+	selections?: boolean
+	/** Close dropdown, datepicker, context menu (default: true) */
+	overlays?: boolean
+	/** Clear focused cell (default: false) */
+	focus?: boolean
+}
+
+// =============================================================================
 // Compound Actions (produce child actions)
 // =============================================================================
 
@@ -366,3 +386,5 @@ export type GridAction =
 	| CompleteFillDragAction
 	// Compound actions
 	| TransitionCellAction
+	// Macro actions
+	| ResetStateAction

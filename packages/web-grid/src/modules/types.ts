@@ -30,6 +30,10 @@ export interface GridContext<T = unknown> {
 	isCommittingFromKeyboard: boolean
 	isTransitioningCells: boolean
 
+	// Context menu state (rendered to document.body)
+	contextMenuElement: HTMLElement | null
+	headerContextMenuElement: HTMLElement | null
+
 	// Datepicker state
 	datepicker: DatePicker | null
 

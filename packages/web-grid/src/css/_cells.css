@@ -75,6 +75,7 @@
   background: var(--wg-surface-1);
   outline: 2px solid var(--wg-accent-color);
   outline-offset: -2px;
+  z-index: 1;  /* Paint above neighboring cells so outline isn't hidden */
 }
 
 /* Hide the dashed hover border when editing */

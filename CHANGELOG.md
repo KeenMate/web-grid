@@ -9,14 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`resetState` macro action**: New pipeline action that expands into primitive cleanup sub-actions (`cancelEdit`, `clearSelection`, `closeContextMenu`, `closeDatePicker`, `blurCell`)
+  - Flags: `edit`, `selections`, `overlays` (default: true), `focus` (default: false) for partial cleanup
+  - Foundation for replacing 20+ scattered manual cleanup locations with a single dispatch
+- **`closeContextMenu` executor**: Pipeline executor now actually closes both cell and header context menus (was a no-op placeholder)
 - **Editor alignment**: Text and number editors now respect column alignment settings
 - **Checkbox scale variable**: `--wg-checkbox-scale` CSS variable to control checkbox size (default: 1.2)
   - `horizontalAlign` is inherited by editors (number editor no longer hardcoded to right)
   - `verticalAlign` positions the editor input at top/middle/bottom of cell
   - Note: Text inside `<input>` elements is always vertically centered by CSS spec; the editor element itself is positioned
 
+### Changed
+
+- **Context menu element refs**: `contextMenuElement` and `headerContextMenuElement` are now part of `GridContext` (previously private on `GridElement`), enabling pipeline executors to access them
+
 ### Fixed
 
+- **Focus outline persists during cell selection drag**: Focus outline on the starting cell now clears immediately when drag begins (previously persisted until mouseup). If user returns to start cell or presses Escape, focus is properly restored.
+- **Edit not cancelled when clicking another cell**: Clicking a non-editing cell while another cell was in dblclick/click edit mode now properly cancels the active edit (previously the edit state persisted because the pipeline only checked if the *clicked* cell was being edited)
+- **Focus stuck on old cell during editor transitions**: Fixed focus outline remaining on the previously-edited cell when transitioning to a new cell via toggle click, date trigger click, or display-mode dropdown click. Root cause: `renderCell` on the old cell ran before `focusedCell` was updated, so the old cell re-rendered with the focus class. Now `setFocusedCell` is called before re-rendering in all four transition paths.
+- **Editing cell outline clipped on left/right**: Fixed the blue editing outline being hidden on left and right sides. The date editor had `background: var(--wg-editor-bg)` (opaque) unlike text/number editors which use transparent backgrounds. Changed to `background: transparent` so the cell's own outline is visible. Also added `z-index: 1` to `.wg__cell--editing` to paint above neighboring cells.
+- **Date input click closes editor**: In `editTrigger: 'click'` mode, clicking inside the date input to reposition the cursor would close the datepicker and exit edit mode. Root cause: the pipeline dispatched `focusCell` which called `cell.focus()` on the `<td>`, triggering `focusout` on the input and cascading into datepicker close + edit cancel. Fix: text-like inputs (text, number, date) in the same editing cell now skip pipeline handling entirely, letting native cursor repositioning work.
 - **Number editor type-to-start**: Typing multiple characters (e.g., "1234") now captures all characters instead of only the first
   - Fixed transition executor to commit edit before re-rendering when navigating away from editing cell
   - Fixed adapter to not dispatch `startEdit` when cell is already being edited (allows native input handling)
