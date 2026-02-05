@@ -99,23 +99,26 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
  * Clear all selections
  */
 function executeClearSelection(ctx: ExecutorContext): void {
+	// Use _noRender variants to prevent requestUpdate() from triggering a full re-render
+	// which would replace DOM elements and lose focus (we handle visuals surgically below)
+
 	// Clear row selection
 	if (ctx.grid.selectedRows.length > 0) {
-		ctx.grid.clearSelection()
+		ctx.grid.clearSelection_noRender()
 		removeRowSelectionBorders()
 		updateRowSelectionVisual(ctx)
 	}
 
 	// Clear column selection
 	if (ctx.grid.selectedColumns.length > 0) {
-		ctx.grid.clearColumnSelection()
+		ctx.grid.clearColumnSelection_noRender()
 		removeColumnSelectionBorders()
 		updateColumnSelectionVisual(ctx)
 	}
 
 	// Clear cell range selection
 	if (ctx.grid.selectedCellRange) {
-		ctx.grid.clearCellSelection()
+		ctx.grid.clearCellSelection_noRender()
 		removeRangeBorder()
 		// Remove fill handle that was hidden by CSS while range border existed
 		// (without this, the old fill handle becomes visible at its stale position)

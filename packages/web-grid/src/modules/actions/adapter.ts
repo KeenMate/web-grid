@@ -428,6 +428,23 @@ export class ActionPipelineAdapter<T = unknown> {
 			return false
 		}
 
+		// Check for shift+click cell selection BEFORE 'always' mode handling
+		// In 'shift' selection mode, shift+click should select cells, not edit
+		const selectionMode = this.ctx.grid.cellSelectionMode
+		const isShiftClick = e.shiftKey
+		if (selectionMode === 'shift' && isShiftClick && isCellClick) {
+			this.pipeline.dispatch({
+				type: 'startCellSelection',
+				rowIndex: cell.rowIndex,
+				colIndex: cell.colIndex,
+				clientX: e.clientX,
+				clientY: e.clientY,
+				shiftKey: true
+			})
+			e.preventDefault()
+			return true
+		}
+
 		// For 'always' mode or when editing: use full mouse handling
 		if (isAlways || isEditing) {
 			// For text-like inputs in the same editing cell, let native behavior handle
@@ -436,6 +453,14 @@ export class ActionPipelineAdapter<T = unknown> {
 			const isTextInput = target.matches('.wg__editor--text, .wg__editor--number, .wg__date-input')
 			if (isTextInput && isEditing && isCellClick) {
 				return true
+			}
+
+			// Clear cell selection when clicking on a cell (shift+click is handled above)
+			// Set transitioning flag to prevent focusout handler from clearing focus
+			const hadSelection = isCellClick && this.ctx.grid.selectedCellRange
+			if (hadSelection) {
+				this.ctx.isTransitioningCells = true
+				this.pipeline.dispatch({ type: 'clearSelection' })
 			}
 
 			const dropdownOpen = this.ctx.dropdownOpen
@@ -453,7 +478,12 @@ export class ActionPipelineAdapter<T = unknown> {
 				isCellClick
 			})
 
-			if (actions.length === 0) return false
+			if (actions.length === 0) {
+				if (hadSelection) {
+					this.ctx.isTransitioningCells = false
+				}
+				return false
+			}
 
 			if (!isTextInput) {
 				e.preventDefault()
@@ -462,6 +492,13 @@ export class ActionPipelineAdapter<T = unknown> {
 
 			for (const action of actions) {
 				this.pipeline.dispatch(action)
+			}
+
+			// Clear transitioning flag after focus has settled
+			if (hadSelection) {
+				requestAnimationFrame(() => {
+					this.ctx.isTransitioningCells = false
+				})
 			}
 
 			return true
