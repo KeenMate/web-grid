@@ -114,6 +114,9 @@ let fillState: FillState = {
 // Store the current context for document-level handlers
 let activeContext: GridContext | null = null
 
+// Track which grid's host element owns the current fill handle
+let fillHandleOwner: HTMLElement | null = null
+
 /**
  * Check if fill drag is in progress
  */
@@ -133,10 +136,12 @@ export function isFillPending(): boolean {
  */
 export function updateFillHandle<T>(ctx: GridContext<T>): void {
 	const focusedCell = ctx.grid.focusedCell
+	const hostElement = ctx.shadow.host as HTMLElement
 
 	// Remove existing handle if no focused cell, in edit mode, or dropdown is open
+	// Only remove if this grid owns the handle (prevents one grid from removing another's)
 	if (!focusedCell || ctx.grid.editingCell || ctx.dropdownOpen) {
-		removeFillHandle()
+		removeFillHandle(hostElement)
 		return
 	}
 
@@ -145,7 +150,7 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 	// Don't show fill handle if the focused cell's column is not editable
 	const column = ctx.grid.visualColumns[colIndex]?.column
 	if (!column || !ctx.grid.isCellEditable(column)) {
-		removeFillHandle()
+		removeFillHandle(hostElement)
 		return
 	}
 
@@ -155,7 +160,7 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 	) as HTMLElement
 
 	if (!cellElement) {
-		removeFillHandle()
+		removeFillHandle(hostElement)
 		return
 	}
 
@@ -172,12 +177,21 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 	const x = cellRect.right - containerRect.left + scrollLeft - handleSize / 2
 	const y = cellRect.bottom - containerRect.top + scrollTop - handleSize / 2
 
+	// Check if existing handle is in a DIFFERENT grid's container
+	// (happens when switching between multiple grids on the same page)
+	if (fillState.handleElement && fillState.handleElement.parentElement !== container) {
+		fillState.handleElement.remove()
+		fillState.handleElement = null
+		fillHandleOwner = null
+	}
+
 	// Create handle AFTER measuring (to avoid layout interference)
 	if (!fillState.handleElement) {
 		const handle = document.createElement('div')
 		handle.className = 'wg__fill-handle'
 		container.appendChild(handle)
 		fillState.handleElement = handle
+		fillHandleOwner = hostElement
 
 		// Attach mousedown listener
 		handle.addEventListener('mousedown', (e) => handleFillStart(ctx, e))
@@ -189,11 +203,18 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 
 /**
  * Remove the fill handle from DOM
+ * @param forHost - If provided, only remove if the handle belongs to this host element.
+ *                  Used to prevent one grid from removing another grid's fill handle.
  */
-export function removeFillHandle(): void {
+export function removeFillHandle(forHost?: HTMLElement): void {
 	if (fillState.handleElement) {
+		// If forHost is specified, only remove if this grid owns the handle
+		if (forHost && fillHandleOwner && forHost !== fillHandleOwner) {
+			return
+		}
 		fillState.handleElement.remove()
 		fillState.handleElement = null
+		fillHandleOwner = null
 	}
 }
 

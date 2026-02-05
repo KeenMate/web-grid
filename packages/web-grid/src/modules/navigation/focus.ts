@@ -415,7 +415,7 @@ export function getCursorPositionFromClick(
 
 /**
  * Handle focus leaving the table
- * Uses double requestAnimationFrame to ensure DOM and focus have stabilized
+ * Defers cleanup to allow focus transitions to complete
  */
 export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void {
 	// Skip if we're transitioning between cells (editor removal triggers blur)
@@ -431,27 +431,36 @@ export function handleTableFocusOut<T>(ctx: GridContext<T>, e: FocusEvent): void
 		return
 	}
 
-	// Check if focus is still within the component
-	const activeElement = ctx.shadow.activeElement as HTMLElement
-	const activeIsInTable = activeElement && table?.contains(activeElement)
+	// Defer the check to allow focus to stabilize after cell.focus() calls
+	requestAnimationFrame(() => {
+		// Re-check transitioning flag (may have changed)
+		if (ctx.isTransitioningCells) {
+			return
+		}
 
-	// If activeElement is still in the table, don't clear focus
-	if (activeIsInTable) {
-		return
-	}
+		// Check if focus is still within the component
+		const activeElement = ctx.shadow.activeElement as HTMLElement
+		const activeIsInTable = activeElement && table?.contains(activeElement)
 
-	// Check if the web component (shadow host) still has focus
-	const host = ctx.shadow.host as HTMLElement
-	const componentHasFocus = document.activeElement === host ||
-		host.contains(document.activeElement as Node)
+		// If activeElement is still in the table, don't clear focus
+		if (activeIsInTable) {
+			return
+		}
 
-	if (componentHasFocus) {
-		return
-	}
+		// Check if the web component (shadow host) still has focus
+		const host = ctx.shadow.host as HTMLElement
+		const componentHasFocus = document.activeElement === host ||
+			host.contains(document.activeElement as Node)
 
-	// Focus truly left the component - clear focus state
-	const oldFocus = ctx.grid.focusedCell
-	ctx.grid.clearFocusedCell()
-	updateFocusVisual(ctx, oldFocus, null)
-	removeFillHandle()
+		if (componentHasFocus) {
+			return
+		}
+
+		// Focus truly left the component - clear focus state
+		const oldFocus = ctx.grid.focusedCell
+		ctx.grid.clearFocusedCell()
+		updateFocusVisual(ctx, oldFocus, null)
+		// Only remove fill handle if this grid owns it (prevents one grid from removing another's)
+		removeFillHandle(host)
+	})
 }
