@@ -59,10 +59,17 @@
         </div>
 
         <div class="card">
-            <h2>Per-Column Opt-Out</h2>
-            <p>Individual columns can disable resizing with <code>resizable: false</code>. Try resizing the "Status" column - you can't!</p>
+            <h2>Per-Column Resize Opt-Out</h2>
+            <p>Individual columns can disable resizing with <code>isResizable: false</code>. Try resizing the "Status" column - you can't!</p>
 
             <web-grid id="grid3" style="max-width: 100%; max-height: 300px;"></web-grid>
+        </div>
+
+        <div class="card">
+            <h2>Per-Column Reorder Opt-Out</h2>
+            <p>Individual columns can disable reordering with <code>isMovable: false</code>. The first two columns (ID and Name) cannot be dragged, but you can still move other columns around them.</p>
+
+            <web-grid id="gridMovable" style="max-width: 100%; max-height: 300px;"></web-grid>
         </div>
 
         <div class="card">
@@ -364,6 +371,21 @@
         grid3.isStriped = true
         grid3.isHoverable = true
         grid3.isColumnReorderAllowed = true
+
+        // Grid - Per-column reorder opt-out (isMovable)
+        const gridMovable = document.getElementById('gridMovable')
+        gridMovable.items = sampleData.slice(0, 10)
+        gridMovable.columns = [
+            { field: 'id', title: 'ID (locked)', width: '80px', isMovable: false },
+            { field: 'name', title: 'Name (locked)', width: '150px', isMovable: false },
+            { field: 'email', title: 'Email', width: '200px' },
+            { field: 'status', title: 'Status (locked)', width: '100px', isMovable: false },
+            { field: 'phone', title: 'Phone', width: '120px' }
+        ]
+        gridMovable.isRowNumbersVisible = true
+        gridMovable.isStriped = true
+        gridMovable.isHoverable = true
+        gridMovable.isColumnReorderAllowed = true
 
         // Grid 4 - Frozen panes + resizable columns
         const wideData = Array.from({ length: 50 }, (_, i) => ({

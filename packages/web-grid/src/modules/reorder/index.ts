@@ -209,6 +209,25 @@ function handleDocumentMouseMove(e: MouseEvent): void {
 }
 
 /**
+ * Find the minimum valid drop index (respects isMovable: false columns)
+ * Dropping before a non-movable column would shift it, so we must drop after all non-movable columns.
+ */
+function getMinDropIndex<T>(ctx: GridContext<T>): number {
+	const visualCols = ctx.grid.visualColumns
+	const frozenCount = ctx.grid.totalFrozenColumns
+	const nonFrozenCols = visualCols.slice(frozenCount)
+
+	// Find the highest index of any non-movable column
+	let minDropIndex = 0
+	for (let i = 0; i < nonFrozenCols.length; i++) {
+		if (nonFrozenCols[i].column.isMovable === false) {
+			minDropIndex = i + 1  // Must drop AFTER this column
+		}
+	}
+	return minDropIndex
+}
+
+/**
  * Find the drop index based on cursor X position
  * Returns index relative to non-frozen columns (0 = first position after frozen columns)
  */
@@ -219,15 +238,18 @@ function findDropIndex<T>(ctx: GridContext<T>, mouseX: number): number {
 
 	if (nonFrozenCols.length === 0) return 0
 
+	// Get minimum valid drop position (after all non-movable columns)
+	const minDropIndex = getMinDropIndex(ctx)
+
 	// Get the first non-frozen column to check if mouse is in frozen area
 	const firstNonFrozenField = String(nonFrozenCols[0].column.field)
 	const firstNonFrozenHeader = ctx.shadow.querySelector(`th[data-field="${firstNonFrozenField}"]`) as HTMLElement
 
-	// If mouse is to the left of the first non-frozen column, clamp to position 0
+	// If mouse is to the left of the first non-frozen column, clamp to minimum valid position
 	if (firstNonFrozenHeader) {
 		const firstRect = firstNonFrozenHeader.getBoundingClientRect()
 		if (mouseX < firstRect.left) {
-			return 0  // Drop at first non-frozen position (after all frozen columns)
+			return minDropIndex
 		}
 	}
 
@@ -239,7 +261,8 @@ function findDropIndex<T>(ctx: GridContext<T>, mouseX: number): number {
 			const rect = header.getBoundingClientRect()
 			const midpoint = rect.left + rect.width / 2
 			if (mouseX < midpoint) {
-				return i
+				// Clamp to minimum valid drop position
+				return Math.max(i, minDropIndex)
 			}
 		}
 	}
