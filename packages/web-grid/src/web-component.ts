@@ -2012,7 +2012,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 
 			// Column selection drag: when reorder is disabled, drag to select columns
-			if (!this.grid.isColumnReorderAllowed) {
+			// Only on left-click (button 0), not right-click (button 2) which opens context menu
+			if (!this.grid.isColumnReorderAllowed && (e as MouseEvent).button === 0) {
 				const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
 				if (header && !target.closest('.wg__resize-handle') && !target.closest('.wg__sort-indicator')) {
 					const field = header.dataset.field
@@ -2026,8 +2027,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 
 			// Row selection: handle mousedown on row number cells
+			// Only on left-click (button 0), not right-click (button 2)
 			const rowNumberCell = target.closest('.wg__row-number[data-row-number]') as HTMLElement
-			if (rowNumberCell) {
+			if (rowNumberCell && (e as MouseEvent).button === 0) {
 				const rowIndex = parseInt(rowNumberCell.dataset.rowNumber || '-1', 10)
 				if (rowIndex >= 0) {
 					handleRowNumberMouseDown(this, rowIndex, e as MouseEvent)
@@ -2035,8 +2037,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 
 			// Select all: handle click on row number header (#)
+			// Only on left-click (button 0), not right-click (button 2)
 			const rowNumberHeader = target.closest('.wg__row-number-header') as HTMLElement
-			if (rowNumberHeader) {
+			if (rowNumberHeader && (e as MouseEvent).button === 0) {
 				e.preventDefault()
 				this.grid.selectAll()
 				// Update the range border visual

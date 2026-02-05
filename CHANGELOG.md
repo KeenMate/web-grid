@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`isMovable` column property**: Per-column opt-out from column reordering
+  - Set `isMovable: false` on a column to prevent it from being dragged
+  - Non-movable columns also block drops that would displace them (other columns can only be dropped after all non-movable columns)
 - **`resetState` macro action**: New pipeline action that expands into primitive cleanup sub-actions (`cancelEdit`, `clearSelection`, `closeContextMenu`, `closeDatePicker`, `blurCell`)
   - Flags: `edit`, `selections`, `overlays` (default: true), `focus` (default: false) for partial cleanup
   - Foundation for replacing 20+ scattered manual cleanup locations with a single dispatch
@@ -89,6 +92,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Display mode now uses proper fallback chain: `getDisplayCallback` → `displayMember` → `label` → raw value
   - Previously display mode showed raw value ("USA") while edit mode showed label ("United States")
   - Escape key now compares against display value for consistent restore behavior
+- **Fill handle disappearing on multi-grid pages**: Fixed fill handle vanishing when clicking between multiple grids
+  - Root cause: Fill handle is module-level singleton; one grid's cleanup handlers removed another grid's handle
+  - Fix: Track ownership of fill handle; only the owning grid can remove it
+- **Right-click triggering selection on headers/row numbers**: Right-clicking column headers or row numbers no longer triggers selection (regression from pipeline refactor)
+- **Frozen column headers lacking visual distinction**: Frozen column headers now have a subtle accent color tint to differentiate them from regular columns
+- **`isResizable` example typo**: Fixed example using wrong property name (`resizable` → `isResizable`)
 
 ---
 
