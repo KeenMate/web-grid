@@ -625,9 +625,13 @@ export class ActionPipelineAdapter<T = unknown> {
 			cursorPosition: cursorPosition ?? undefined
 		})
 
-		// Open dropdown/datepicker for those editor types
+		// Open dropdown/datepicker for those editor types (if showOnFocus !== false)
 		if (isDropdown) {
-			this.pipeline.dispatch({ type: 'openDropdown' })
+			const column = this.ctx.grid.columns[cell.colIndex]
+			const opts = column?.editorOptions as { showOnFocus?: boolean } | undefined
+			if (opts?.showOnFocus !== false) {
+				this.pipeline.dispatch({ type: 'openDropdown' })
+			}
 		} else if (isDate) {
 			this.pipeline.dispatch({ type: 'openDatePicker' })
 		}
@@ -668,9 +672,13 @@ export class ActionPipelineAdapter<T = unknown> {
 			cursorPosition: cursorPosition ?? undefined
 		})
 
-		// Open dropdown/datepicker for those editor types
+		// Open dropdown/datepicker for those editor types (if showOnFocus !== false)
 		if (isDropdown) {
-			this.pipeline.dispatch({ type: 'openDropdown' })
+			const column = this.ctx.grid.columns[cell.colIndex]
+			const opts = column?.editorOptions as { showOnFocus?: boolean } | undefined
+			if (opts?.showOnFocus !== false) {
+				this.pipeline.dispatch({ type: 'openDropdown' })
+			}
 		} else if (isDate) {
 			this.pipeline.dispatch({ type: 'openDatePicker' })
 		}

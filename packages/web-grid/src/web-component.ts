@@ -1633,17 +1633,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					}
 				}
 			}
-			if (target.matches('.wg__select-trigger, .wg__combobox-input, .wg__autocomplete-input')) {
-				if (!this.justSelected && !this.dropdownOpen) {
-					const field = target.dataset.field || ''
-					const column = this.grid.columns.find(c => c.field === field)
-					const opts = column?.editorOptions || {}
-					const hasInitialQuery = this.grid.editingCell?.initialSearchQuery !== undefined
-					if (hasInitialQuery || (opts as { showOnFocus?: boolean }).showOnFocus !== false) {
-						openDropdownForCurrentEditor(this)
-					}
-				}
-			}
+			// Dropdown opening on focus - handled by pipeline (adapter dispatches openDropdown after startEdit)
+			// Legacy code removed: openDropdownForCurrentEditor was called here for .wg__select-trigger, .wg__combobox-input, .wg__autocomplete-input
 		}, true)
 
 		// Keydown events
@@ -1931,53 +1922,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 			}
 
-			// Toggle click
-			if (target.matches('.wg__combobox-toggle, .wg__select-toggle')) {
-				e.preventDefault()
-				e.stopPropagation()
-
-				const displayContainer = target.closest('.wg__cell-dropdown-display') as HTMLElement
-				const editorContainer = target.closest('.wg__editor--select, .wg__editor--combobox, .wg__editor--autocomplete') as HTMLElement
-
-				if (editorContainer) {
-					// Set flag if closing to prevent blur from canceling edit
-					if (this.dropdownOpen) {
-						this.isClosingViaToggle = true
-					}
-					toggleDropdown(this)
-				} else if (displayContainer) {
-					const rowIndex = parseInt(displayContainer.dataset.row || '0', 10)
-					const field = displayContainer.dataset.field || ''
-					const colIndex = this.grid.columns.findIndex(c => String(c.field) === field)
-					if (colIndex >= 0) {
-						this.isTransitioningCells = true
-						// Save old editing cell info before clearing
-						const oldEditingCell = this.grid.editingCell
-						const oldColIndex = oldEditingCell
-							? this.grid.columns.findIndex(c => String(c.field) === oldEditingCell.field)
-							: -1
-						if (oldEditingCell) {
-							removeDropdown(this)
-							clearEditingVisual(this)
-							this.grid.cancelEdit()
-							// Move focus to the new cell BEFORE re-rendering so the old cell
-							// renders without the focused class
-							this.grid.setFocusedCell(rowIndex, colIndex)
-							// Re-render old cell AFTER cancelEdit so it renders in display mode
-							if (oldColIndex >= 0) {
-								renderCell(this, oldEditingCell.rowIndex, oldColIndex)
-							}
-						}
-						tryStartEdit(this, rowIndex, colIndex)
-						requestAnimationFrame(() => {
-							this.isTransitioningCells = false
-							if (!this.dropdownOpen) {
-								openDropdownForCurrentEditor(this)
-							}
-						})
-					}
-				}
-			}
+			// Toggle click - handled by pipelineAdapter.tryHandleMouseDown() above
+			// (dispatches focusCell → startEdit → openDropdown via pipeline)
 
 			// Display mode dropdown click
 			if (target.matches('.wg__cell-dropdown-display')) {
@@ -3231,7 +3177,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Open the date picker for a date input
 	 */
 	private openDatePicker(input: HTMLInputElement, anchor: HTMLElement): void {
-		console.log('[LEGACY] openDatePicker')
+		console.trace('[LEGACY] openDatePicker')
 		// Close any existing datepicker silently (don't trigger onClose - we're opening a new one)
 		if (this.datepicker) {
 			this.datepicker.close(true)
@@ -3287,7 +3233,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Handle date selection from the date picker
 	 */
 	private handleDatePickerSelect(input: HTMLInputElement, date: Date, direction?: 'down' | 'next'): void {
-		console.log('[LEGACY] handleDatePickerSelect')
+		console.trace('[LEGACY] handleDatePickerSelect')
 		const dateFormat = input.dataset.dateFormat || 'YYYY-MM-DD'
 		const formatInfo = parseFormat(dateFormat)
 
@@ -3314,7 +3260,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * @param commitEmptyRow - If true and editing empty row, add it to items (Enter key behavior)
 	 */
 	private async commitDateEditor(input: HTMLInputElement, commitEmptyRow: boolean = false): Promise<void> {
-		console.log('[LEGACY] commitDateEditor')
+		console.trace('[LEGACY] commitDateEditor')
 		if (!this.grid.editingCell) return
 
 		const rowIndex = parseInt(input.dataset.row || '0', 10)
@@ -3472,7 +3418,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Open custom editor by calling the cellEditCallback
 	 */
 	private openCustomEditor(rowIndex: number, colIndex: number): void {
-		console.log('[LEGACY] openCustomEditor', { rowIndex, colIndex })
+		console.trace('[LEGACY] openCustomEditor', { rowIndex, colIndex })
 		const column = this.grid.columns[colIndex]
 		if (!column || column.editor !== 'custom' || !column.cellEditCallback) {
 			return
