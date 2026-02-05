@@ -45,6 +45,7 @@ function executeSelectRow(ctx: ExecutorContext, action: SelectRowAction): void {
 		ctx.grid.clearCellSelection()
 		removeRangeBorder()
 		removeFillHandle()
+		updateCellRangeVisual(ctx)
 	}
 
 	if (extendSelection && ctx.grid.selectedRows.length > 0) {
@@ -76,6 +77,7 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
 		ctx.grid.clearCellSelection()
 		removeRangeBorder()
 		removeFillHandle()
+		updateCellRangeVisual(ctx)
 	}
 
 	if (extendSelection && ctx.grid.selectedColumns.length > 0) {

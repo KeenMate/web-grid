@@ -64,9 +64,11 @@
    FOCUSED/SELECTED ROW WITH FROZEN COLUMNS
    ========================================================================== */
 
-/* When a row is focused (master/detail) */
-.wg__row--focused .wg__cell--frozen {
-  background: var(--wg-row-focus-bg);
+/* When a row is focused (master/detail)
+   Uses !important to beat striped (0,3,2) and hover (0,3,2) rules above.
+   Consistent with selected/column-selected/in-range rules below. */
+.wg__row--focused > .wg__cell--frozen {
+  background: var(--wg-row-focus-bg) !important;
 }
 
 /* Row selection on frozen cells */

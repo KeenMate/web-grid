@@ -142,6 +142,13 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 
 	const { rowIndex, colIndex } = focusedCell
 
+	// Don't show fill handle if the focused cell's column is not editable
+	const column = ctx.grid.visualColumns[colIndex]?.column
+	if (!column || !ctx.grid.isCellEditable(column)) {
+		removeFillHandle()
+		return
+	}
+
 	// Find the focused cell element
 	const cellElement = ctx.shadow.querySelector(
 		`[data-row="${rowIndex}"][data-col="${colIndex}"]`

@@ -206,10 +206,18 @@ function startActualDrag<T>(ctx: GridContext<T>): void {
 	const container = ctx.shadow.querySelector('.wg')
 	container?.classList.add('wg--selecting-cells')
 
-	// Clear focused cell so focus outline disappears immediately when drag begins
+	// Clear focused cell and row so focus outlines disappear immediately when drag begins
 	const oldFocus = ctx.grid.focusedCell
 	ctx.grid.clearFocusedCell()
 	updateFocusVisual(ctx, oldFocus, null)
+
+	// Clear focused row visual (tracked separately from cell focus)
+	const focusedRowIndex = ctx.grid.focusedRowIndex
+	if (focusedRowIndex !== null) {
+		const row = ctx.shadow.querySelector(`tr[data-row-index="${focusedRowIndex}"]`)
+		row?.classList.remove('wg__row--focused')
+		ctx.grid.clearRowFocus()
+	}
 
 	// Apply cell highlighting immediately
 	updateCellHighlighting(ctx)

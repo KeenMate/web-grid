@@ -321,7 +321,7 @@
   /* ==========================================================================
      ROW FOCUS (master/detail patterns)
      ========================================================================== */
-  --wg-row-focus-bg: var(--wg-hover-bg);
+  --wg-row-focus-bg: color-mix(in srgb, var(--wg-accent-color) 10%, transparent);
   --wg-row-focus-row-number-bg: color-mix(in srgb, var(--wg-accent-color) 30%, transparent);
 
   /* ==========================================================================
