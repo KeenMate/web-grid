@@ -207,6 +207,8 @@ export type Column<T> = {
 	isFrozen?: boolean
 	// Resizable - allow column width to be changed by dragging (default: true)
 	isResizable?: boolean
+	// Movable - allow column to be reordered by dragging (default: true)
+	isMovable?: boolean
 	// Fill direction - override grid-level fillDirection for this column
 	fillDirection?: FillDirection
 	// Hidden - column is not rendered but kept in columns array for visibility toggling

@@ -87,6 +87,10 @@ export function handleReorderStart<T>(ctx: GridContext<T>, e: MouseEvent, field:
 	const visualIndex = visualCols.findIndex(vc => String(vc.column.field) === field)
 	if (visualIndex < frozenCount) return  // This is a frozen column
 
+	// Check if column has isMovable: false
+	const column = visualCols[visualIndex]?.column
+	if (column?.isMovable === false) return
+
 	// Get non-frozen column index
 	const nonFrozenIndex = visualIndex - frozenCount
 
