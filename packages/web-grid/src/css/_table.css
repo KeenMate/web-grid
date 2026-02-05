@@ -90,7 +90,8 @@ th.wg__filler {
   top: 0;
   z-index: 1;
   background: var(--wg-header-bg);
-  border-bottom: var(--wg-header-border) !important;
+  /* Use box-shadow for bottom border - real borders disappear with border-collapse when content scrolls underneath */
+  box-shadow: inset 0 -2px 0 var(--wg-border-color) !important;
 }
 
 /* Filler body cells are transparent */
@@ -148,7 +149,8 @@ td.wg__filler {
 
 thead .wg__actions-column {
   background: var(--wg-header-bg);
-  border-bottom: var(--wg-header-border);
+  /* Use box-shadow for bottom border - real borders disappear with border-collapse when content scrolls underneath */
+  box-shadow: inset 0 -2px 0 var(--wg-border-color);
 }
 
 .wg__filter-row .wg__actions-column {

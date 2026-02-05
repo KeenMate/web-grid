@@ -13,18 +13,19 @@
   font-weight: var(--wg-header-font-weight);
   padding: var(--wg-header-padding);
   height: var(--wg-header-min-height);  /* In table layout, height acts as min-height */
-  border-bottom: var(--wg-header-border);
-  /* Use box-shadow instead of border-right to avoid flicker with sticky + border-collapse */
-  box-shadow: inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
+  /* Use box-shadow instead of border for sticky headers - real borders disappear with border-collapse when content scrolls underneath */
+  box-shadow:
+    inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color),
+    inset 0 -2px 0 var(--wg-border-color);
   box-sizing: border-box;  /* Include padding in width calculation */
   /* text-align set by inline style from column.headerAlign or column.align */
   user-select: none;
   overflow: hidden;  /* Required for text-overflow to work in table cells */
 }
 
-/* Remove separator from last header */
+/* Remove right separator from last header, but keep bottom border */
 .wg__header:last-child {
-  box-shadow: none;
+  box-shadow: inset 0 -2px 0 var(--wg-border-color);
 }
 
 .wg__header--sortable {

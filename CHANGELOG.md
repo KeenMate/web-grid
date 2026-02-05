@@ -98,6 +98,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Right-click triggering selection on headers/row numbers**: Right-clicking column headers or row numbers no longer triggers selection (regression from pipeline refactor)
 - **Frozen column headers lacking visual distinction**: Frozen column headers now have a subtle accent color tint to differentiate them from regular columns
 - **`isResizable` example typo**: Fixed example using wrong property name (`resizable` → `isResizable`)
+- **Sticky header bottom border disappearing**: Fixed header bottom border becoming invisible when scrolling with sticky headers
+  - Root cause: With `border-collapse: collapse`, real borders get overlapped when content scrolls underneath
+  - Fix: Changed to `box-shadow` which always paints on top regardless of scroll position
 
 ---
 
