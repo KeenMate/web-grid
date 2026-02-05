@@ -52,9 +52,14 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): void {
 	// Focus the appropriate element
 	if (isAlwaysEditMode) {
 		// In 'always' mode, focus the editor input inside the cell
-		const editor = cell.querySelector(
-			'.wg__editor, .wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger'
+		// First try specific focusable inputs (combobox/autocomplete/date have wrapper divs)
+		// Then fall back to .wg__editor (for text/number inputs where the input IS the .wg__editor)
+		let editor = cell.querySelector(
+			'.wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger'
 		) as HTMLElement
+		if (!editor) {
+			editor = cell.querySelector('.wg__editor') as HTMLElement
+		}
 
 		if (editor) {
 			editor.focus({ preventScroll: true })

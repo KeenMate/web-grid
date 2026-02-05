@@ -194,6 +194,14 @@ export class ActionPipelineAdapter<T = unknown> {
 			// While editing: handle navigation/commit/cancel keys
 			if (!isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)) return false
 
+			// For text inputs (not dropdown editors), let horizontal arrows pass through for cursor movement
+			// Exception: if dropdown is open, capture arrows for option navigation
+			const isTextEditor = !isDropdown && !isCheckbox && !isDate
+			const isHorizontalArrow = e.key === 'ArrowLeft' || e.key === 'ArrowRight'
+			if (isTextEditor && isHorizontalArrow && !dropdownOpen) {
+				return false  // Let browser handle cursor movement
+			}
+
 			const action = mapKeyDownToAction(e, {
 				currentCell: cell,
 				dropdownOpen,

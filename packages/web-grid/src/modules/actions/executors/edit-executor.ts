@@ -21,7 +21,7 @@ export const editExecutor: ActionExecutor = {
 				executeStartEdit(ctx, action)
 				break
 			case 'commitEdit':
-				executeCommitEdit(ctx, action.commitEmptyRow)
+				executeCommitEdit(ctx, action.commitEmptyRow, action.target)
 				break
 			case 'cancelEdit':
 				executeCancelEdit(ctx)
@@ -49,13 +49,35 @@ function executeStartEdit(ctx: ExecutorContext, action: StartEditAction): void {
 /**
  * Commit the current editor and optionally navigate
  */
-async function executeCommitEdit(ctx: ExecutorContext, commitEmptyRow?: boolean): Promise<void> {
+async function executeCommitEdit(
+	ctx: ExecutorContext,
+	commitEmptyRow?: boolean,
+	target?: { rowIndex: number; colIndex: number }
+): Promise<void> {
 	const editingCell = ctx.grid.editingCell
-	if (!editingCell) return
 
-	const { rowIndex, field } = editingCell
-	const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
-	if (colIndex < 0) return
+	// Use target coordinates if provided (for 'always' edit mode), otherwise use editingCell
+	let rowIndex: number
+	let colIndex: number
+	let field: string
+
+	if (target) {
+		// 'always' edit mode - coordinates provided directly
+		rowIndex = target.rowIndex
+		colIndex = target.colIndex
+		const column = ctx.grid.columns[colIndex]
+		if (!column) return
+		field = String(column.field)
+	} else if (editingCell) {
+		// Normal edit mode - use tracked editingCell
+		rowIndex = editingCell.rowIndex
+		field = editingCell.field
+		colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
+		if (colIndex < 0) return
+	} else {
+		// No target and no editingCell - nothing to commit
+		return
+	}
 
 	// Find the editor element
 	const cell = ctx.shadow.querySelector(
@@ -63,9 +85,14 @@ async function executeCommitEdit(ctx: ExecutorContext, commitEmptyRow?: boolean)
 	) as HTMLElement
 	if (!cell) return
 
-	const editor = cell.querySelector(
-		'.wg__editor, .wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger'
+	// First try specific focusable inputs (combobox/autocomplete/date have wrapper divs)
+	// Then fall back to .wg__editor (for text/number inputs where the input IS the .wg__editor)
+	let editor = cell.querySelector(
+		'.wg__combobox-input, .wg__autocomplete-input, .wg__date-input, .wg__select-trigger'
 	) as HTMLInputElement | HTMLSelectElement
+	if (!editor) {
+		editor = cell.querySelector('.wg__editor') as HTMLInputElement | HTMLSelectElement
+	}
 	if (!editor) return
 
 	// Get the value based on editor type

@@ -17,7 +17,14 @@ export function handleComboboxInput<T>(ctx: GridContext<T>, e: Event): void {
 	ctx.filterText = input.value
 	ctx.isUserFiltering = true
 
-	const column = ctx.getCurrentEditingColumn()
+	// Try editingCell first, then fall back to input's data-field attribute (for 'always' mode)
+	let column = ctx.getCurrentEditingColumn()
+	if (!column) {
+		const field = input.dataset.field
+		if (field) {
+			column = ctx.grid.columns.find(c => String(c.field) === field) || null
+		}
+	}
 	if (!column) return
 
 	const opts = column.editorOptions || {}
@@ -54,7 +61,14 @@ export function handleAutocompleteInput<T>(ctx: GridContext<T>, e: Event): void 
 	const input = e.target as HTMLInputElement
 	ctx.filterText = input.value
 
-	const column = ctx.getCurrentEditingColumn()
+	// Try editingCell first, then fall back to input's data-field attribute (for 'always' mode)
+	let column = ctx.getCurrentEditingColumn()
+	if (!column) {
+		const field = input.dataset.field
+		if (field) {
+			column = ctx.grid.columns.find(c => String(c.field) === field) || null
+		}
+	}
 	if (!column) return
 
 	const opts = column.editorOptions || {}

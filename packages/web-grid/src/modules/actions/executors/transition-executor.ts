@@ -32,12 +32,20 @@ function executeTransition(ctx: ExecutorContext, action: TransitionCellAction): 
 		editingCell.rowIndex === from.rowIndex &&
 		ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === from.colIndex
 
+	// Check if the 'from' cell is in 'always' edit mode
+	const fromColumn = ctx.grid.columns[from.colIndex]
+	const effectiveTrigger = fromColumn?.editTrigger ?? ctx.grid.editTrigger
+	const isAlwaysEditMode = effectiveTrigger === 'always'
+
 	// If moving to a different cell
 	if (from.rowIndex !== to.rowIndex || from.colIndex !== to.colIndex) {
-		// If the old cell was being edited, commit the edit first
+		// If the old cell was being edited OR is in 'always' edit mode, commit first
 		// This saves the value from the DOM input before re-rendering destroys it
 		if (isFromEditing) {
 			childActions.push({ type: 'commitEdit' })
+		} else if (isAlwaysEditMode) {
+			// In 'always' mode, editingCell isn't tracked, so pass coordinates explicitly
+			childActions.push({ type: 'commitEdit', target: from })
 		} else {
 			// Just re-render the old one to remove focus visual
 			const renderOld: RenderCellAction = {

@@ -65,6 +65,8 @@ export type CommitEditAction = {
 	type: 'commitEdit'
 	/** Commit empty row if applicable */
 	commitEmptyRow?: boolean
+	/** Target cell (for 'always' edit mode where editingCell isn't tracked) */
+	target?: CellCoordinates
 }
 
 /**
