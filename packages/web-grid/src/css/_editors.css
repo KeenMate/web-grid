@@ -31,9 +31,9 @@
   text-align: inherit;
 }
 
-/* Number Editor - inherits text-align from cell (column.horizontalAlign) */
+/* Number Editor - right-align by default (can be overridden via column.horizontalAlign) */
 .wg__editor--number {
-  text-align: inherit;
+  text-align: right;
 }
 
 /* Vertical alignment for text/number editors */

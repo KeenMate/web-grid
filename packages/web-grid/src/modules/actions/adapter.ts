@@ -68,6 +68,8 @@ export class ActionPipelineAdapter<T = unknown> {
 	 * Check if a cell is in 'always' editTrigger mode
 	 */
 	private isAlwaysMode(colIndex: number): boolean {
+		// Not "always" mode if grid isn't editable
+		if (!this.ctx.grid.isEditable) return false
 		return this.getEditTrigger(colIndex) === 'always'
 	}
 
@@ -163,7 +165,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		}
 
 		const editTrigger = this.getEditTrigger(cell.colIndex)
-		const isAlways = editTrigger === 'always'
+		const isAlways = this.isAlwaysMode(cell.colIndex)
 		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)
 		const dropdownOpen = this.ctx.dropdownOpen
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
@@ -419,8 +421,7 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		if (!cell) return false
 
-		const editTrigger = this.getEditTrigger(cell.colIndex)
-		const isAlways = editTrigger === 'always'
+		const isAlways = this.isAlwaysMode(cell.colIndex)
 		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)
 
 		// Handle toggle clicks, date trigger clicks, checkbox clicks, and cell clicks
@@ -451,7 +452,17 @@ export class ActionPipelineAdapter<T = unknown> {
 			// cursor repositioning. Don't dispatch focusCell (which would call cell.focus()
 			// and trigger focusout on the input — closing the datepicker for date editors).
 			const isTextInput = target.matches('.wg__editor--text, .wg__editor--number, .wg__date-input')
-			if (isTextInput && isEditing && isCellClick) {
+			// Also treat combobox/autocomplete inputs as text inputs for cursor repositioning
+			const isComboboxInput = target.matches('.wg__combobox-input, .wg__autocomplete-input')
+
+			// Check if clicking on already-focused cell (for cursor repositioning)
+			const currentFocus = this.ctx.grid.focusedCell
+			const isAlreadyFocused = currentFocus &&
+				currentFocus.rowIndex === cell.rowIndex &&
+				currentFocus.colIndex === cell.colIndex
+
+			// Let native handle cursor repositioning for text/combobox inputs on already-focused cells
+			if ((isTextInput || isComboboxInput) && isAlreadyFocused && isCellClick) {
 				return true
 			}
 

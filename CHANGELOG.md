@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`closeContextMenu` executor**: Pipeline executor now actually closes both cell and header context menus (was a no-op placeholder)
 - **Editor alignment**: Text and number editors now respect column alignment settings
 - **Checkbox scale variable**: `--wg-checkbox-scale` CSS variable to control checkbox size (default: 1.2)
+- **Configuration warning**: Console warning when `editTrigger: 'always'` is used with `isEditable: false` (unsupported combination)
   - `horizontalAlign` is inherited by editors (number editor no longer hardcoded to right)
   - `verticalAlign` positions the editor input at top/middle/bottom of cell
   - Note: Text inside `<input>` elements is always vertically centered by CSS spec; the editor element itself is positioned
@@ -28,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Read-only mode with `editTrigger: 'always'` broken**: Switching from input-matrix mode to read-only mode caused broken state (cell selection didn't work, grid unresponsive). Root cause: `isAlwaysMode()` didn't check `isEditable`, so adapter entered "always" code path without editors. Fix: `isAlwaysMode()` now returns `false` when grid is not editable.
+- **Combobox text selection in always mode**: First click on combobox now selects all text (enables quick type-to-filter workflow). Second click on already-focused combobox positions cursor for precise editing.
+- **Number editor left-aligned**: Number inputs now default to right-align instead of inheriting (which defaulted to left).
 - **Focus outline persists during cell selection drag**: Focus outline on the starting cell now clears immediately when drag begins (previously persisted until mouseup). If user returns to start cell or presses Escape, focus is properly restored.
 - **Edit not cancelled when clicking another cell**: Clicking a non-editing cell while another cell was in dblclick/click edit mode now properly cancels the active edit (previously the edit state persisted because the pipeline only checked if the *clicked* cell was being edited)
 - **Focus stuck on old cell during editor transitions**: Fixed focus outline remaining on the previously-edited cell when transitioning to a new cell via toggle click, date trigger click, or display-mode dropdown click. Root cause: `renderCell` on the old cell ran before `focusedCell` was updated, so the old cell re-rendered with the focus class. Now `setFocusedCell` is called before re-rendering in all four transition paths.

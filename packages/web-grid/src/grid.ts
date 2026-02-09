@@ -345,6 +345,7 @@ export class WebGrid<T = unknown> {
 	get isEditable(): boolean { return this._isEditable }
 	set isEditable(value: boolean) {
 		this._isEditable = value
+		this.checkEditTriggerConflicts()
 		this.requestUpdate()
 	}
 
@@ -352,6 +353,7 @@ export class WebGrid<T = unknown> {
 	set editTrigger(value: EditTrigger) {
 		this._editTrigger = value
 		this.checkSelectionConflicts()
+		this.checkEditTriggerConflicts()
 		this.requestUpdate()
 	}
 
@@ -364,6 +366,7 @@ export class WebGrid<T = unknown> {
 	set mode(value: GridMode) {
 		this._mode = value
 		this.applyModeDefaults()
+		this.checkEditTriggerConflicts()
 		this.requestUpdate()
 	}
 
@@ -1627,6 +1630,20 @@ export class WebGrid<T = unknown> {
 				'WebGrid: cellSelectionMode="click" conflicts with editTrigger="click". ' +
 				'Cell range selection takes priority. Use Shift+click to enter edit mode, ' +
 				'or change to cellSelectionMode="shift" to avoid confusion.'
+			)
+		}
+	}
+
+	/**
+	 * Check for editTrigger conflicts in read-only mode
+	 */
+	protected checkEditTriggerConflicts(): void {
+		if (!this._isEditable && this._editTrigger === 'always') {
+			console.warn(
+				'%cWebGrid: editTrigger="always" is not supported in read-only mode (isEditable=false).\n' +
+				'Supported editTrigger values in read-only mode: "navigate", "click", "dblclick".\n' +
+				'The grid may behave unexpectedly.',
+				'font-size: 14px; font-weight: bold;'
 			)
 		}
 	}

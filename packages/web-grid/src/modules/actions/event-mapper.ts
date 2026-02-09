@@ -253,10 +253,13 @@ export function mapMouseDownToActions(
 	}
 
 	// Always focus the clicked cell first
+	// For dropdown editors, select text on cell click to enable quick type-to-filter
+	const { isDropdownEditor } = context
+	const selectText = !isToggleClick && (!isCellClick || isDropdownEditor)
 	actions.push({
 		type: 'focusCell',
 		target: cell,
-		selectText: !isToggleClick && !isCellClick  // Select text on editor focus, not on toggle/cell click
+		selectText
 	})
 
 	// Toggle click → start edit (if not already editing) and toggle dropdown
