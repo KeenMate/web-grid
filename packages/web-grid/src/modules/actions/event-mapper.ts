@@ -84,12 +84,22 @@ export function mapKeyDownToAction(
 		return { type: 'escapeEdit', phase: 'edit' } as GridAction
 	}
 
-	// Checkbox editor - Space toggles checkbox
-	if (context.isCheckboxEditor && e.key === ' ') {
-		return {
-			type: 'toggleCheckbox',
-			target: currentCell
+	// Checkbox editor handling
+	if (context.isCheckboxEditor) {
+		// Space toggles checkbox (stays in edit mode for more toggles)
+		if (e.key === ' ') {
+			return {
+				type: 'toggleCheckbox',
+				target: currentCell
+			}
 		}
+		// Block arrow keys while in checkbox edit mode (like other editors)
+		// Arrow keys are not used for editing checkboxes, so consume them with noop
+		if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+			return { type: 'noop' }
+		}
+		// Enter commits the current value and moves down (standard grid behavior)
+		// Tab is handled by standard navigation below
 	}
 
 	// Dropdown editor without open dropdown
@@ -250,6 +260,11 @@ export function mapMouseDownToActions(
 		actions.push({ type: 'startEdit', target: cell })
 		actions.push({ type: 'toggleDatePicker' })
 		return actions
+	}
+
+	// Close any open dropdown before focusing a different cell
+	if (dropdownOpen && !isToggleClick) {
+		actions.push({ type: 'closeDropdown' })
 	}
 
 	// Always focus the clicked cell first

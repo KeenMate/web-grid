@@ -419,6 +419,32 @@ export function getCursorPositionFromClick(
 }
 
 /**
+ * Centralized cleanup of edit/dropdown/focus state.
+ * Call this from any focus-changing path that bypasses the action pipeline
+ * (e.g. column selection, row selection) to ensure consistent cleanup.
+ */
+export function cleanupEditState<T>(ctx: GridContext<T>): void {
+	if (ctx.dropdownOpen) {
+		removeDropdown(ctx)
+	}
+	if (ctx.grid.editingCell) {
+		const editingCell = ctx.grid.editingCell
+		const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field)
+		clearEditingVisual(ctx)
+		ctx.grid.cancelEdit()
+		if (colIndex >= 0) {
+			renderCell(ctx, editingCell.rowIndex, colIndex)
+		}
+	}
+	if (ctx.grid.focusedCell) {
+		const oldFocus = ctx.grid.focusedCell
+		ctx.grid.clearFocusedCell()
+		updateFocusVisual(ctx, oldFocus, null)
+		removeFillHandle(ctx.shadow.host as HTMLElement)
+	}
+}
+
+/**
  * Handle focus leaving the table
  * Defers cleanup to allow focus transitions to complete
  */

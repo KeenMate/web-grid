@@ -27,7 +27,7 @@ export const focusExecutor: ActionExecutor = {
 /**
  * Execute focusCell action
  */
-function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): void {
+function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAction[] | void {
 	const { rowIndex, colIndex } = action.target
 	const column = ctx.grid.columns[colIndex]
 	if (!column) return
@@ -70,6 +70,10 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): void {
 		}
 	} else {
 		// Default: focus the cell itself
+		// Ensure cell is focusable (cells in click/dblclick mode don't have tabindex from rendering)
+		if (!cell.hasAttribute('tabindex')) {
+			cell.setAttribute('tabindex', '-1')
+		}
 		cell.focus({ preventScroll: true })
 	}
 
@@ -78,6 +82,14 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): void {
 
 	// Update fill handle position for the newly focused cell
 	updateFillHandle(ctx)
+
+	// In 'always' mode, auto-open dropdown if shouldShowDropdownOnFocus is true
+	if (isAlwaysEditMode && ctx.grid.shouldShowDropdownOnFocus && !ctx.justSelected) {
+		const editorType = column.editor
+		if (editorType === 'select' || editorType === 'combobox' || editorType === 'autocomplete') {
+			return [{ type: 'openDropdown' }]
+		}
+	}
 }
 
 /**

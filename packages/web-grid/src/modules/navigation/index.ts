@@ -6,6 +6,7 @@ export {
 	focusCellElement,
 	updateFocusVisual,
 	clearEditingVisual,
+	cleanupEditState,
 	restoreEditingCellToDisplayMode,
 	handleCellFocus,
 	moveFocus,

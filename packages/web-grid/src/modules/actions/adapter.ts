@@ -21,6 +21,7 @@ import { contextMenuExecutor } from './executors/context-menu-executor.js'
 import { fillHandleExecutor } from './executors/fill-handle-executor.js'
 import { cellSelectionExecutor } from './executors/cell-selection-executor.js'
 import { macroExecutor } from './executors/macro-executor.js'
+import { customEditorExecutor } from './executors/custom-editor-executor.js'
 import { mapKeyDownToAction, isPipelineKey, mapMouseDownToActions } from './event-mapper.js'
 import { getCursorPositionFromClick } from '../navigation/focus.js'
 import type { CellCoordinates } from './types.js'
@@ -52,6 +53,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		this.pipeline.registerExecutor(fillHandleExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(cellSelectionExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(macroExecutor as ActionExecutor<T>)
+		this.pipeline.registerExecutor(customEditorExecutor as ActionExecutor<T>)
 		this.pipeline.registerExecutor(noopExecutor as ActionExecutor<T>)
 	}
 
@@ -113,6 +115,15 @@ export class ActionPipelineAdapter<T = unknown> {
 	}
 
 	/**
+	 * Check if a column has a custom editor
+	 */
+	private isCustomEditor(colIndex: number): boolean {
+		const column = this.ctx.grid.columns[colIndex]
+		if (!column) return false
+		return column.editor === 'custom'
+	}
+
+	/**
 	 * Get the dropdown editor type for a column
 	 */
 	private getDropdownEditorType(colIndex: number): 'select' | 'combobox' | 'autocomplete' | undefined {
@@ -148,6 +159,7 @@ export class ActionPipelineAdapter<T = unknown> {
 	tryHandleKeyDown(e: KeyboardEvent): boolean {
 		const target = e.target as HTMLElement
 		const cell = this.getCellFromTarget(target)
+
 
 		if (!cell) return false
 
@@ -194,7 +206,8 @@ export class ActionPipelineAdapter<T = unknown> {
 		// For other modes, behavior depends on whether we're editing
 		if (isEditing) {
 			// While editing: handle navigation/commit/cancel keys
-			if (!isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)) return false
+			const isPipeline = isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)
+			if (!isPipeline) return false
 
 			// For text inputs (not dropdown editors), let horizontal arrows pass through for cursor movement
 			// Exception: if dropdown is open, capture arrows for option navigation
@@ -239,17 +252,20 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// F2 starts edit
 		if (e.key === 'F2') {
+			const isCustom = this.isCustomEditor(cell.colIndex)
 			e.preventDefault()
 			e.stopPropagation()
 			this.pipeline.dispatch({
 				type: 'startEdit',
 				target: cell
 			})
-			// Open dropdown for dropdown editors
+			// Open dropdown/datepicker/custom editor
 			if (isDropdown) {
 				this.pipeline.dispatch({ type: 'openDropdown' })
 			} else if (isDate) {
 				this.pipeline.dispatch({ type: 'openDatePicker' })
+			} else if (isCustom) {
+				this.pipeline.dispatch({ type: 'openCustomEditor', target: cell })
 			}
 			return true
 		}
@@ -275,9 +291,10 @@ export class ActionPipelineAdapter<T = unknown> {
 			return false
 		}
 
-		// Space starts edit for dropdown/date/checkbox editors
+		// Space starts edit for dropdown/date/checkbox/custom editors
 		if (e.key === ' ') {
-			if (isDropdown || isDate || isCheckbox) {
+			const isCustom = this.isCustomEditor(cell.colIndex)
+			if (isDropdown || isDate || isCheckbox || isCustom) {
 				e.preventDefault()
 				e.stopPropagation()
 				if (isCheckbox) {
@@ -288,6 +305,8 @@ export class ActionPipelineAdapter<T = unknown> {
 						this.pipeline.dispatch({ type: 'openDropdown' })
 					} else if (isDate) {
 						this.pipeline.dispatch({ type: 'openDatePicker' })
+					} else if (isCustom) {
+						this.pipeline.dispatch({ type: 'openCustomEditor', target: cell })
 					}
 				}
 				return true
@@ -320,6 +339,9 @@ export class ActionPipelineAdapter<T = unknown> {
 
 			e.preventDefault()
 			e.stopPropagation()
+
+			const isCustom = this.isCustomEditor(cell.colIndex)
+
 			this.pipeline.dispatch({
 				type: 'startEdit',
 				target: cell,
@@ -327,6 +349,8 @@ export class ActionPipelineAdapter<T = unknown> {
 			})
 			if (isDropdown) {
 				this.pipeline.dispatch({ type: 'openDropdown' })
+			} else if (isCustom) {
+				this.pipeline.dispatch({ type: 'openCustomEditor', target: cell })
 			}
 			return true
 		}
@@ -424,8 +448,15 @@ export class ActionPipelineAdapter<T = unknown> {
 		const isAlways = this.isAlwaysMode(cell.colIndex)
 		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)
 
+		console.log('[mousedown] cell:', cell, 'isAlways:', isAlways, 'isEditing:', isEditing,
+			'isToggleClick:', isToggleClick, 'isCellClick:', isCellClick,
+			'isCheckboxClick:', isCheckboxClick, 'isDateTriggerClick:', isDateTriggerClick,
+			'selectedColumns:', this.ctx.grid.selectedColumns.length,
+			'selectedRows:', this.ctx.grid.selectedRows.length)
+
 		// Handle toggle clicks, date trigger clicks, checkbox clicks, and cell clicks
 		if (!isToggleClick && !isDateTriggerClick && !isCheckboxClick && !isCellClick) {
+			console.log('[mousedown] EARLY EXIT: no recognized click type')
 			return false
 		}
 
@@ -447,6 +478,7 @@ export class ActionPipelineAdapter<T = unknown> {
 		}
 
 		// For 'always' mode or when editing: use full mouse handling
+		console.log('[mousedown] entering always/editing branch?', isAlways || isEditing)
 		if (isAlways || isEditing) {
 			// For text-like inputs in the same editing cell, let native behavior handle
 			// cursor repositioning. Don't dispatch focusCell (which would call cell.focus()
@@ -466,11 +498,23 @@ export class ActionPipelineAdapter<T = unknown> {
 				return true
 			}
 
-			// Clear cell selection when clicking on a cell (shift+click is handled above)
+			// Clear any active selections when clicking on a cell (shift+click is handled above)
 			// Set transitioning flag to prevent focusout handler from clearing focus
-			const hadSelection = isCellClick && this.ctx.grid.selectedCellRange
-			if (hadSelection) {
-				this.ctx.isTransitioningCells = true
+			const hadCellRangeSelection = isCellClick && this.ctx.grid.selectedCellRange
+			const hadAnySelection = isCellClick && (
+				hadCellRangeSelection ||
+				this.ctx.grid.selectedRows.length > 0 ||
+				this.ctx.grid.selectedColumns.length > 0
+			)
+			console.log('[mousedown] hadAnySelection:', hadAnySelection,
+				'hadCellRange:', !!hadCellRangeSelection,
+				'selectedCols:', this.ctx.grid.selectedColumns.length,
+				'selectedRows:', this.ctx.grid.selectedRows.length)
+			if (hadAnySelection) {
+				console.log('[mousedown] dispatching clearSelection')
+				if (hadCellRangeSelection) {
+					this.ctx.isTransitioningCells = true
+				}
 				this.pipeline.dispatch({ type: 'clearSelection' })
 			}
 
@@ -490,7 +534,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			})
 
 			if (actions.length === 0) {
-				if (hadSelection) {
+				if (hadCellRangeSelection) {
 					this.ctx.isTransitioningCells = false
 				}
 				return false
@@ -506,7 +550,7 @@ export class ActionPipelineAdapter<T = unknown> {
 			}
 
 			// Clear transitioning flag after focus has settled
-			if (hadSelection) {
+			if (hadCellRangeSelection) {
 				requestAnimationFrame(() => {
 					this.ctx.isTransitioningCells = false
 				})
@@ -567,6 +611,7 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// For non-always modes when not editing: focus the cell and optionally start cell selection
 		// (Click/dblclick modes handle edit start separately)
+		console.log('[mousedown] non-always path, isCellClick:', isCellClick)
 		if (isCellClick && !isToggleClick && !isCheckboxClick) {
 			// Must preventDefault to stop browser from stealing focus after our programmatic focus
 			// Note: Don't stopPropagation() - it can interfere with dblclick detection
@@ -574,6 +619,10 @@ export class ActionPipelineAdapter<T = unknown> {
 
 			// Cancel any active edit on a different cell before focusing
 			if (this.ctx.grid.editingCell) {
+				// Set transition flag to prevent focusout handler from clearing focus
+				// (cancelEdit re-renders the old cell, removing its editor → triggers focusout
+				// which would undo the focusCell we dispatch next)
+				this.ctx.isTransitioningCells = true
 				this.pipeline.dispatch({ type: 'cancelEdit' })
 			}
 
@@ -608,6 +657,13 @@ export class ActionPipelineAdapter<T = unknown> {
 					clientX: e.clientX,
 					clientY: e.clientY,
 					shiftKey: e.shiftKey
+				})
+			}
+
+			// Clear transitioning flag after focus has settled
+			if (this.ctx.isTransitioningCells) {
+				requestAnimationFrame(() => {
+					this.ctx.isTransitioningCells = false
 				})
 			}
 
@@ -664,10 +720,11 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 		const isDate = this.isDateEditor(cell.colIndex)
+		const isCustom = this.isCustomEditor(cell.colIndex)
 
-		// Stop immediate propagation for dropdown/date editors to prevent
+		// Stop immediate propagation for dropdown/date/custom editors to prevent
 		// other click listeners on the same table from calling toggleDropdown/toggleDatePicker
-		if (isDropdown || isDate) {
+		if (isDropdown || isDate || isCustom) {
 			e.stopImmediatePropagation()
 		}
 
@@ -681,15 +738,16 @@ export class ActionPipelineAdapter<T = unknown> {
 			cursorPosition: cursorPosition ?? undefined
 		})
 
-		// Open dropdown/datepicker for those editor types (if showOnFocus !== false)
+		// Open dropdown/datepicker/custom editor for those editor types
+		// Note: Always open on click regardless of showOnFocus setting.
+		// showOnFocus: false only prevents auto-open on Tab/focus navigation,
+		// not on explicit edit actions like click.
 		if (isDropdown) {
-			const column = this.ctx.grid.columns[cell.colIndex]
-			const opts = column?.editorOptions as { showOnFocus?: boolean } | undefined
-			if (opts?.showOnFocus !== false) {
-				this.pipeline.dispatch({ type: 'openDropdown' })
-			}
+			this.pipeline.dispatch({ type: 'openDropdown' })
 		} else if (isDate) {
 			this.pipeline.dispatch({ type: 'openDatePicker' })
+		} else if (isCustom) {
+			this.pipeline.dispatch({ type: 'openCustomEditor', target: cell })
 		}
 
 		return true
@@ -717,6 +775,7 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		const isDropdown = this.isDropdownEditor(cell.colIndex)
 		const isDate = this.isDateEditor(cell.colIndex)
+		const isCustom = this.isCustomEditor(cell.colIndex)
 
 		// Calculate cursor position from click for editStartSelection: 'mousePosition'
 		const cellElement = target.closest('.wg__cell') as HTMLElement
@@ -728,15 +787,16 @@ export class ActionPipelineAdapter<T = unknown> {
 			cursorPosition: cursorPosition ?? undefined
 		})
 
-		// Open dropdown/datepicker for those editor types (if showOnFocus !== false)
+		// Open dropdown/datepicker/custom editor for those editor types
+		// Note: Always open on double-click regardless of showOnFocus setting.
+		// showOnFocus: false only prevents auto-open on Tab/focus navigation,
+		// not on explicit edit actions like double-click.
 		if (isDropdown) {
-			const column = this.ctx.grid.columns[cell.colIndex]
-			const opts = column?.editorOptions as { showOnFocus?: boolean } | undefined
-			if (opts?.showOnFocus !== false) {
-				this.pipeline.dispatch({ type: 'openDropdown' })
-			}
+			this.pipeline.dispatch({ type: 'openDropdown' })
 		} else if (isDate) {
 			this.pipeline.dispatch({ type: 'openDatePicker' })
+		} else if (isCustom) {
+			this.pipeline.dispatch({ type: 'openCustomEditor', target: cell })
 		}
 
 		return true

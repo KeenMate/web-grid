@@ -9,18 +9,19 @@
 }
 
 /* Remove browser default focus outline - we handle it with .wg__cell--focused */
-.wg--navigate-mode .wg__cell:focus {
+.wg--editable .wg__cell:focus {
   outline: none;
 }
 
-/* Focused cell styling - Excel-like green border for ALL cells */
-.wg--navigate-mode .wg__cell.wg__cell--focused {
+/* Focused cell styling - Excel-like green border for ALL editable modes */
+/* Must use .wg--editable prefix to match :focus rule specificity (0-3-0) so source order wins */
+.wg--editable .wg__cell.wg__cell--focused {
   outline: var(--wg-focus-outline);
   outline-offset: -2px;
 }
 
 /* Focus styling for always-editing mode (editTrigger: 'always' / input-matrix mode) */
-/* In this mode, wg--navigate-mode is not added, but we still need focus visual */
+/* In this mode, the <td> doesn't have :focus (the inner input does), so no specificity conflict */
 .wg__cell.wg__cell--always-edit-focused {
   outline: var(--wg-focus-outline);
   outline-offset: -2px;
@@ -36,8 +37,7 @@
    ROW FOCUS (master/detail patterns)
    ==============================================================================
    Must be in this file (after _cells.css) so source order beats the
-   .wg--navigate-mode .wg__cell:not(.wg__cell--editable) readonly rule
-   at equal specificity (0,3,0).
+   .wg--editable.wg--navigate-mode .wg__cell:not(.wg__cell--editable) readonly rule.
 */
 .wg__row--focused > .wg__cell {
   background: var(--wg-row-focus-bg);
@@ -47,11 +47,11 @@
   background: var(--wg-row-focus-row-number-bg);
 }
 
-/* Navigate mode: override read-only cell background (needs 0,3,0 specificity) */
-.wg--navigate-mode .wg__row--focused > .wg__cell {
+/* Navigate mode: override read-only cell background (needs higher specificity than _cells.css rule) */
+.wg--editable.wg--navigate-mode .wg__row--focused > .wg__cell {
   background: var(--wg-row-focus-bg);
 }
 
-.wg--navigate-mode .wg__row--focused > .wg__cell.wg__row-number {
+.wg--editable.wg--navigate-mode .wg__row--focused > .wg__cell.wg__row-number {
   background: var(--wg-row-focus-row-number-bg);
 }

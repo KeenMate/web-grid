@@ -99,11 +99,15 @@ function executeSelectColumn(ctx: ExecutorContext, action: SelectColumnAction): 
  * Clear all selections
  */
 function executeClearSelection(ctx: ExecutorContext): void {
+	console.log('[clearSelection] rows:', ctx.grid.selectedRows.length,
+		'cols:', ctx.grid.selectedColumns.length,
+		'cellRange:', !!ctx.grid.selectedCellRange)
 	// Use _noRender variants to prevent requestUpdate() from triggering a full re-render
 	// which would replace DOM elements and lose focus (we handle visuals surgically below)
 
 	// Clear row selection
 	if (ctx.grid.selectedRows.length > 0) {
+		console.log('[clearSelection] clearing rows')
 		ctx.grid.clearSelection_noRender()
 		removeRowSelectionBorders()
 		updateRowSelectionVisual(ctx)
@@ -111,9 +115,14 @@ function executeClearSelection(ctx: ExecutorContext): void {
 
 	// Clear column selection
 	if (ctx.grid.selectedColumns.length > 0) {
+		console.log('[clearSelection] clearing columns, removing visual classes')
 		ctx.grid.clearColumnSelection_noRender()
 		removeColumnSelectionBorders()
 		updateColumnSelectionVisual(ctx)
+		console.log('[clearSelection] after clear, selectedColumns:', ctx.grid.selectedColumns.length)
+		// Verify DOM was updated
+		const remaining = ctx.shadow.querySelectorAll('.wg__header--selected')
+		console.log('[clearSelection] remaining header--selected elements:', remaining.length)
 	}
 
 	// Clear cell range selection
@@ -152,17 +161,17 @@ function updateColumnSelectionVisual(ctx: ExecutorContext): void {
 	const selectedCells = ctx.shadow.querySelectorAll('.wg__cell--column-selected')
 	selectedCells.forEach(cell => cell.classList.remove('wg__cell--column-selected'))
 
-	const selectedHeaders = ctx.shadow.querySelectorAll('.wg__header-cell--selected')
-	selectedHeaders.forEach(header => header.classList.remove('wg__header-cell--selected'))
+	const selectedHeaders = ctx.shadow.querySelectorAll('.wg__header--selected')
+	selectedHeaders.forEach(header => header.classList.remove('wg__header--selected'))
 
 	// Add class to selected column cells and headers
 	for (const colIndex of ctx.grid.selectedColumns) {
 		const cells = ctx.shadow.querySelectorAll(`.wg__cell[data-col="${colIndex}"]`)
 		cells.forEach(cell => cell.classList.add('wg__cell--column-selected'))
 
-		const header = ctx.shadow.querySelector(`.wg__header-cell[data-col="${colIndex}"]`)
+		const header = ctx.shadow.querySelector(`.wg__header[data-col="${colIndex}"]`)
 		if (header) {
-			header.classList.add('wg__header-cell--selected')
+			header.classList.add('wg__header--selected')
 		}
 	}
 }

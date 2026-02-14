@@ -5,6 +5,7 @@
 
 import type { GridContext } from '../types.js'
 import { removeRangeBorder } from '../cell-selection/index.js'
+import { cleanupEditState } from '../navigation/index.js'
 
 /** Minimum distance (px) mouse must move before drag starts */
 const DRAG_THRESHOLD = 5
@@ -54,6 +55,9 @@ export function isSelectionPending(): boolean {
 export function handleRowNumberMouseDown<T>(ctx: GridContext<T>, rowIndex: number, event: MouseEvent): void {
 	event.preventDefault()
 	event.stopPropagation()
+
+	// Close any open dropdown/edit state before selecting rows
+	cleanupEditState(ctx)
 
 	// Clear cell range selection when selecting rows
 	if (ctx.grid.selectedCellRange) {

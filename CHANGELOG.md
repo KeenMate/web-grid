@@ -5,7 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0-rc15] - 2026-02-13
+
+### Fixed
+
+- **Dropdown not closing on column/row header click**: Clicking a column header or row number while a dropdown (or editor) was open left the dropdown/edit state dangling. Root cause: header and row-number click handlers bypassed the action pipeline, so no cleanup ran. Fix: Added centralized `cleanupEditState()` helper that closes dropdowns, cancels edits, clears focused cell, and removes fill handle — called from both `handleHeaderMouseDown` and `handleRowNumberMouseDown`.
+- **Dropdown staying open when clicking another cell**: In `editTrigger: 'always'` mode, clicking a different cell while a dropdown was open didn't close the dropdown. Root cause: `mapMouseDownToActions` only emitted `focusCell` for non-toggle cell clicks — no `closeDropdown`. Fix: prepend `closeDropdown` action when `dropdownOpen && !isToggleClick`.
+- **`shouldShowDropdownOnFocus` not working**: The `shouldShowDropdownOnFocus` property was defined but never wired up. Dropdown editors (select/combobox/autocomplete) in `editTrigger: 'always'` mode now auto-open the dropdown when a cell receives focus (via click, Tab, arrow keys), if `shouldShowDropdownOnFocus` is `true` (the default). Explicit edit actions (click, dblclick, F2, Space) always open the dropdown regardless of this setting.
+- **Column selection visual not clearing on cell click**: Clicking a data cell while a column was selected didn't remove the selection highlight from the header. Two root causes: (1) In `editTrigger: 'always'`/editing path, `clearSelection` was only dispatched for cell range selections, not row/column selections. (2) The selection executor used wrong CSS class name (`wg__header-cell--selected`) — the renderer applies `wg__header--selected`. Fixed both the dispatch condition and the class name.
+- **No focus border in click/dblclick edit modes**: Clicking a cell in `editTrigger: 'click'` or `'dblclick'` mode showed the fill handle (proving focus was set) but no focus outline. Root cause: focus border CSS was scoped to `.wg--navigate-mode`, which is only added when `editTrigger === 'navigate'`. Fix: removed the navigate-mode guard — `.wg__cell--focused` outline now works in all editable modes.
+- **Focused cell persists after clicking header/row number**: The focused cell's outline and fill handle remained visible after clicking a column header or row number to select. Fix: `cleanupEditState()` now also clears `focusedCell` state, removes the focus visual, and removes the fill handle.
+- **Click-after-dropdown requires double click in click/dblclick modes**: In `editTrigger: 'dblclick'` (or `'click'`), opening a dropdown then clicking another cell only closed the dropdown — the new cell didn't get focused until a second click. Root cause: `cancelEdit` re-renders the old cell (removing its editor), which triggers `focusout`; the deferred `handleTableFocusOut` handler then clears the focus that `focusCell` just set. Fix: set `isTransitioningCells` flag before `cancelEdit` in the non-always path, and ensure cells get `tabindex="-1"` for programmatic focus.
+
+## [1.0.0-rc14] - 2026-02-12 (Published)
+
+### Added
+
+- **`cellToolbarOffset` accepts CSS lengths**: In addition to numbers (0-1 fraction of cell width), now accepts CSS length strings like `'2rem'` or `'24px'` for fixed offset from cell left edge
+- **Toolbar configuration warnings**: Console warnings when toolbar settings are used with incompatible `toolbarPosition` values (e.g. `toolbarVerticalAlign` with `top` position, `toolbarColumn`/`cellToolbar`/`toolbarFollowsCursor` with non-`top` positions, `toolbarColumn` + `toolbarFollowsCursor` conflict)
+- **Comprehensive README** - Complete rewrite covering all features, 18 property subsections, column definitions, 8 editor types, grid modes, row toolbar, context menus, callbacks, 40+ public methods, and styling guide
+- **14 new CSS variables** for granular theming control:
+  - `--wg-overlay-bg`, `--wg-dialog-shadow` — Dialog/overlay styling
+  - `--wg-tooltip-max-width`, `--wg-tooltip-arrow-size` — Tooltip dimensions
+  - `--wg-row-number-width`, `--wg-actions-column-width` — Column sizing
+  - `--wg-editor-hitbox-height` — Editor click target height
+  - `--wg-toolbar-divider-height`, `--wg-toolbar-icon-size` — Toolbar element sizing
+  - `--wg-dropdown-max-height` — Dropdown list height
+  - `--wg-frozen-column-shadow-gradient`, `--wg-frozen-column-shadow-width` — Frozen column shadow
+  - `--wg-row-locked-bg`, `--wg-row-locked-opacity` — Row locking appearance
+
+### Changed
+
+- **CSS variable architecture cleanup** — All `--base-*` theme variables are now consumed exclusively in `_variables.css` and mapped to `--wg-*` intermediaries. Previously `_row-locking.css` defined its own `--base-*` fallbacks in a `:host` block.
+- **Hardcoded values replaced with CSS variables** — ~30 magic numbers (pixel values, rgba colors, font weights) across 12 CSS files replaced with named `--wg-*` variables for consistent theming
+- **Redundant CSS fallbacks removed** — Stripped inline fallback values from `var()` calls (e.g., `var(--wg-accent-color, #0078d4)` → `var(--wg-accent-color)`) in `_cells.css`, `_dropdown.css`, `_editors.css`, `_dialogs.css`, `_toolbar.css`, `_cell-selection.css` — all variables are already defined with defaults in `_variables.css`
+
+### Fixed
+
+- **Toolbar position flash on row boundaries**: When hovering between rows with `toolbarFollowsCursor` or `cellToolbar` active, the toolbar would briefly flash at a wrong X position before snapping to the correct cell-offset position. Now computes the correct initial X from the cursor position inside the `computePosition` callback, so the toolbar is never visible at a wrong position.
+- **`toolbarColumn` ignored when `toolbarFollowsCursor` enabled**: The mousemove handler unconditionally overrode the column-anchored position. Now `toolbarColumn` takes priority — when set, cursor following is disabled and the toolbar stays pinned to the specified column.
+- **Cell toolbar showing base items on row change**: When hovering across rows on the same column, `cellToolbar` would briefly show the base `rowToolbar` items instead of the cell-specific items. Root cause: `openToolbar` rebuilt the toolbar with base items but `currentCellToolbarItems` wasn't reset, so the subsequent cell-change comparison found no difference and skipped the update.
+- **Inline actions column clipped**: With `table-layout: fixed`, the inline actions column had no explicit width so buttons were cut off by `overflow: hidden`. Now computes column width from the max button count per toolbar row using CSS `calc()` with theme variables. Also left-aligned buttons to prevent zig-zag when rows have different visible button counts (due to `hidden` callbacks).
+- **Inline action buttons inconsistent width**: Emoji icons could expand buttons beyond `min-width`, causing layout overflow. Buttons now use fixed `width`/`max-width` equal to `--wg-toolbar-btn-min-width` for predictable column sizing.
+
+## [1.0.0-rc13-pre] - 2026-02-11
 
 ### Added
 
@@ -29,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Toolbar position flash on row boundaries**: When hovering between rows with `toolbarFollowsCursor` or `cellToolbar` active, the toolbar would briefly flash at a wrong X position before snapping to the correct cell-offset position. Now computes the correct initial X from the cursor position inside the `computePosition` callback, so the toolbar is never visible at a wrong position.
 - **Read-only mode with `editTrigger: 'always'` broken**: Switching from input-matrix mode to read-only mode caused broken state (cell selection didn't work, grid unresponsive). Root cause: `isAlwaysMode()` didn't check `isEditable`, so adapter entered "always" code path without editors. Fix: `isAlwaysMode()` now returns `false` when grid is not editable.
 - **Combobox text selection in always mode**: First click on combobox now selects all text (enables quick type-to-filter workflow). Second click on already-focused combobox positions cursor for precise editing.
 - **Number editor left-aligned**: Number inputs now default to right-align instead of inheriting (which defaulted to left).
@@ -105,6 +149,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sticky header bottom border disappearing**: Fixed header bottom border becoming invisible when scrolling with sticky headers
   - Root cause: With `border-collapse: collapse`, real borders get overlapped when content scrolls underneath
   - Fix: Changed to `box-shadow` which always paints on top regardless of scroll position
+- **Dropdown not opening on click/double-click**: Fixed dropdown editors (select/combobox/autocomplete) not opening when clicking or double-clicking to start edit, when `showOnFocus: false` was set in editorOptions
+  - Root cause: Pipeline adapter incorrectly checked `showOnFocus` setting for explicit edit actions
+  - Fix: `showOnFocus: false` now only prevents auto-open on Tab/focus navigation, not on explicit edit actions (click, double-click, F2, Space, Enter)
+- **Checkbox editor keyboard navigation**: Fixed multiple keyboard issues with checkbox editor
+  - **Enter/Tab not working after toggle**: After toggling a checkbox with Space, Enter and Tab keys were not registered. Root cause: `renderCell()` replaced the checkbox HTML but didn't restore focus, so keyboard events had no target. Fix: Added `{ focusEditor: true }` to re-focus checkbox after toggle.
+  - **Tab required two presses**: Tab key only navigated on second press because `toggleCheckbox` didn't set `editingCell`. Fix: Checkbox toggle now calls `startEdit()` to integrate with standard editing flow.
+  - **Enter on last row caused stuck state**: Pressing Enter on the last row had nowhere to navigate, so edit was never committed. Fix: Navigate executor now commits edit and keeps focus on current cell when there's no navigation target.
+  - **Escape didn't discard changes**: Pressing Escape after toggling didn't restore the original value. Fix: Added `discardCellDraft()` method and integrated with cancel/escape handlers for checkbox editor.
+  - **Arrow keys navigated during edit**: Arrow keys moved between cells while checkbox was in edit mode. Fix: Arrow keys now return `noop` action for checkbox editor, matching other editor behavior.
 
 ---
 
