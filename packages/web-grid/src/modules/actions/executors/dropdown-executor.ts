@@ -117,6 +117,7 @@ function executeDropdownNavigate(ctx: ExecutorContext, action: DropdownNavigateA
 	}
 
 	ctx.highlightedIndex = newIndex
+	ctx.dropdownUserInteracted = true
 	updateDropdownHighlight(ctx)
 	scrollHighlightedIntoView(ctx)
 }
@@ -179,10 +180,11 @@ function executeDropdownSelect(ctx: ExecutorContext, action: DropdownSelectActio
 		// Re-render current cell first to show new value
 		renderCell(ctx, rowIndex, colIndex)
 
-		// Reset justSelected after a frame
-		requestAnimationFrame(() => {
-			ctx.justSelected = false
-		})
+		// Reset justSelected synchronously before navigating.
+		// The flag was needed to prevent dropdown re-opening during commit on
+		// the current cell, but the commit is done and the cell is re-rendered.
+		// The NEXT cell's dropdown must be able to open normally.
+		ctx.justSelected = false
 
 		// Return navigate action
 		const navigateAction: NavigateAction = {

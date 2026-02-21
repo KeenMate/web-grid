@@ -127,4 +127,5 @@ export function removeDropdown<T>(ctx: GridContext<T>): void {
 	ctx.dropdownOpen = false
 	ctx.highlightedIndex = -1
 	ctx.filterText = ''  // Clear filter when dropdown closes
+	ctx.dropdownUserInteracted = false
 }

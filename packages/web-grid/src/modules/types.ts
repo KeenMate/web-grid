@@ -27,6 +27,7 @@ export interface GridContext<T = unknown> {
 	isUserFiltering: boolean
 	justSelected: boolean
 	isOpeningDropdown: boolean
+	dropdownUserInteracted: boolean
 	isCommittingFromKeyboard: boolean
 	isTransitioningCells: boolean
 
@@ -60,6 +61,9 @@ export interface GridContext<T = unknown> {
 
 	// Focus/navigation methods
 	moveFocusAfterCommit(rowIndex: number, field: string, direction: 'down' | 'up' | 'next' | 'prev'): void
+
+	// Custom editor support
+	openCustomEditor(rowIndex: number, colIndex: number): void
 
 	// Scroll event manager (pub/sub for scroll events)
 	readonly scrollEvents: ScrollEventManager

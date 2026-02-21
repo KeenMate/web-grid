@@ -111,8 +111,11 @@ export function updateLoadingIndicator<T>(ctx: GridContext<T>, show: boolean): v
  * Works with both editingCell (normal edit mode) and focusedCell ('always' edit mode)
  */
 export function openDropdownForCurrentEditor<T>(ctx: GridContext<T>): void {
-	console.trace('[LEGACY] openDropdownForCurrentEditor')
-	if (ctx.justSelected) return
+	if (ctx.justSelected) {
+		return
+	}
+
+	ctx.dropdownUserInteracted = false
 
 	// Get cell info - prefer editingCell, fall back to focusedCell for 'always' mode
 	const editingCell = ctx.grid.editingCell
@@ -273,6 +276,7 @@ export function attachDropdownListeners<T>(
 		const option = (e.target as HTMLElement).closest('.wg__dropdown-option')
 		if (option && !option.hasAttribute('data-disabled')) {
 			ctx.highlightedIndex = parseInt(option.getAttribute('data-index') || '0', 10)
+			ctx.dropdownUserInteracted = true
 			updateDropdownHighlight(ctx)
 		}
 	})

@@ -71,7 +71,9 @@ export class ActionPipelineAdapter<T = unknown> {
 	 */
 	private isAlwaysMode(colIndex: number): boolean {
 		// Not "always" mode if grid isn't editable
-		if (!this.ctx.grid.isEditable) return false
+		if (!this.ctx.grid.isEditable) {
+			return false
+		}
 		return this.getEditTrigger(colIndex) === 'always'
 	}
 
@@ -205,6 +207,46 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// For other modes, behavior depends on whether we're editing
 		if (isEditing) {
+			const isHorizontalArrow = e.key === 'ArrowLeft' || e.key === 'ArrowRight'
+
+			// In navigate mode, Left/Right on dropdown editors cancel edit and navigate
+			// (allows quick traversal between cells even when dropdown is auto-opened)
+			if (isHorizontalArrow && editTrigger === 'navigate' && isDropdown) {
+				e.preventDefault()
+				e.stopPropagation()
+				this.pipeline.dispatch({ type: 'cancelEdit' })
+				this.pipeline.dispatch({
+					type: 'navigate',
+					direction: e.key === 'ArrowLeft' ? 'left' : 'right',
+					from: cell
+				})
+				return true
+			}
+
+			// In navigate mode with dropdown open, Tab/Shift+Tab behavior depends on
+			// whether the user actively navigated within the dropdown
+			if (e.key === 'Tab' && editTrigger === 'navigate' && dropdownOpen) {
+				e.preventDefault()
+				e.stopPropagation()
+				if (this.ctx.dropdownUserInteracted) {
+					// User navigated the dropdown — select highlighted option and move
+					this.pipeline.dispatch({
+						type: 'dropdownSelect',
+						moveAfterSelect: false,
+						thenNavigate: e.shiftKey ? 'tab-back' : 'tab'
+					})
+				} else {
+					// Dropdown auto-opened, user didn't interact — just traverse
+					this.pipeline.dispatch({ type: 'cancelEdit' })
+					this.pipeline.dispatch({
+						type: 'navigate',
+						direction: e.shiftKey ? 'tab-back' : 'tab',
+						from: cell
+					})
+				}
+				return true
+			}
+
 			// While editing: handle navigation/commit/cancel keys
 			const isPipeline = isPipelineKey(e.key, dropdownOpen, isDropdown, isCheckbox)
 			if (!isPipeline) return false
@@ -212,7 +254,6 @@ export class ActionPipelineAdapter<T = unknown> {
 			// For text inputs (not dropdown editors), let horizontal arrows pass through for cursor movement
 			// Exception: if dropdown is open, capture arrows for option navigation
 			const isTextEditor = !isDropdown && !isCheckbox && !isDate
-			const isHorizontalArrow = e.key === 'ArrowLeft' || e.key === 'ArrowRight'
 			if (isTextEditor && isHorizontalArrow && !dropdownOpen) {
 				return false  // Let browser handle cursor movement
 			}
@@ -272,22 +313,33 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// Enter starts edit for dropdown/date editors, or moves down for others
 		if (e.key === 'Enter') {
-			if (isDropdown || isDate || isCheckbox) {
+			if (isDate) {
+				// Date always starts edit + opens picker on Enter
 				e.preventDefault()
 				e.stopPropagation()
-				if (isCheckbox) {
-					this.pipeline.dispatch({ type: 'toggleCheckbox', target: cell })
-				} else {
-					this.pipeline.dispatch({ type: 'startEdit', target: cell })
-					if (isDropdown) {
-						this.pipeline.dispatch({ type: 'openDropdown' })
-					} else if (isDate) {
-						this.pipeline.dispatch({ type: 'openDatePicker' })
-					}
-				}
+				this.pipeline.dispatch({ type: 'startEdit', target: cell })
+				this.pipeline.dispatch({ type: 'openDatePicker' })
 				return true
 			}
-			// For text editors, Enter moves down (standard navigation)
+			if (isCheckbox) {
+				e.preventDefault()
+				e.stopPropagation()
+				this.pipeline.dispatch({ type: 'toggleCheckbox', target: cell })
+				return true
+			}
+			if (isDropdown) {
+				const column = this.ctx.grid.columns[cell.colIndex]
+				if (column && this.ctx.grid.getEffectiveShouldOpenDropdownOnEnter(column)) {
+					e.preventDefault()
+					e.stopPropagation()
+					this.pipeline.dispatch({ type: 'startEdit', target: cell })
+					this.pipeline.dispatch({ type: 'openDropdown' })
+					return true
+				}
+				// shouldOpenDropdownOnEnter is false: fall through to move down
+				return false
+			}
+			// Text editors: fall through to move down
 			return false
 		}
 
@@ -448,15 +500,8 @@ export class ActionPipelineAdapter<T = unknown> {
 		const isAlways = this.isAlwaysMode(cell.colIndex)
 		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)
 
-		console.log('[mousedown] cell:', cell, 'isAlways:', isAlways, 'isEditing:', isEditing,
-			'isToggleClick:', isToggleClick, 'isCellClick:', isCellClick,
-			'isCheckboxClick:', isCheckboxClick, 'isDateTriggerClick:', isDateTriggerClick,
-			'selectedColumns:', this.ctx.grid.selectedColumns.length,
-			'selectedRows:', this.ctx.grid.selectedRows.length)
-
 		// Handle toggle clicks, date trigger clicks, checkbox clicks, and cell clicks
 		if (!isToggleClick && !isDateTriggerClick && !isCheckboxClick && !isCellClick) {
-			console.log('[mousedown] EARLY EXIT: no recognized click type')
 			return false
 		}
 
@@ -478,7 +523,6 @@ export class ActionPipelineAdapter<T = unknown> {
 		}
 
 		// For 'always' mode or when editing: use full mouse handling
-		console.log('[mousedown] entering always/editing branch?', isAlways || isEditing)
 		if (isAlways || isEditing) {
 			// For text-like inputs in the same editing cell, let native behavior handle
 			// cursor repositioning. Don't dispatch focusCell (which would call cell.focus()
@@ -506,12 +550,7 @@ export class ActionPipelineAdapter<T = unknown> {
 				this.ctx.grid.selectedRows.length > 0 ||
 				this.ctx.grid.selectedColumns.length > 0
 			)
-			console.log('[mousedown] hadAnySelection:', hadAnySelection,
-				'hadCellRange:', !!hadCellRangeSelection,
-				'selectedCols:', this.ctx.grid.selectedColumns.length,
-				'selectedRows:', this.ctx.grid.selectedRows.length)
 			if (hadAnySelection) {
-				console.log('[mousedown] dispatching clearSelection')
 				if (hadCellRangeSelection) {
 					this.ctx.isTransitioningCells = true
 				}
@@ -611,7 +650,6 @@ export class ActionPipelineAdapter<T = unknown> {
 
 		// For non-always modes when not editing: focus the cell and optionally start cell selection
 		// (Click/dblclick modes handle edit start separately)
-		console.log('[mousedown] non-always path, isCellClick:', isCellClick)
 		if (isCellClick && !isToggleClick && !isCheckboxClick) {
 			// Must preventDefault to stop browser from stealing focus after our programmatic focus
 			// Note: Don't stopPropagation() - it can interfere with dblclick detection

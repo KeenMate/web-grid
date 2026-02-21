@@ -128,6 +128,11 @@ import {
 	getConnectorState,
 	updateConnector,
 	buildToolbarTooltipHtml,
+	updateToolbarPosition,
+	updateToolbarItems,
+	getActiveToolbar,
+	renderToolbarHTML,
+	resolveToolbarOffset,
 	type ConnectorState
 } from './modules/toolbar/index.js'
 
@@ -246,6 +251,11 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	private toolbarHovered = false
 	private toolbarShortcutHandler: ((e: KeyboardEvent) => void) | null = null
 
+	// Cell-aware toolbar tracking
+	private hoveredCell: { rowIndex: number; colIndex: number; field: string } | null = null
+	private currentCellToolbarItems: string | null = null  // JSON of current items for comparison
+	private toolbarMousemoveHandler: ((e: MouseEvent) => void) | null = null
+
 	// Inline shortcuts handler (hovered row tracked in WebGrid.hoveredRowIndex)
 	private inlineShortcutHandler: ((e: KeyboardEvent) => void) | null = null
 
@@ -257,6 +267,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	isUserFiltering = false
 	justSelected = false
 	isOpeningDropdown = false  // Flag to skip scroll events during dropdown opening
+	dropdownUserInteracted = false  // Flag: user navigated within dropdown (arrow keys/hover)
 	isClosingViaToggle = false  // Flag to prevent blur from canceling when closing via toggle
 	private isProgrammaticScroll = false  // Flag to skip handleVirtualScroll during keyboard nav
 
@@ -480,6 +491,25 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	get toolbarPosition(): ToolbarPosition { return this.grid.toolbarPosition }
 	set toolbarPosition(value: ToolbarPosition) { this.grid.toolbarPosition = value }
+
+	get toolbarColumn(): string | number | undefined { return this.grid.toolbarColumn }
+	set toolbarColumn(value: string | number | undefined) { this.grid.toolbarColumn = value }
+
+	get toolbarFollowsCursor(): boolean { return this.grid.toolbarFollowsCursor }
+	set toolbarFollowsCursor(value: boolean) { this.grid.toolbarFollowsCursor = value }
+
+	get cellToolbar(): ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined {
+		return this.grid.cellToolbar
+	}
+	set cellToolbar(value: ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined) {
+		this.grid.cellToolbar = value
+	}
+
+	get cellToolbarOffset(): number | string { return this.grid.cellToolbarOffset }
+	set cellToolbarOffset(value: number | string) { this.grid.cellToolbarOffset = value }
+
+	get toolbarBtnMinWidth(): string | undefined { return this.grid.toolbarBtnMinWidth }
+	set toolbarBtnMinWidth(value: string | undefined) { this.grid.toolbarBtnMinWidth = value }
 
 	get inlineActionsTitle(): string { return this.grid.inlineActionsTitle }
 	set inlineActionsTitle(value: string) { this.grid.inlineActionsTitle = value }
@@ -1965,11 +1995,21 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
-		// Click events
+		// Click events - legacy select trigger toggle
+		// In 'always' mode, the pipeline handles dropdown open via shouldShowDropdownOnFocus
+		// so this legacy handler must not fire (it would toggle-close the already-opened dropdown)
 		table.addEventListener('click', (e: Event) => {
 			const target = e.target as HTMLElement
 
 			if (target.matches('.wg__select-trigger, .wg__select-value')) {
+				// Skip if pipeline handles this cell (always mode)
+				const cell = target.closest('.wg__cell') as HTMLElement
+				if (cell) {
+					const colIndex = parseInt(cell.dataset.col || '', 10)
+					const column = this.grid.columns[colIndex]
+					const trigger = column?.editTrigger ?? this.grid.editTrigger
+					if (trigger === 'always') return
+				}
 				e.preventDefault()
 				e.stopPropagation()
 				toggleDropdown(this)
@@ -2360,7 +2400,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 						const cell = this.shadow.querySelector(
 							`.wg__cell[data-row="${rowIndex}"][data-col="${colIndex}"]`
 						)
-						cell?.classList.remove('wg__cell--focused')
+						cell?.classList.remove('wg__cell--focused', 'wg__cell--always-edit-focused')
 						this.grid.clearFocusedCell()
 					}
 
@@ -2571,6 +2611,74 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 			}
 		}, true)
+
+		// Row mousemove - handle mouse-following toolbar and cell-aware toolbar
+		table.addEventListener('mousemove', (e: Event) => {
+			const mouseEvent = e as MouseEvent
+			const target = mouseEvent.target as HTMLElement
+			const row = target.closest('.wg__row') as HTMLElement
+
+			if (!row) return
+
+			const rowIndex = parseInt(row.dataset.rowIndex || '0', 10)
+			const toolbarRowIndex = getActiveToolbarRowIndex()
+
+			// Only process if toolbar is open for this row and in 'top' position
+			if (toolbarRowIndex !== rowIndex || this.grid.toolbarPosition !== 'top') return
+
+			// Handle mouse-following toolbar (skip if cellToolbar is active - it handles its own positioning,
+			// and skip if toolbarColumn is set - column pinning takes priority over cursor following)
+			if (this.grid.toolbarFollowsCursor && !this.grid.cellToolbar && this.grid.toolbarColumn === undefined) {
+				const cell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
+				if (cell) {
+					const cellRect = cell.getBoundingClientRect()
+					const targetX = resolveToolbarOffset(cellRect, this.grid.cellToolbarOffset)
+					updateToolbarPosition(targetX, row, 'start')
+				} else {
+					updateToolbarPosition(mouseEvent.clientX, row)
+				}
+			}
+
+			// Handle cell-aware toolbar
+			if (this.grid.cellToolbar) {
+				const cell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
+				if (cell) {
+					const field = cell.dataset.field || ''
+					// Find colIndex from visualColumns since cells don't have data-col-index
+					const colIndex = this.grid.visualColumns.findIndex(vc => String(vc.column.field) === field)
+
+					// Check if cell changed (compare by field since that's what we have)
+					const cellChanged = !this.hoveredCell ||
+						this.hoveredCell.rowIndex !== rowIndex ||
+						this.hoveredCell.field !== field
+
+					if (cellChanged) {
+						this.hoveredCell = { rowIndex, colIndex, field }
+
+						// Get cell-specific toolbar items
+						const dataRow = this.grid.displayItems[rowIndex]
+						if (dataRow) {
+							const cellItems = this.grid.cellToolbar(dataRow, rowIndex, field, colIndex)
+							// Use cell items if provided, otherwise use default rowToolbar
+							const itemsToUse = cellItems || this.grid.rowToolbar
+							const newItemsJson = JSON.stringify(itemsToUse)
+
+							// Check if items changed
+							if (newItemsJson !== this.currentCellToolbarItems) {
+								this.currentCellToolbarItems = newItemsJson
+								// Re-render toolbar with new items
+								this.updateToolbarWithCellItems(rowIndex, itemsToUse)
+							}
+
+							// Position toolbar at configured offset from cell left edge
+							const cellRect = cell.getBoundingClientRect()
+							const targetX = resolveToolbarOffset(cellRect, this.grid.cellToolbarOffset)
+							updateToolbarPosition(targetX, row, 'start')
+						}
+					}
+				}
+			}
+		})
 
 		// Row click (click mode)
 		table.addEventListener('click', (e: Event) => {
@@ -3420,8 +3528,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	/**
 	 * Open custom editor by calling the cellEditCallback
 	 */
-	private openCustomEditor(rowIndex: number, colIndex: number): void {
-		console.trace('[LEGACY] openCustomEditor', { rowIndex, colIndex })
+	openCustomEditor(rowIndex: number, colIndex: number): void {
 		const column = this.grid.columns[colIndex]
 		if (!column || column.editor !== 'custom' || !column.cellEditCallback) {
 			return
@@ -3962,6 +4069,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.toolbarHideTimeout = null
 		}
 
+		// Reset cell toolbar state so next cell change will always update the HTML
+		// (openToolbar rebuilds with base rowToolbar items, not cell-specific items)
+		this.currentCellToolbarItems = null
+
 		openToolbar(
 			this,
 			rowElement,
@@ -4034,6 +4145,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	private closeToolbarAndReset(): void {
 		this.toolbarMoveInProgress = false
 		this.toolbarHovered = false
+		this.hoveredCell = null
+		this.currentCellToolbarItems = null
 		if (this.toolbarHideTimeout) {
 			clearTimeout(this.toolbarHideTimeout)
 			this.toolbarHideTimeout = null
@@ -4044,6 +4157,59 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.toolbarShortcutHandler = null
 		}
 		closeToolbar()
+	}
+
+	/**
+	 * Update toolbar with cell-specific items
+	 */
+	private updateToolbarWithCellItems(rowIndex: number, cellItems: RowToolbarConfig<T>[]): void {
+		const row = this.grid.displayItems[rowIndex]
+		if (!row) return
+
+		// Merge base toolbar items with cell-specific items
+		// Cell items override base items by ID, or append if new
+		const baseItems = normalizeToolbarItems(this.grid.rowToolbar)
+		const normalizedCellItems = normalizeToolbarItems(cellItems)
+
+		// Create a map of cell items by ID for fast lookup
+		const cellItemsMap = new Map(normalizedCellItems.map(item => [item.id, item]))
+
+		// Start with cell items, then add any base items not in cell items
+		const mergedItems = [...normalizedCellItems]
+		for (const baseItem of baseItems) {
+			if (!cellItemsMap.has(baseItem.id)) {
+				mergedItems.push(baseItem)
+			}
+		}
+
+		// Re-sort by row and group
+		mergedItems.sort((a, b) => {
+			if (a.row !== b.row) return a.row - b.row
+			return a.group - b.group
+		})
+
+		const reverseRows = this.grid.toolbarVerticalAlign !== 'top'
+
+		// Update the toolbar HTML in place
+		const activeToolbar = getActiveToolbar()
+		if (!activeToolbar) return
+
+		const html = renderToolbarHTML(mergedItems, row, rowIndex, reverseRows)
+		const temp = document.createElement('div')
+		temp.innerHTML = html
+		const newToolbarContent = temp.querySelector('.wg__toolbar')
+		if (newToolbarContent) {
+			// Keep position styles
+			const { left, top, position, visibility } = activeToolbar.toolbar.style
+			activeToolbar.toolbar.innerHTML = newToolbarContent.innerHTML
+			activeToolbar.toolbar.style.left = left
+			activeToolbar.toolbar.style.top = top
+			activeToolbar.toolbar.style.position = position
+			activeToolbar.toolbar.style.visibility = visibility
+
+			// Re-setup tooltips for new items
+			this.setupToolbarTooltips(mergedItems, row, rowIndex)
+		}
 	}
 
 	/**
