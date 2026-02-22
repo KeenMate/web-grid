@@ -114,6 +114,8 @@
      ========================================================================== */
   --wg-table-bg: var(--wg-surface-1);
   --wg-table-border: 1px solid var(--wg-border-color);
+  --wg-row-number-width: calc(4.0 * var(--wg-rem));
+  --wg-actions-column-width: calc(3.2 * var(--wg-rem));
 
   /* ==========================================================================
      HEADER COMPONENT
@@ -222,6 +224,9 @@
   /* Date Editor */
   --wg-date-trigger-size: calc(2.8 * var(--wg-rem));
 
+  /* Editor Hitbox (invisible click target for toggle/trigger buttons) */
+  --wg-editor-hitbox-height: calc(4.8 * var(--wg-rem));
+
   /* Checkbox Editor */
   --wg-checkbox-scale: 1.2;
 
@@ -233,7 +238,9 @@
   --wg-toolbar-border-radius: var(--wg-border-radius-sm);
   --wg-toolbar-shadow: var(--base-dropdown-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
   --wg-toolbar-divider-color: var(--wg-border-color);
+  --wg-toolbar-divider-height: calc(1.6 * var(--wg-rem));
   --wg-toolbar-row-height: calc(3.7 * var(--wg-rem));
+  --wg-toolbar-icon-size: calc(1.6 * var(--wg-rem));
 
   /* Toolbar Button */
   --wg-toolbar-btn-min-width: calc(2.4 * var(--wg-rem));
@@ -249,10 +256,18 @@
   --wg-toolbar-trigger-bg-hover: var(--wg-hover-bg);
 
   /* ==========================================================================
+     OVERLAY / DIALOG
+     ========================================================================== */
+  --wg-overlay-bg: rgba(0, 0, 0, 0.4);
+  --wg-dialog-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+
+  /* ==========================================================================
      TOOLTIP
      ========================================================================== */
   --wg-tooltip-bg: var(--base-tooltip-bg, #333);
   --wg-tooltip-color: var(--base-tooltip-color, #fff);
+  --wg-tooltip-max-width: 300px;
+  --wg-tooltip-arrow-size: 8px;
 
   /* ==========================================================================
      CONTEXT MENU
@@ -265,6 +280,8 @@
      ========================================================================== */
   --wg-focus-outline: 2px solid var(--wg-accent-color);
   --wg-focus-outline-offset: -2px;
+  --wg-focus-border-width: 2px;
+  --wg-focus-border-color: var(--wg-accent-color);
   --wg-focus-bg: var(--wg-hover-bg);
 
   /* ==========================================================================
@@ -282,6 +299,12 @@
   --wg-z-tooltip: 10000;
 
   /* ==========================================================================
+     ROW LOCKING
+     ========================================================================== */
+  --wg-row-locked-bg: var(--base-disabled-bg, var(--wg-surface-2));
+  --wg-row-locked-opacity: 0.7;
+
+  /* ==========================================================================
      FREEZE PANES (Sticky Columns)
      ========================================================================== */
   --wg-frozen-column-bg: var(--wg-surface-1);
@@ -289,6 +312,8 @@
   --wg-frozen-column-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
   --wg-frozen-column-shadow-active: 6px 0 12px rgba(0, 0, 0, 0.25);  /* Enhanced shadow when scrolled */
   --wg-frozen-column-border: 2px solid var(--wg-border-color);
+  --wg-frozen-column-shadow-gradient: linear-gradient(to right, rgba(0, 0, 0, 0.15), transparent);
+  --wg-frozen-column-shadow-width: 8px;
 
   /* ==========================================================================
      COLUMN RESIZE
@@ -334,6 +359,7 @@
   /* ==========================================================================
      DROPDOWN MENU (Component-Specific)
      ========================================================================== */
+  --wg-dropdown-max-height: 200px;
   --wg-dropdown-option-gap: var(--wg-spacing-sm);
   --wg-dropdown-option-padding: calc(0.6 * var(--wg-rem)) var(--wg-spacing-sm) calc(0.6 * var(--wg-rem)) calc(var(--wg-spacing-sm) - 1px);
   --wg-dropdown-empty-padding: calc(0.8 * var(--wg-rem)) var(--wg-spacing-sm) calc(0.8 * var(--wg-rem)) calc(var(--wg-spacing-sm) - 1px);

@@ -26,12 +26,14 @@
 }
 
 /* Range border - thick blue border around entire range
-   Shown during drag AND after selection completes */
+   Shown during drag AND after selection completes.
+   z-index must be below frozen cells (sticky, z-index: 1-2) so the border
+   scrolls behind frozen columns instead of bleeding over them. */
 .wg__cell-range-border {
   position: absolute;
   border: var(--wg-cell-selection-border-width) solid var(--wg-cell-selection-border);
   pointer-events: none;
-  z-index: 3;
+  z-index: 0;
   box-sizing: border-box;
   border-radius: 1px;
 }
@@ -65,9 +67,9 @@
 .wg__row-selection-border,
 .wg__column-selection-border {
   position: absolute;
-  border: var(--wg-selection-border-width, 2px) solid var(--wg-selection-border-color, var(--wg-accent-color));
+  border: var(--wg-selection-border-width) solid var(--wg-selection-border-color);
   pointer-events: none;
-  z-index: 3;
+  z-index: 0;
   box-sizing: border-box;
   border-radius: 1px;
 }

@@ -61,6 +61,8 @@ export function focusCellElement<T>(
 		) as HTMLElement
 		if (cell) {
 			focusElementInCell(cell, isAlwaysEditMode)
+			// Ensure cell isn't hidden behind frozen columns
+			ensureCellNotBehindFrozen(ctx, cell, rowIndex)
 		}
 		// If not visible, scroll triggered re-render which will focus via renderVirtualRows
 		return
@@ -77,19 +79,45 @@ export function focusCellElement<T>(
 	// Let scrollIntoView handle the main scrolling (both axes)
 	cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 
-	// After scrollIntoView, check if cell is STILL obscured by sticky header
+	// After scrollIntoView, adjust for sticky elements it doesn't account for
 	const header = ctx.shadow.querySelector('.wg__header') as HTMLElement
 	const scrollContainer = ctx.shadow.querySelector('.wg') as HTMLElement
 
 	if (header && scrollContainer) {
-		const headerRect = header.getBoundingClientRect()
 		const cellRect = cell.getBoundingClientRect()
 
-		// If cell is still under the header, adjust
+		// Check if cell is obscured by sticky header (vertical)
+		const headerRect = header.getBoundingClientRect()
 		if (cellRect.top < headerRect.bottom) {
 			const scrollAmount = cellRect.top - headerRect.bottom - 4
 			scrollContainer.scrollBy({ top: scrollAmount, behavior: 'instant' })
 		}
+
+		// Check if cell is obscured by frozen columns (horizontal)
+		ensureCellNotBehindFrozen(ctx, cell, rowIndex)
+	}
+}
+
+/**
+ * If cell is behind frozen columns, scroll horizontally to reveal it
+ */
+export function ensureCellNotBehindFrozen<T>(
+	ctx: GridContext<T>,
+	cell: HTMLElement,
+	rowIndex: number
+): void {
+	const scrollContainer = ctx.shadow.querySelector('.wg') as HTMLElement
+	if (!scrollContainer) return
+
+	const lastFrozenCell = ctx.shadow.querySelector(
+		`tr[data-row-index="${rowIndex}"] .wg__cell--frozen-last`
+	) as HTMLElement
+	if (!lastFrozenCell) return
+
+	const frozenRight = lastFrozenCell.getBoundingClientRect().right
+	const cellRect = cell.getBoundingClientRect()
+	if (cellRect.left < frozenRight) {
+		scrollContainer.scrollBy({ left: cellRect.left - frozenRight, behavior: 'instant' })
 	}
 }
 
@@ -171,16 +199,22 @@ export function updateFocusVisual<T>(
 	const editingCell = ctx.grid.editingCell
 
 	// Re-render old cell (will remove --focused class)
-	// Skip re-render if this cell is currently being edited (don't disrupt editor)
+	// Skip re-render if this cell is currently being edited or in 'always' mode (don't disrupt editor)
+	// For 'always' mode: renderCell triggers renderer side effects (overwrites ctx.filterText,
+	// ctx.dropdownOptions) which leaks state to the next cell's dropdown open
 	// But still remove focus CSS class
 	if (oldFocus) {
 		const isOldCellEditing = editingCell &&
 			editingCell.rowIndex === oldFocus.rowIndex &&
 			ctx.grid.columns.findIndex(c => String(c.field) === editingCell.field) === oldFocus.colIndex
-		if (!isOldCellEditing) {
+		const oldColumn = ctx.grid.columns[oldFocus.colIndex]
+		const oldTrigger = oldColumn?.editTrigger ?? ctx.grid.editTrigger
+		const isOldCellAlwaysMode = oldTrigger === 'always'
+
+		if (!isOldCellEditing && !isOldCellAlwaysMode) {
 			renderCell(ctx, oldFocus.rowIndex, oldFocus.colIndex)
 		} else {
-			// Old cell is being edited - just remove focus class
+			// Old cell is being edited or in 'always' mode - just remove focus class
 			// Editor will be cleaned up later by tryStartEdit when click fires
 			const cell = ctx.shadow.querySelector(
 				`td[data-row="${oldFocus.rowIndex}"][data-col="${oldFocus.colIndex}"]`

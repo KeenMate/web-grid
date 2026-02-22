@@ -8,23 +8,30 @@
   cursor: cell;
 }
 
-/* Remove browser default focus outline - we handle it with .wg__cell--focused */
-.wg--editable .wg__cell:focus {
+/* Replace browser default focus outline with box-shadow on all cells.
+   Outline ignores z-index stacking and bleeds over frozen columns.
+   Box-shadow respects stacking contexts so frozen columns properly cover it.
+   Combines with the cell splitter shadow (from _cells.css) to keep the right-edge separator. */
+.wg__cell:focus {
   outline: none;
+  box-shadow:
+    inset 0 0 0 var(--wg-focus-border-width) var(--wg-focus-border-color),
+    inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
 }
 
-/* Focused cell styling - Excel-like green border for ALL editable modes */
-/* Must use .wg--editable prefix to match :focus rule specificity (0-3-0) so source order wins */
+/* Focused cell styling for editable navigate mode (.wg__cell--focused class) */
 .wg--editable .wg__cell.wg__cell--focused {
-  outline: var(--wg-focus-outline);
-  outline-offset: -2px;
+  box-shadow:
+    inset 0 0 0 var(--wg-focus-border-width) var(--wg-focus-border-color),
+    inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
 }
 
 /* Focus styling for always-editing mode (editTrigger: 'always' / input-matrix mode) */
 /* In this mode, the <td> doesn't have :focus (the inner input does), so no specificity conflict */
 .wg__cell.wg__cell--always-edit-focused {
-  outline: var(--wg-focus-outline);
-  outline-offset: -2px;
+  box-shadow:
+    inset 0 0 0 var(--wg-focus-border-width) var(--wg-focus-border-color),
+    inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
 }
 
 /* Hide hover border when cell is focused */

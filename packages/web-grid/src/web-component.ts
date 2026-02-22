@@ -76,6 +76,7 @@ import {
 
 import {
 	focusCellElement,
+	ensureCellNotBehindFrozen,
 	updateFocusVisual,
 	clearEditingVisual,
 	restoreEditingCellToDisplayMode,
@@ -1234,7 +1235,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 					tryStartEdit(this, rowIndex, colIndex)
 				} else {
 					if (rowIndex < displayItems.length - 1) {
-						moveFocus(this, rowIndex + 1, colIndex)
+						const targetCol = this.grid.tabTraversalStartColIndex ?? colIndex
+						this.grid.tabTraversalStartColIndex = null
+						moveFocus(this, rowIndex + 1, targetCol)
 					}
 				}
 				break
@@ -1268,7 +1271,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const isDate = col?.editor === 'date'
 				const isCustom = col?.editor === 'custom'
 
-				if (isCheckbox) {
+				if (isCheckbox && col && this.grid.isCellEditable(col)) {
 					toggleCheckboxAndMove(this, rowIndex, colIndex)
 				} else if (isDropdown) {
 					tryStartEdit(this, rowIndex, colIndex)
@@ -1628,6 +1631,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const prevFocusedRow = this.grid.focusedRowIndex
 				this.grid.setFocusedRow(rowIndex)
 				this.updateRowFocusVisual(prevFocusedRow, rowIndex)
+
+				// Auto-scroll if cell is behind frozen columns
+				ensureCellNotBehindFrozen(this, target, rowIndex)
 			}
 			// Handle focus on editor inputs in always-editing mode
 			// When Tab/Enter moves focus to an editor input, we need to update the grid's focus state
