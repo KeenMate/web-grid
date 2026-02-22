@@ -80,6 +80,36 @@
             </div>
         </div>
 
+        <div class="card">
+            <h2>Dynamic Cell Styling</h2>
+            <p>The Priority column also uses <code>cellClassCallback</code> to apply CSS classes based on the cell value, and <code>customStylesCallback</code> to inject the matching styles into the shadow DOM.</p>
+
+            <div class="code-block">
+                <pre>// Column definition
+{
+    field: 'priority',
+    cellClassCallback: (value) =&gt; value ? `priority-${value}` : null,
+    formatCallback: (value) =&gt; {
+        const opt = priorityOptions.find(o =&gt; o.value === value)
+        return `&lt;span style="..."&gt;&lt;/span&gt;${opt.label}`
+    }
+}
+
+// Inject styles into shadow DOM
+grid.customStylesCallback = () =&gt; `
+    .priority-critical { background: color-mix(in srgb, #dc3545 12%, transparent); }
+    .priority-high { background: color-mix(in srgb, #fd7e14 12%, transparent); }
+    .priority-medium { background: color-mix(in srgb, #ffc107 12%, transparent); }
+    .priority-low { background: color-mix(in srgb, #28a745 12%, transparent); }
+`</pre>
+            </div>
+
+            <div class="note">
+                <div class="note-title">Why customStylesCallback?</div>
+                <p>Since WebGrid uses Shadow DOM, external page CSS cannot reach cell elements. Use <code>customStylesCallback</code> to inject CSS rules that target classes added by <code>cellClassCallback</code>.</p>
+            </div>
+        </div>
+
         <footer>
             <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
         </footer>
@@ -133,6 +163,12 @@
                 title: 'Priority (custom render)',
                 width: '180px',
                 editor: 'select',
+                formatCallback: (value) => {
+                    const opt = priorityOptions.find(o => o.value === value)
+                    if (!opt) return value ?? ''
+                    return `<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${opt.color}; margin-right: 6px; vertical-align: middle;"></span>${opt.label}`
+                },
+                cellClassCallback: (value) => value ? `priority-${value}` : null,
                 editorOptions: {
                     options: priorityOptions,
                     disabledMember: 'disabled',
@@ -218,6 +254,14 @@
         grid.editTrigger = 'navigate'
         grid.tooltipShowDelay = 0
         grid.tooltipHideDelay = 100
+
+        // Inject custom styles into shadow DOM for cellClassCallback classes
+        grid.customStylesCallback = () => `
+            .priority-critical { background: color-mix(in srgb, #dc3545 12%, transparent); }
+            .priority-high { background: color-mix(in srgb, #fd7e14 12%, transparent); }
+            .priority-medium { background: color-mix(in srgb, #ffc107 12%, transparent); }
+            .priority-low { background: color-mix(in srgb, #28a745 12%, transparent); }
+        `
     </script>
 </body>
 </html>
