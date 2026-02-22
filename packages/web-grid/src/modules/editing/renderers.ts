@@ -217,8 +217,10 @@ export function renderCheckboxEditor<T>(
 	column: Column<T>
 ): string {
 	const opts = column.editorOptions || {}
-	const trueValue = opts.trueValue !== undefined ? opts.trueValue : true
-	const isChecked = value === trueValue
+	// If explicit trueValue is set, use strict comparison; otherwise use truthiness
+	const isChecked = opts.trueValue !== undefined
+		? value === opts.trueValue
+		: Boolean(value)
 
 	return `
 		<input
@@ -265,6 +267,7 @@ export function renderSelectEditor<T>(
 			aria-haspopup="listbox"
 			data-row="${rowIndex}"
 			data-field="${field}"
+			data-value="${ctx.escapeHtml(String(value ?? ''))}"
 		>
 			<span class="wg__select-value">${ctx.escapeHtml(displayValue)}</span>
 			<span class="wg__select-toggle">▼</span>
