@@ -1,0 +1,165 @@
+CRITICAL NOTES
+--------------
+- @keenmate/web-grid is a web component. It registers <web-grid> as a custom element.
+- Shadow DOM encapsulated. External CSS does not reach internal styles.
+- Items and columns are set via JavaScript properties, NOT HTML attributes.
+- The import itself registers the custom element. No manual registration needed.
+- Setting the "mode" property applies sensible defaults for editing, selection,
+  and dropdown behavior. You can override individual properties after setting mode.
+
+
+INSTALLATION
+------------
+  npm install @keenmate/web-grid
+
+
+ES MODULE IMPORT (RECOMMENDED)
+------------------------------
+Import the package in a module script. The import registers <web-grid> automatically.
+
+  <script type="module">
+    import '@keenmate/web-grid'
+  </script>
+
+  <web-grid id="grid"></web-grid>
+
+  <script type="module">
+    const grid = document.getElementById('grid')
+
+    grid.items = [
+      { id: 1, name: 'Alice', age: 28 },
+      { id: 2, name: 'Bob', age: 34 }
+    ]
+
+    grid.columns = [
+      { field: 'id', title: 'ID', width: '60px' },
+      { field: 'name', title: 'Name' },
+      { field: 'age', title: 'Age' }
+    ]
+  </script>
+
+
+UMD SCRIPT TAG USAGE
+--------------------
+For non-module environments, use the UMD bundle via a CDN:
+
+  <script src="https://unpkg.com/@keenmate/web-grid"></script>
+  <web-grid id="grid"></web-grid>
+
+Then set items and columns the same way via JavaScript properties.
+
+
+MINIMAL GRID SETUP
+------------------
+Two properties are required for a functional grid:
+
+  items   - Array of data objects. Each object is one row.
+  columns - Array of column definitions. Each must have a "field" property
+            matching a key in the data objects.
+
+Minimal column definition:
+  { field: 'name' }
+
+Typical column definition:
+  { field: 'name', title: 'Full Name', width: '200px' }
+
+Minimal working example:
+
+  const grid = document.querySelector('web-grid')
+  grid.items = [{ name: 'Alice', age: 28 }]
+  grid.columns = [
+    { field: 'name', title: 'Name' },
+    { field: 'age', title: 'Age' }
+  ]
+
+
+BASIC ATTRIBUTES AND PROPERTIES
+--------------------------------
+These are commonly used display and behavior properties. They can be set as
+HTML attributes (kebab-case) or JavaScript properties (camelCase).
+
+Attribute (HTML)        Property (JS)           Type       Default   Description
+----------------------  ----------------------  ---------  --------  -----------
+is-striped              isStriped               boolean    false     Alternate row backgrounds
+is-hoverable            isHoverable             boolean    false     Highlight row on hover
+sort-mode               sortMode                string     'none'    'none', 'single', or 'multi'
+is-filterable           isFilterable            boolean    false     Show per-column filter inputs
+is-pageable             isPageable              boolean    false     Enable pagination
+page-size               pageSize                number     10        Rows per page
+is-editable             isEditable              boolean    false     Enable cell editing
+edit-trigger            editTrigger             string     'dblclick' How editing starts (see below)
+is-row-numbers-visible  isRowNumbersVisible     boolean    false     Show row number column
+mode                    mode                    string     (none)    Grid mode (see below)
+is-scrollable           isScrollable            boolean    false     Enable scroll container
+freeze-columns          freezeColumns           number     0         Freeze first N columns
+
+Edit trigger values: 'click', 'dblclick', 'button', 'always', 'navigate'
+
+Sorting example:
+
+  grid.sortMode = 'multi'
+
+Pagination example:
+
+  grid.isPageable = true
+  grid.pageSize = 25
+  grid.pageSizes = [10, 25, 50, 100]
+
+Filtering example:
+
+  grid.isFilterable = true
+
+
+CORE PROPERTIES
+---------------
+items : T[]
+  The data array. Each element is a row object. Setting this re-renders the grid.
+  Example: grid.items = [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+
+columns : Column<T>[]
+  Column definitions array. Each column requires at minimum a "field" property.
+  Key column fields:
+    field              - (required) Data property name
+    title              - Header display text
+    width              - CSS width string (e.g. '100px', '20%')
+    isEditable         - Enable editing for this column
+    editor             - Editor type: 'text', 'number', 'checkbox', 'select',
+                         'combobox', 'autocomplete', 'date', 'custom'
+    formatCallback     - Function to format display value: (value, row) => string
+    templateCallback   - Function returning HTML string: (row) => string
+    horizontalAlign    - 'left', 'center', 'right', 'justify'
+    isSortable         - Enable sorting for this column
+    isFilterable       - Enable filtering for this column
+    isFrozen           - Stick column to left during horizontal scroll
+    isHidden           - Hide column but keep in array for toggling
+
+
+GRID MODES OVERVIEW
+-------------------
+The "mode" property sets sensible defaults for common use cases. Set it before
+overriding individual properties.
+
+  grid.mode = 'read-only'
+    No editing. Click to select cells. For display grids with copy support.
+    Sets: isEditable=false, cellSelectionMode='click'
+
+  grid.mode = 'excel'
+    Navigate cells with arrows, type to start editing, Escape to cancel.
+    Click+drag for cell selection.
+    Sets: isEditable=true, editTrigger='navigate', cellSelectionMode='click',
+          dropdownToggleVisibility='always'
+
+  grid.mode = 'input-matrix'
+    All cells always in edit mode. Shift+click for cell selection. Tab to
+    navigate between fields.
+    Sets: isEditable=true, editTrigger='always', cellSelectionMode='shift',
+          dropdownToggleVisibility='always', shouldShowDropdownOnFocus=true
+
+For detailed grid mode documentation, see grid-modes.txt.
+
+
+BROWSER SUPPORT
+---------------
+Chrome/Edge 88+
+Firefox 78+
+Safari 14+

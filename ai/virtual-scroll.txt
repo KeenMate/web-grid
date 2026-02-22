@@ -1,0 +1,146 @@
+VIRTUAL SCROLL AND INFINITE SCROLL
+===================================
+@keenmate/web-grid - Performance features for large datasets.
+
+
+VIRTUAL SCROLL
+--------------
+Virtual scroll renders only the rows visible in the viewport plus a small
+buffer, dramatically reducing DOM nodes for large datasets.
+
+
+PROPERTIES
+----------
+isVirtualScrollEnabled (boolean, default: false)
+  Explicitly enable virtual scroll.
+
+virtualScrollThreshold (number, default: 100)
+  Auto-enable virtual scroll when items.length >= this threshold. The grid
+  checks this automatically, so you often do not need to set
+  isVirtualScrollEnabled manually.
+
+virtualScrollRowHeight (number, default: 38)
+  Fixed row height in pixels. All rows MUST be the same height for virtual
+  scroll to calculate positions correctly. This value is used to compute
+  total scroll height, visible row range, and scroll offsets.
+
+virtualScrollBuffer (number, default: 10)
+  Number of extra rows rendered above and below the visible viewport. This
+  prevents blank flashes during fast scrolling. Higher values render more
+  DOM nodes but provide smoother scrolling.
+
+
+HOW IT WORKS
+------------
+The grid calculates which rows are visible based on:
+  - scrollTop of the scroll container
+  - viewportHeight (clientHeight of container minus header height)
+  - virtualScrollRowHeight (fixed height per row)
+
+A spacer element with the total height (rowCount * rowHeight) is placed in
+the table to create the correct scrollbar. Only rows in the visible range
+(plus buffer) are rendered as actual DOM elements. When the user scrolls,
+the visible range is recalculated and rows are added/removed.
+
+The grid uses shouldUseVirtualScroll() internally which returns true when
+isVirtualScrollEnabled is set OR when items.length >= virtualScrollThreshold.
+
+
+KEYBOARD NAVIGATION WITH VIRTUAL SCROLL
+----------------------------------------
+Arrow keys, PageUp, PageDown, Home, and End all work with virtual scroll.
+When navigating to a row outside the current viewport:
+  - The grid scrolls to make the target row visible with minimal movement
+  - For PageUp/PageDown, the target row is positioned as the second visible
+    row (one row of context above)
+  - Focus is set after the scroll-triggered re-render completes
+
+
+FIXED ROW HEIGHT REQUIREMENT
+-----------------------------
+Virtual scroll requires all rows to be exactly virtualScrollRowHeight pixels
+tall. Variable row heights are NOT supported. If rows have different content
+heights, set a fixed height via CSS:
+
+  web-grid {
+    --wg-row-min-height: 38px;
+  }
+
+Or use textOverflow: 'ellipsis' on columns to prevent text wrapping.
+
+
+EXAMPLE
+-------
+  grid.items = largeDataset           // 10,000 rows
+  grid.virtualScrollRowHeight = 40    // Each row is 40px
+  grid.virtualScrollBuffer = 15       // Render 15 extra rows each side
+  // virtualScrollThreshold defaults to 100, so virtual scroll activates
+  // automatically for datasets >= 100 rows
+
+
+INFINITE SCROLL
+---------------
+Infinite scroll triggers a data load when the user scrolls near the bottom.
+It is designed for "load more" patterns with server-side data.
+
+
+PROPERTIES
+----------
+isInfiniteScrollEnabled (boolean, default: false)
+  Enable infinite scroll behavior.
+
+infiniteScrollThreshold (number, default: 100)
+  Distance from the bottom of the scroll container (in pixels) at which
+  the ondatarequest event fires to load more data.
+
+hasMoreItems (boolean, default: true)
+  Set to false when there is no more data to load. This prevents further
+  ondatarequest events from firing.
+
+
+HOW IT WORKS
+------------
+When the user scrolls within infiniteScrollThreshold pixels of the bottom,
+the grid fires the ondatarequest event with:
+  trigger: 'loadMore'
+  mode: 'append'
+  skip: current items.length
+
+The consumer should:
+  1. Fetch the next batch of data from the server
+  2. Append it to the existing items array
+  3. Set hasMoreItems = false when the server returns no more data
+
+Example:
+  grid.isInfiniteScrollEnabled = true
+  grid.infiniteScrollThreshold = 200
+  grid.ondatarequest = async (detail) => {
+    if (detail.trigger === 'loadMore') {
+      const newItems = await fetchItems(detail.skip, detail.pageSize)
+      grid.items = [...grid.items, ...newItems]
+      if (newItems.length < detail.pageSize) {
+        grid.hasMoreItems = false
+      }
+    }
+  }
+
+
+COMBINING VIRTUAL AND INFINITE SCROLL
+--------------------------------------
+Virtual scroll and infinite scroll can be used together. The grid renders
+only visible rows (virtual scroll) while loading more data as the user
+scrolls toward the bottom (infinite scroll). This is the recommended
+pattern for very large server-side datasets.
+
+
+PERFORMANCE CONSIDERATIONS
+--------------------------
+- Virtual scroll reduces DOM nodes from N rows to roughly
+  (viewportHeight / rowHeight) + (2 * buffer) rows
+- For 10,000 rows with buffer=10, about 30-40 DOM rows exist at any time
+- Column count still affects performance (each row has N cells)
+- beforeCommitCallback, formatCallback, and other per-cell callbacks still
+  run only for rendered cells
+- Cell selection and clipboard operations work across the full dataset,
+  not just visible rows
+- Sorting and filtering operate on the full items array

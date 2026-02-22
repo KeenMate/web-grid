@@ -1,0 +1,297 @@
+CALLBACKS AND EVENTS
+====================
+@keenmate/web-grid - Complete reference for all callbacks and events.
+
+
+NAMING CONVENTION
+-----------------
+on* = Events (fire-and-forget notifications, return value is ignored)
+*Callback = Callbacks (return value affects component behavior)
+
+Events can be safely ignored. The component works without them.
+Callbacks affect behavior. The component depends on the return value.
+
+
+GRID-LEVEL EVENTS (PROPERTY-BASED)
+-----------------------------------
+All events are set as properties on the grid element. They are NOT DOM
+CustomEvents (except onrowdelete which is both).
+
+onrowchange
+  Signature: (detail: RowChangeDetail<T>) => void
+  Fires when a cell value changes (after commit).
+  Detail: { row, draftRow, rowIndex, field, oldValue, newValue, isValid, validationError }
+  The row is the original (unchanged). The draftRow contains the user's edits
+  including invalid values.
+
+onroweditstart
+  Signature: (detail: { row: T, rowIndex: number, field: string }) => void
+  Fires when editing begins on a cell.
+
+onroweditcancel
+  Signature: (detail: { row: T, rowIndex: number, field: string }) => void
+  Fires when the user cancels an edit (Escape key).
+
+onvalidationerror
+  Signature: (detail: { row: T, rowIndex: number, field: string, error: string }) => void
+  Fires when beforeCommitCallback or validateCallback rejects a value.
+
+ontoolbarclick
+  Signature: (detail: ToolbarClickDetail<T>) => void
+  Fires when a toolbar button is clicked.
+  Detail: { item: NormalizedToolbarItem<T>, rowIndex: number, row: T }
+
+onrowaction
+  Signature: (detail: { action: string, rowIndex: number, row: T }) => void
+  LEGACY. Use ontoolbarclick instead.
+
+oncontextmenuopen
+  Signature: (context: ContextMenuContext<T>) => void
+  Fires when the cell/row context menu opens.
+  Context: { row, rowIndex, colIndex, column, cellValue }
+
+onheadercontextmenuopen
+  Signature: (context: HeaderMenuContext<T>) => void
+  Fires when the header context menu opens.
+  Context: { column, field, columnIndex, sortDirection, isFrozen, allColumns, labels }
+
+ondatarequest
+  Signature: (detail: DataRequestDetail) => void
+  Fires when sort, page, or pageSize changes.
+  Detail: { sort, page, pageSize, trigger, mode, skip }
+  trigger: 'sort' | 'page' | 'pageSize' | 'init' | 'loadMore'
+  mode: 'replace' | 'append' (append for infinite scroll loadMore)
+
+onrowdelete
+  Signature: (detail: { rowIndex: number, row: T }) => void
+  Fires when Ctrl+Delete is pressed on a row.
+  NOTE: This is the ONLY callback also dispatched as a DOM CustomEvent.
+  Both the property callback and addEventListener('rowdelete', ...) work.
+
+onrowfocus
+  Signature: (detail: RowFocusDetail<T>) => void
+  Fires when a different row is focused (useful for master/detail patterns).
+  Detail: { rowIndex, row, previousRowIndex }
+
+onrowlockchange
+  Signature: (detail: RowLockChangeDetail<T>) => void
+  Fires when a row's lock state changes.
+  Detail: { rowId, row, rowIndex, lockInfo, source }
+  source: 'property' | 'callback' | 'external'
+
+oncolumnresize
+  Signature: (detail: ColumnResizeDetail) => void
+  Fires when a column is resized by dragging.
+  Detail: { field, oldWidth, newWidth, allWidths }
+
+oncolumnreorder
+  Signature: (detail: ColumnReorderDetail) => void
+  Fires when a column is reordered by dragging.
+  Detail: { field, fromIndex, toIndex, allOrder }
+
+oncellselectionchange
+  Signature: (detail: CellSelectionChangeDetail) => void
+  Fires when the cell range selection changes.
+  Detail: { range: CellRange | null, cellCount: number }
+
+onbeforepaste
+  Signature: (detail: BeforePasteDetail<T>) => void
+  Fires before paste is applied. Allows cancellation or cell skipping.
+  Detail: { rawText, parsedRows, hasHeaders, headerMapping, targetRowIndex,
+  targetColIndex, newRowsCount, cancel, skipCells }
+  Set detail.cancel = true to cancel the entire paste.
+  Add "row-col" keys to detail.skipCells to skip specific cells.
+
+onpaste
+  Signature: (detail: PasteDetail<T>) => void
+  Fires after paste is applied.
+  Detail: { totalCells, successfulCells, failedCells, skippedCells,
+  newRowsCreated, cellResults, hadHeaders }
+
+
+GRID-LEVEL CALLBACKS (RETURN VALUE MATTERS)
+-------------------------------------------
+
+fillDragCallback
+  Signature: (detail: FillDragDetail) => boolean | void
+  Called when fill handle drag completes. Return false to cancel the fill.
+
+paginationLabelsCallback
+  Signature: (context: PaginationLabelsContext) => Partial<PaginationLabels>
+  Returns translated/customized pagination text labels.
+
+summaryContentCallback
+  Signature: (context: SummaryContext<T>) => string
+  Returns HTML string for the summary bar content.
+
+customStylesCallback
+  Signature: () => string
+  Returns CSS string injected into the shadow DOM.
+
+rowClassCallback
+  Signature: (row: T, rowIndex: number) => string | null
+  Returns CSS class name(s) to apply to a row element.
+
+validationTooltipCallback
+  Signature: (context: ValidationTooltipContext<T>) => string | null
+  Returns HTML string for validation error tooltips (grid-level default).
+
+shortcutsHelpContentCallback
+  Signature: () => string
+  Returns custom HTML to display alongside the shortcuts help list.
+
+createRowCallback
+  Signature: (pastedData: Record<string, unknown>, rowIndex: number) => T
+  Creates a new row object from pasted data when paste adds rows beyond the
+  current items array. Required for multi-row paste to create new rows.
+
+createEmptyRowCallback
+  Signature: () => T | Promise<T>
+  Creates a blank row for the new-row entry feature (isNewRowEnabled).
+  Called when the user focuses the empty row at the bottom/top.
+
+
+COLUMN-LEVEL CALLBACKS (ON COLUMN<T>)
+--------------------------------------
+
+formatCallback
+  Signature: (value: unknown, row: T) => string
+  Returns formatted display string for the cell value. Text only (no HTML).
+
+templateCallback
+  Signature: (row: T) => string
+  Returns HTML string for custom cell content.
+
+renderCallback
+  Signature: (row: T, element: HTMLElement) => void
+  Imperative cell rendering. Receives the <td> element directly.
+  NOTE: Defined in the type system but not yet wired into rendering.
+
+tooltipCallback
+  Signature: (value: unknown, row: T) => string | null
+  Returns tooltip text for the cell. Takes priority over tooltipMember.
+
+validateCallback (DEPRECATED)
+  Signature: (value: unknown, row: T) => string | null | Promise<string | null>
+  Returns error message or null. Use beforeCommitCallback instead.
+
+beforeCommitCallback
+  Signature: (context: BeforeCommitContext<T>) => BeforeCommitResult | Promise<BeforeCommitResult>
+  Validates and optionally transforms value before commit.
+  Context: { value, oldValue, row, rowIndex, field }
+  Return values:
+    { valid: true }                          Accept
+    { valid: true, transformedValue: x }     Accept with transformation
+    { valid: false, message: 'Error' }       Reject with message
+    true / null / undefined                  Accept
+    false                                    Reject (no message)
+    'Error message'                          Reject with that string as message
+
+cellEditCallback
+  Signature: (context: CustomEditorContext<T>) => void
+  Handler for editor: 'custom'. Receives { value, row, rowIndex, field, commit, cancel }.
+
+cellClassCallback
+  Signature: (value: unknown, row: T) => string | null
+  Returns dynamic CSS class name(s) for cells in this column.
+
+validationTooltipCallback (column-level)
+  Signature: (context: ValidationTooltipContext<T>) => string | null
+  Returns HTML for this column's validation error tooltip. Overrides grid-level.
+
+beforeCopyCallback
+  Signature: (value: unknown, row: T) => string
+  Transforms value before copying to clipboard.
+
+beforePasteCallback
+  Signature: (value: string, row: T) => unknown
+  Processes pasted value before applying to the cell.
+
+
+EDITOR OPTION CALLBACKS (ON EDITOROPTIONS<T>)
+----------------------------------------------
+These are set inside column.editorOptions for select, combobox, and
+autocomplete editor types.
+
+loadOptions
+  Signature: (row: T, field: string) => Promise<EditorOption[]>
+  Async option loader. Trigger controlled by optionsLoadTrigger.
+
+getValueCallback
+  Signature: (option: EditorOption) => string | number
+  Returns the value to store from an option.
+
+getDisplayCallback
+  Signature: (option: EditorOption) => string
+  Returns the display text for an option.
+
+getSearchCallback
+  Signature: (option: EditorOption) => string
+  Returns searchable text (falls back to display text).
+
+getIconCallback
+  Signature: (option: EditorOption) => string
+  Returns icon/emoji for an option.
+
+getSubtitleCallback
+  Signature: (option: EditorOption) => string
+  Returns subtitle/description for an option.
+
+getDisabledCallback
+  Signature: (option: EditorOption) => boolean
+  Returns whether an option is disabled.
+
+getGroupCallback
+  Signature: (option: EditorOption) => string
+  Returns group name for grouping options.
+
+renderOptionCallback
+  Signature: (option: EditorOption, context: OptionRenderContext) => string
+  Returns custom HTML for rendering an option in the dropdown.
+  Context: { index, isHighlighted, isSelected, isDisabled }
+
+onselect
+  Signature: (option: EditorOption, row: T) => void
+  Event (fire-and-forget). Fires when an option is selected.
+
+searchCallback (autocomplete only)
+  Signature: (query: string, row: T, signal?: AbortSignal) => Promise<EditorOption[]>
+  Async search function. Receives AbortSignal for cancellation on new searches.
+
+
+CONTEXT MENU ITEM CALLBACKS
+----------------------------
+
+onclick (on ContextMenuItem<T>)
+  Signature: (context: ContextMenuContext<T>) => void | Promise<void>
+  Context: { row, rowIndex, colIndex, column, cellValue }
+
+onclick (on HeaderMenuItem<T>)
+  Signature: (context: HeaderMenuContext<T>) => void | Promise<void>
+  Context: { column, field, columnIndex, sortDirection, isFrozen, allColumns, labels }
+
+label/icon/disabled/visible can be static values or functions receiving context.
+submenu: (context) => HeaderMenuItem[] for dynamic submenus.
+
+
+TOOLBAR ITEM CALLBACKS
+-----------------------
+
+onclick (on RowToolbarItem<T>)
+  Signature: (detail: { row: T, rowIndex: number }) => void | Promise<void>
+
+disabled: boolean | (row: T, rowIndex: number) => boolean
+hidden: boolean | (row: T, rowIndex: number) => boolean
+tooltipCallback: (row: T, rowIndex: number) => string
+
+
+SHORTCUT CALLBACKS
+------------------
+
+RowShortcut<T>.action
+  Signature: (ctx: ShortcutContext<T>) => void | Promise<void>
+  Context: { row, rowIndex, colIndex, column, cellValue }
+
+RangeShortcut<T>.action
+  Signature: (ctx: RangeShortcutContext<T>) => void | Promise<void>
+  Context: { rows, rowIndices, cellRange?, cells? }

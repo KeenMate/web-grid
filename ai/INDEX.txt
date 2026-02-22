@@ -1,0 +1,360 @@
+DOCUMENTATION INDEX
+===================
+
+Quick reference for finding documentation on specific topics.
+
+FILE OVERVIEW
+-------------
+basic-setup.txt                  - Installation, imports, first grid, critical notes
+columns.txt                      - Column definitions, field types, alignment, templates
+editing.txt                      - Inline editing, editor types, draft management, validation
+dropdown-editors.txt             - Select, combobox, autocomplete editors and EditorOptions
+grid-modes.txt                   - Mode property, presets (display, navigate, inline, etc.)
+selection.txt                    - Row selection, cell ranges, column selection, row focus
+sorting-filtering-pagination.txt - Sorting, filtering, pagination, server-side data, summary
+keyboard-navigation.txt          - Navigation keys, editing keys, custom shortcuts, help overlay
+toolbar-actions.txt              - Row toolbar, inline actions, cell toolbar, context menus
+callbacks-events.txt             - All events (on*) and callbacks (*Callback) reference
+public-methods.txt               - All public methods on the <web-grid> element
+frozen-columns.txt               - Freeze columns to left during horizontal scroll
+fill-handle.txt                  - Excel-like drag-to-fill for copying cell values
+virtual-scroll.txt               - Virtual scroll and infinite scroll for large datasets
+row-locking.txt                  - Optimistic row locking, external lock management
+styling-theming.txt              - CSS variables, --base-* integration, theming
+typescript-types.txt             - All exported TypeScript type definitions
+
+KEYWORD INDEX
+=============
+
+A
+-
+Accessibility -> keyboard-navigation.txt
+Actions -> toolbar-actions.txt
+Alignment -> columns.txt
+Autocomplete -> dropdown-editors.txt
+Auto-scroll -> frozen-columns.txt, keyboard-navigation.txt
+
+B
+-
+beforeCommitCallback -> editing.txt, callbacks-events.txt, columns.txt
+Border -> styling-theming.txt
+
+C
+-
+Callbacks -> callbacks-events.txt, columns.txt, editing.txt
+Cell editing -> editing.txt, columns.txt
+Cell focus -> selection.txt, keyboard-navigation.txt
+Cell range selection -> selection.txt
+Cell toolbar -> toolbar-actions.txt
+cellClass -> columns.txt
+cellClassCallback -> columns.txt
+cellEditCallback -> columns.txt, callbacks-events.txt
+cellSelectionMode -> selection.txt
+Checkboxes -> selection.txt
+Column definition -> columns.txt, typescript-types.txt
+Column order -> public-methods.txt, columns.txt
+Column resize -> columns.txt
+Column selection -> selection.txt
+Combobox -> dropdown-editors.txt
+commitDraft -> editing.txt, public-methods.txt
+Context menu -> toolbar-actions.txt
+Copy/paste -> keyboard-navigation.txt, selection.txt
+createEmptyRowCallback -> callbacks-events.txt, editing.txt
+createRowCallback -> callbacks-events.txt
+CSS variables -> styling-theming.txt
+Custom element -> basic-setup.txt
+
+D
+-
+Data request -> sorting-filtering-pagination.txt, callbacks-events.txt
+Delete row -> keyboard-navigation.txt, callbacks-events.txt
+Disabled columns -> columns.txt
+Draft management -> editing.txt, public-methods.txt
+Drag-to-fill -> fill-handle.txt
+Dropdown editors -> dropdown-editors.txt
+
+E
+-
+editAllRows -> editing.txt, grid-modes.txt
+editBehavior -> editing.txt
+Editor types -> editing.txt, dropdown-editors.txt
+editTrigger -> editing.txt
+EditorOptions -> dropdown-editors.txt, typescript-types.txt
+Events -> callbacks-events.txt
+Export -> keyboard-navigation.txt, selection.txt
+
+F
+-
+Field -> columns.txt
+Fill handle -> fill-handle.txt
+fillDragCallback -> fill-handle.txt, callbacks-events.txt
+fillDirection -> fill-handle.txt, columns.txt
+Filter -> sorting-filtering-pagination.txt
+focusCell -> public-methods.txt
+formatCallback -> columns.txt, callbacks-events.txt
+freezeColumns -> frozen-columns.txt
+Frozen columns -> frozen-columns.txt
+
+G
+-
+getDisplayCallback -> dropdown-editors.txt, callbacks-events.txt
+getValueCallback -> dropdown-editors.txt, callbacks-events.txt
+Grid labels -> sorting-filtering-pagination.txt, callbacks-events.txt
+Grid modes -> grid-modes.txt
+Groups -> dropdown-editors.txt
+
+H
+-
+Header menu -> toolbar-actions.txt
+headerInfo -> columns.txt
+Help overlay -> keyboard-navigation.txt
+Horizontal align -> columns.txt
+
+I
+-
+idValueCallback -> editing.txt, row-locking.txt
+idValueMember -> editing.txt, row-locking.txt
+Infinite scroll -> virtual-scroll.txt
+Inline actions -> toolbar-actions.txt
+inlineActionsTitle -> toolbar-actions.txt
+Installation -> basic-setup.txt
+isEditable -> columns.txt, editing.txt
+isFrozen -> frozen-columns.txt, columns.txt
+isLocked -> row-locking.txt
+isSortable -> columns.txt, sorting-filtering-pagination.txt
+isVirtualScrollEnabled -> virtual-scroll.txt
+Items -> basic-setup.txt
+
+K
+-
+Keyboard navigation -> keyboard-navigation.txt
+Keyboard shortcuts -> keyboard-navigation.txt
+
+L
+-
+Labels -> sorting-filtering-pagination.txt, callbacks-events.txt
+Lock -> row-locking.txt
+lockRowById -> row-locking.txt, public-methods.txt
+
+M
+-
+maxLines -> columns.txt
+Methods -> public-methods.txt
+Mode -> grid-modes.txt
+Multiple sort -> sorting-filtering-pagination.txt
+
+N
+-
+Navigate mode -> grid-modes.txt, editing.txt
+New row entry -> editing.txt
+newRowPosition -> editing.txt
+isNewRowEnabled -> editing.txt
+
+O
+-
+oncontextmenuopen -> callbacks-events.txt, toolbar-actions.txt
+ondatarequest -> callbacks-events.txt, sorting-filtering-pagination.txt
+onrowchange -> callbacks-events.txt, editing.txt
+onroweditstart -> callbacks-events.txt, editing.txt
+onrowlockchange -> callbacks-events.txt, row-locking.txt
+onselectionchange -> callbacks-events.txt, selection.txt
+onbeforepaste -> callbacks-events.txt
+onpaste -> callbacks-events.txt
+
+P
+-
+Pagination -> sorting-filtering-pagination.txt
+Paste -> callbacks-events.txt, keyboard-navigation.txt
+Public methods -> public-methods.txt
+
+R
+-
+renderOptionCallback -> dropdown-editors.txt, callbacks-events.txt
+Resize -> columns.txt
+Row focus -> selection.txt
+Row locking -> row-locking.txt
+Row numbers -> columns.txt, basic-setup.txt
+Row selection -> selection.txt
+Row shortcuts -> keyboard-navigation.txt
+Row toolbar -> toolbar-actions.txt
+rowLocking -> row-locking.txt, typescript-types.txt
+RowToolbarConfig -> toolbar-actions.txt, typescript-types.txt
+
+S
+-
+searchCallback -> dropdown-editors.txt, callbacks-events.txt
+Select editor -> dropdown-editors.txt
+Selection -> selection.txt
+Shadow DOM -> basic-setup.txt, styling-theming.txt
+Shift+click -> selection.txt
+Shortcuts -> keyboard-navigation.txt
+Sort -> sorting-filtering-pagination.txt
+sortMode -> sorting-filtering-pagination.txt
+SortState -> sorting-filtering-pagination.txt, typescript-types.txt
+Sticky headers -> styling-theming.txt
+Summary bar -> sorting-filtering-pagination.txt
+
+T
+-
+templateCallback -> columns.txt, callbacks-events.txt
+Text overflow -> columns.txt
+Theming -> styling-theming.txt
+Toolbar -> toolbar-actions.txt
+tooltipCallback -> columns.txt, callbacks-events.txt
+TypeScript -> typescript-types.txt
+Types -> typescript-types.txt
+
+U
+-
+unlockRowById -> row-locking.txt, public-methods.txt
+
+V
+-
+validateCallback -> editing.txt, columns.txt, callbacks-events.txt
+Validation -> editing.txt
+Vertical align -> columns.txt
+Virtual scroll -> virtual-scroll.txt
+virtualScrollThreshold -> virtual-scroll.txt
+
+W
+-
+Web component -> basic-setup.txt
+Width -> columns.txt
+--wg-* variables -> styling-theming.txt
+
+Z
+-
+z-index -> frozen-columns.txt, styling-theming.txt
+
+COMMON QUESTIONS
+================
+
+Q: How do I get started?
+A: -> basic-setup.txt
+
+Q: How do I define columns?
+A: -> columns.txt
+
+Q: How do I enable editing?
+A: -> editing.txt
+
+Q: How do I use dropdown editors (select, combobox, autocomplete)?
+A: -> dropdown-editors.txt
+
+Q: What do the grid modes do?
+A: -> grid-modes.txt
+
+Q: How does row selection work?
+A: -> selection.txt
+
+Q: How do I enable cell range selection?
+A: -> selection.txt (CELL RANGE SELECTION section)
+
+Q: How do I add sorting, filtering, or pagination?
+A: -> sorting-filtering-pagination.txt
+
+Q: What keyboard shortcuts are available?
+A: -> keyboard-navigation.txt
+
+Q: How do I add action buttons to rows?
+A: -> toolbar-actions.txt
+
+Q: How do I add a context menu?
+A: -> toolbar-actions.txt (CELL CONTEXT MENU section)
+
+Q: What events and callbacks are available?
+A: -> callbacks-events.txt
+
+Q: What public methods does the grid have?
+A: -> public-methods.txt
+
+Q: How do I freeze columns?
+A: -> frozen-columns.txt
+
+Q: How do I use the fill handle (drag-to-fill)?
+A: -> fill-handle.txt
+
+Q: My grid is slow with large datasets
+A: -> virtual-scroll.txt
+
+Q: How do I implement row locking?
+A: -> row-locking.txt
+
+Q: How do I customize colors and styles?
+A: -> styling-theming.txt
+
+Q: Where are the TypeScript types?
+A: -> typescript-types.txt
+
+Q: How do I do server-side sorting/filtering/pagination?
+A: -> sorting-filtering-pagination.txt (SERVER-SIDE section)
+
+Q: How do I validate cell edits?
+A: -> editing.txt (VALIDATION section)
+
+Q: How do I add custom keyboard shortcuts?
+A: -> keyboard-navigation.txt (CUSTOM SHORTCUTS section)
+
+Q: How do I handle paste events?
+A: -> callbacks-events.txt (onbeforepaste, onpaste)
+
+Q: How do I add a new-row entry row?
+A: -> editing.txt (NEW ROW ENTRY section)
+
+FEATURES BY CATEGORY
+====================
+
+GETTING STARTED
+- Installation and imports -> basic-setup.txt
+- First grid -> basic-setup.txt
+- Grid modes -> grid-modes.txt
+
+DATA & COLUMNS
+- Column definitions -> columns.txt
+- Editor types -> editing.txt, dropdown-editors.txt
+- Templates and formatting -> columns.txt
+- TypeScript types -> typescript-types.txt
+
+EDITING
+- Inline editing -> editing.txt
+- New row entry -> editing.txt
+- Draft management -> editing.txt
+- Validation -> editing.txt
+- Dropdown editors -> dropdown-editors.txt
+- Fill handle -> fill-handle.txt
+
+SELECTION & NAVIGATION
+- Row selection -> selection.txt
+- Cell range selection -> selection.txt
+- Column selection -> selection.txt
+- Keyboard navigation -> keyboard-navigation.txt
+- Custom shortcuts -> keyboard-navigation.txt
+
+DATA DISPLAY
+- Sorting -> sorting-filtering-pagination.txt
+- Filtering -> sorting-filtering-pagination.txt
+- Pagination -> sorting-filtering-pagination.txt
+- Server-side data -> sorting-filtering-pagination.txt
+- Summary bar -> sorting-filtering-pagination.txt
+
+ACTIONS & MENUS
+- Row toolbar -> toolbar-actions.txt
+- Inline actions -> toolbar-actions.txt
+- Cell toolbar -> toolbar-actions.txt
+- Context menus -> toolbar-actions.txt
+- Header menu -> toolbar-actions.txt
+
+PERFORMANCE
+- Virtual scroll -> virtual-scroll.txt
+- Infinite scroll -> virtual-scroll.txt
+- Frozen columns -> frozen-columns.txt
+
+CUSTOMIZATION
+- CSS variables -> styling-theming.txt
+- Theming -> styling-theming.txt
+- Row locking -> row-locking.txt
+
+API REFERENCE
+- Events and callbacks -> callbacks-events.txt
+- Public methods -> public-methods.txt
+- TypeScript types -> typescript-types.txt

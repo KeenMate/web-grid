@@ -1,0 +1,429 @@
+KEYBOARD NAVIGATION AND SHORTCUTS
+==================================
+This document covers all keyboard interactions in @keenmate/web-grid:
+cell navigation, editing triggers, row operations, custom shortcuts,
+and the shortcuts help overlay.
+
+
+NAVIGATION KEYS
+---------------
+These keys work when a cell is focused but NOT in edit mode (navigate state).
+Arrow keys move one cell at a time. Other keys jump farther.
+
+  Arrow Up        Move focus one row up (same column)
+  Arrow Down      Move focus one row down (same column)
+  Arrow Left      Move focus one column left (same row)
+  Arrow Right     Move focus one column right (same row)
+
+  Tab             Move to next editable column. Wraps to first editable
+                  column of next row when at the end of a row.
+  Shift+Tab       Move to previous editable column. Wraps to last editable
+                  column of previous row when at the start of a row.
+
+  Home            Move to first column in the current row
+  End             Move to last column in the current row
+  Ctrl+Home       Move to first cell in the grid (row 0, column 0)
+  Ctrl+End        Move to last cell in the grid (last row, last column)
+
+  PageUp          Move up ~10 rows (same column)
+  PageDown        Move down ~10 rows (same column)
+  Ctrl+PageUp     Move to first row (same column)
+  Ctrl+PageDown   Move to last row (same column)
+
+  Enter           Move to next row (same column). If Tab was used before
+                  Enter, the column resets to where Tab traversal started
+                  (Excel-like behavior).
+
+  Ctrl+G          Open "Go To Row" dialog for jumping to a specific row number
+
+Tab traversal tracks a "start column." When you Tab across columns and then
+press Enter, focus moves down to the next row at the column where you started
+Tab traversal. Arrow keys reset this tracking.
+
+
+EDITING KEYS
+------------
+These keys start or control cell editing. Behavior depends on the column's
+editor type (text, number, checkbox, select, combobox, autocomplete, date,
+custom) and the grid's editTrigger setting.
+
+  Enter           Start editing for dropdown/date editors (if
+                  shouldOpenDropdownOnEnter is true). For text/number
+                  editors, Enter navigates down (does not start editing).
+  F2              Start editing the focused cell. For dropdown editors,
+                  also opens the dropdown. For date editors, opens the
+                  date picker. For custom editors, calls cellEditCallback.
+  Space           Toggle checkbox value. For dropdown/date/custom editors,
+                  starts editing and opens the respective picker/editor.
+  Escape          If editing with dropdown/datepicker open: first press
+                  closes the dropdown/datepicker. Second press cancels the
+                  edit and returns to navigate mode. If no dropdown is open,
+                  first press cancels the edit. If not editing, clears focus.
+  Delete          Clear cell content (sets value to null) for editable cells.
+  Ctrl+C          Copy focused cell value (or cell selection) to clipboard.
+
+  Any printable   Start editing with that character as initial input. For
+  character       text editors, the character replaces the cell value. For
+                  combobox/autocomplete, it becomes the initial search query.
+                  For number editors, only digits/dot/minus are accepted.
+
+When a dropdown is open during editing:
+  Arrow Up/Down   Navigate through dropdown options
+  PageUp/PageDown Jump ~10 options in the dropdown
+  Home/End        Jump to first/last option (select/combobox only;
+                  autocomplete lets the browser handle cursor movement)
+  Enter           Select the highlighted option and commit
+  Tab             Select the highlighted option and move to next cell
+  Escape          Close dropdown (first press), cancel edit (second press)
+
+
+ROW OPERATION KEYS
+------------------
+These built-in keys operate on the currently focused row.
+
+  Ctrl+Delete     Fire the onrowdelete callback and dispatch a 'rowdelete'
+                  CustomEvent. Does NOT delete the row automatically.
+                  The consumer must handle deletion in the callback.
+
+                  grid.onrowdelete = ({ rowIndex, row }) => {
+                    grid.items = grid.items.filter((_, i) => i !== rowIndex)
+                  }
+
+Row move operations (Ctrl+Up to move row up, Ctrl+Down to move row down)
+are available as predefined toolbar items ('moveUp', 'moveDown'), not as
+built-in keyboard shortcuts. To add them as keyboard shortcuts, use
+rowShortcuts (see below).
+
+
+ROW SHORTCUTS
+-------------
+rowShortcuts defines keyboard shortcuts that operate on a single focused row.
+Each shortcut requires key, id, label, and action. The action receives a
+context with the row data and position.
+
+Type definition:
+
+  type RowShortcut<T> = {
+    key: string                                     // Key combo string
+    id: string                                      // Unique identifier
+    label: string                                   // Display label for help overlay
+    action: (ctx: ShortcutContext<T>) => void        // Handler function
+    disabled?: boolean | ((ctx) => boolean)           // Optionally disable
+  }
+
+  type ShortcutContext<T> = {
+    row: T                  // The data object for the focused row
+    rowIndex: number        // Index in displayItems
+    colIndex: number        // Currently focused column index
+    column: Column<T>       // Column definition at colIndex
+    cellValue: unknown      // Raw value of the focused cell
+  }
+
+Example:
+
+  grid.rowShortcuts = [
+    {
+      key: 'Delete',
+      id: 'delete-row',
+      label: 'Delete row',
+      action: (ctx) => {
+        grid.items = grid.items.filter((_, i) => i !== ctx.rowIndex)
+      }
+    },
+    {
+      key: 'Ctrl+D',
+      id: 'duplicate-row',
+      label: 'Duplicate row',
+      action: (ctx) => {
+        const copy = { ...ctx.row, id: Date.now() }
+        grid.items = [
+          ...grid.items.slice(0, ctx.rowIndex + 1),
+          copy,
+          ...grid.items.slice(ctx.rowIndex + 1)
+        ]
+      }
+    },
+    {
+      key: 'Ctrl+Up',
+      id: 'move-up',
+      label: 'Move row up',
+      action: (ctx) => {
+        if (ctx.rowIndex === 0) return
+        const items = [...grid.items]
+        ;[items[ctx.rowIndex - 1], items[ctx.rowIndex]] =
+          [items[ctx.rowIndex], items[ctx.rowIndex - 1]]
+        grid.items = items
+      }
+    },
+    {
+      key: 'Shift+F2',
+      id: 'edit-details',
+      label: 'Edit in modal',
+      disabled: (ctx) => ctx.row.locked,
+      action: (ctx) => openEditModal(ctx.row)
+    }
+  ]
+
+Shortcuts are checked before built-in key handlers. If a shortcut matches,
+it consumes the event (preventDefault) and the built-in behavior is skipped.
+
+Shortcuts also work on hovered rows when the row toolbar is visible. The grid
+sets up document-level keydown listeners for the toolbar and inline toolbar
+modes, so shortcuts fire even without cell focus.
+
+
+RANGE SHORTCUTS
+---------------
+rangeShortcuts defines keyboard shortcuts that operate on multiple selected
+rows or a selected cell range. They work with both row selection (clicking
+row number column) and cell range selection (click+drag or Shift+click).
+
+Type definition:
+
+  type RangeShortcut<T> = {
+    key: string                                         // Key combo string
+    id: string                                          // Unique identifier
+    label: string                                       // Display label
+    action: (ctx: RangeShortcutContext<T>) => void       // Handler function
+    disabled?: boolean | ((ctx) => boolean)               // Optionally disable
+  }
+
+  type RangeShortcutContext<T> = {
+    // Always present (populated for row selection, empty arrays for cell range)
+    rows: T[]                // Selected row data objects (display order)
+    rowIndices: number[]     // Selected row indices (sorted ascending)
+
+    // Present only when a cell range is selected
+    cellRange?: CellRange    // { startRowIndex, startColIndex, endRowIndex,
+                             //   endColIndex, startField, endField }
+    cells?: Array<{          // Individual cells in the selected range
+      row: T
+      rowIndex: number
+      colIndex: number
+      field: string
+      value: unknown
+    }>
+  }
+
+Example:
+
+  grid.rangeShortcuts = [
+    {
+      key: 'Delete',
+      id: 'delete-selected',
+      label: 'Delete selected rows',
+      action: (ctx) => {
+        const indexSet = new Set(ctx.rowIndices)
+        grid.items = grid.items.filter((_, i) => !indexSet.has(i))
+      }
+    },
+    {
+      key: 'Ctrl+E',
+      id: 'export-selection',
+      label: 'Export selection',
+      action: (ctx) => {
+        if (ctx.cells) {
+          // Cell range selected - export cell data
+          exportCells(ctx.cells)
+        } else {
+          // Row selection - export full rows
+          exportRows(ctx.rows)
+        }
+      }
+    }
+  ]
+
+Range shortcuts are checked in two places:
+1. On the focused cell's keydown handler (when rows are selected)
+2. On the grid container's keydown handler (for cell range and row/column
+   selection when no individual cell has focus)
+
+Built-in range keys (no rangeShortcuts needed):
+  Ctrl+C          Copy selected rows/columns/cells to clipboard as TSV
+  Escape          Clear the current selection
+
+
+SHORTCUTS HELP OVERLAY
+----------------------
+When isShortcutsHelpVisible is true and rowShortcuts has entries, the grid
+displays a small info icon. Hovering or focusing the icon reveals an overlay
+listing all registered shortcuts with their key combinations and labels.
+
+Properties:
+
+  isShortcutsHelpVisible       boolean, default false
+                               Show the shortcuts help icon
+
+  shortcutsHelpPosition        'top-right' (default) or 'top-left'
+                               Where to place the icon in the grid
+
+  shortcutsHelpContentCallback () => string
+                               Return custom HTML to display above the
+                               shortcuts list in the overlay
+
+Example:
+
+  grid.isShortcutsHelpVisible = true
+  grid.shortcutsHelpPosition = 'top-right'
+
+  grid.shortcutsHelpContentCallback = () => {
+    return '<p>Use these shortcuts when a row is focused:</p>'
+  }
+
+
+KEY FORMAT
+----------
+Key combination strings use '+' as a separator between modifiers and the
+main key. Case-insensitive for modifiers, case-insensitive matching for
+letters.
+
+Modifiers:
+  Ctrl (or Control)
+  Shift
+  Alt
+  Meta (or Cmd, Command)
+
+Examples:
+  'Delete'          Delete key alone
+  'Ctrl+D'          Ctrl and D
+  'Ctrl+Alt+E'      Ctrl, Alt, and E
+  'Shift+F2'        Shift and F2
+  'Ctrl+Up'         Ctrl and Arrow Up (use 'ArrowUp' for the key name)
+  'Ctrl+Shift+Z'    Ctrl, Shift, and Z
+
+Note: The key name in the combo is matched against KeyboardEvent.key. For
+arrow keys, you can use either 'Up' or 'ArrowUp' since matching is done via
+e.key.toLowerCase(). The parsed combo stores the key as provided; matching
+compares lowercase versions.
+
+Under the hood, parseKeyCombo() splits on '+', identifies modifiers (ctrl,
+shift, alt, meta), and the remaining part becomes the key. matchesKeyCombo()
+checks that all modifier flags match and the key matches (case-insensitive).
+
+
+NAVIGATION BEHAVIOR BY EDIT MODE
+---------------------------------
+The editTrigger property (grid-level or per-column) changes how keyboard
+navigation interacts with editing. There are five modes: navigate, always,
+click, dblclick, and button.
+
+NAVIGATE MODE (editTrigger: 'navigate')
+  This is the mode set by mode: 'excel'. Cells display values. Arrow keys
+  move between cells. Typing starts editing with the typed character. F2
+  starts editing. Enter/Tab commit edits and move focus.
+
+  When not editing:
+    - Arrow keys move focus between cells
+    - Tab/Shift+Tab move between editable cells only
+    - Enter moves down (or starts edit for dropdown if configured)
+    - F2 starts edit
+    - Space toggles checkbox / opens dropdown / opens datepicker
+    - Printable characters start edit with that character
+    - Delete clears cell value
+
+  When editing:
+    - Arrow Up/Down for text editors: commit and navigate (pipeline mode)
+    - Arrow Left/Right for text editors: cursor movement (native browser)
+    - Arrow Left/Right for dropdown editors: cancel edit and navigate
+    - Tab commits and moves to next editable cell
+    - Enter commits and moves down
+    - Escape cancels edit (two-phase if dropdown is open)
+
+ALWAYS MODE (editTrigger: 'always')
+  This is the mode set by mode: 'input-matrix'. All cells render as editors
+  permanently. Focus moves between editor inputs directly.
+
+  - Tab/Shift+Tab commit current cell and move to next/previous editor
+  - Enter commits and moves to next row
+  - Arrow Up/Down commit and move up/down
+  - Arrow Left/Right are handled by the input (cursor movement) for text
+    editors; for dropdown editors, they navigate options when open
+  - Escape closes dropdown (first press) or clears focus (second press)
+  - The grid uses the action pipeline exclusively in this mode
+
+CLICK MODE (editTrigger: 'click')
+  Single click on a cell starts editing. Keyboard navigation works the same
+  as navigate mode when not editing.
+
+  - Click starts editing immediately
+  - While not editing, all navigation keys work normally
+  - While editing, same behavior as navigate mode editing
+
+DBLCLICK MODE (editTrigger: 'dblclick')
+  Double-click on a cell starts editing. This is the default editTrigger.
+
+  - Double-click starts editing
+  - While not editing, all navigation keys work normally
+  - While editing, same behavior as navigate mode editing
+  - In navigate mode, double-click also starts editing
+
+BUTTON MODE (editTrigger: 'button')
+  Editing is only triggered by the edit button (isEditButtonVisible: true).
+  Keyboard navigation works but does not start editing.
+
+READ-ONLY (isEditable: false or mode: 'read-only')
+  Navigation keys work normally (arrows, Tab, Home, End, PageUp, PageDown).
+  No editing keys function. Ctrl+C copies. Cell selection works if enabled.
+
+
+EDITOR-SPECIFIC NAVIGATION
+---------------------------
+Different editor types handle keys differently during editing:
+
+TEXT / NUMBER EDITORS:
+  - Arrow Left/Right: cursor movement within the input (native)
+  - Arrow Up/Down: commit edit and navigate (navigate/click/dblclick modes)
+  - Enter: commit and move down
+  - Tab: commit and move to next editable cell
+  - Escape: cancel edit
+
+CHECKBOX EDITOR:
+  - Space: toggle checked state
+  - Arrow keys: consumed (noop) while in edit mode
+  - Enter: commit and move down
+  - Tab: commit and move to next cell
+  - isCheckboxAlwaysEditable: when true, Space toggles checkbox even in
+    navigate mode without entering edit state
+
+SELECT / COMBOBOX / AUTOCOMPLETE EDITORS:
+  When dropdown is CLOSED:
+    - Arrow Left/Right: cancel edit and navigate to adjacent cell
+      (navigate mode only)
+    - Space/F2/Enter: open the dropdown
+    - Typing: for select, type-to-filter (keys accumulate as filter text,
+      Backspace removes last character)
+
+  When dropdown is OPEN:
+    - Arrow Up/Down: navigate through options (skip disabled)
+    - PageUp/PageDown: jump ~10 options
+    - Home/End: first/last option (select/combobox only)
+    - Enter: select highlighted option, commit, move down
+    - Tab: select highlighted option, commit, move to next cell
+    - Escape: close dropdown (first press); cancel edit (second press).
+      For combobox/autocomplete, first Escape restores original display
+      value if input was modified.
+    - Arrow Left/Right: for autocomplete, cursor movement in input.
+      For select/combobox, consumed (noop).
+
+DATE EDITOR:
+  - When datepicker is open, Arrow/PageUp/PageDown/Home/End/Enter/Escape/Tab
+    are handled by the datepicker component, not the grid
+  - F2 or Space from navigate mode: start edit and open datepicker
+  - Enter from navigate mode: start edit and open datepicker
+
+CUSTOM EDITOR:
+  - F2 or Space from navigate mode: start edit and call cellEditCallback
+  - The custom editor receives commit() and cancel() functions
+  - Grid does not handle keydown inside custom editors
+
+
+CLIPBOARD KEYS
+--------------
+  Ctrl+C          Copy focused cell, selected rows, selected columns, or
+                  cell range to clipboard as TSV (tab-separated values).
+                  Compatible with Excel paste.
+  Ctrl+V          Paste TSV data from clipboard into the grid starting at
+                  the focused cell. Multi-cell paste supported.
+
+shouldCopyWithHeaders (boolean, default false): when true, column headers
+are included as the first row when copying cell selections.

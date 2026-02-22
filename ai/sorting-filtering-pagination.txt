@@ -1,0 +1,375 @@
+SORTING, FILTERING, AND PAGINATION
+===================================
+Reference for @keenmate/web-grid sorting, filtering, pagination, server-side
+data, and summary bar features. All properties are set via JavaScript on the
+<web-grid> element. See basic-setup.txt for installation and imports.
+
+
+SORTING
+-------
+Sorting is controlled by two grid-level properties and one per-column flag.
+
+Grid properties:
+  sortMode    String. Default: 'none'. Values: 'none', 'single', 'multi'.
+              'none' disables sorting entirely.
+              'single' allows one column sorted at a time.
+              'multi' allows multiple columns sorted simultaneously.
+
+  sort        Array of SortState objects. Default: [].
+              Each entry: { column: string, direction: 'asc' | 'desc' }
+              Set this to provide initial sort or reflect server-side sort.
+              Readable and writable at any time.
+
+Per-column flag:
+  isSortable  Boolean on column definition. When set, this column participates
+              in sorting when the grid's sortMode is 'single' or 'multi'.
+
+User interaction:
+  - Click a sortable column header: sets that column as the sole sort (asc).
+  - Click the same header again: toggles to desc.
+  - Click the same header a third time: clears sorting.
+  - Ctrl+Click (or Cmd+Click) in multi mode: adds the column to the existing
+    sort. If already sorted asc, toggles to desc. If already desc, removes it.
+
+When sorting changes, the grid resets currentPage to 1 and fires the
+ondatarequest callback with trigger='sort'.
+
+Client-side sorting (default): the grid sorts items automatically using
+localeCompare for strings, numeric comparison for numbers, and string
+coercion as fallback. Multi-column sort compares columns in priority order.
+
+Server-side sorting: set ondatarequest to fetch data from your server.
+The detail.sort array tells you the requested sort state.
+
+Example -- enable multi-column sort with initial state:
+
+  const grid = document.getElementById('grid')
+  grid.sortMode = 'multi'
+  grid.sort = [
+    { column: 'lastName', direction: 'asc' },
+    { column: 'firstName', direction: 'asc' }
+  ]
+  grid.columns = [
+    { field: 'lastName', title: 'Last Name', isSortable: true },
+    { field: 'firstName', title: 'First Name', isSortable: true },
+    { field: 'notes', title: 'Notes', isSortable: false }
+  ]
+
+Sort state type:
+
+  type SortState = {
+    column: string        // field name
+    direction: 'asc' | 'desc'
+  }
+
+
+FILTERING
+---------
+Filtering adds a text input below each column header. Typing into it filters
+rows by that column using case-insensitive substring matching.
+
+Grid property:
+  isFilterable  Boolean. Default: false. Set to true to show filter row.
+
+Per-column flag:
+  isFilterable  Boolean on column definition. Set to false to hide the filter
+                input for a specific column while the grid-level filter row is
+                visible.
+
+Client-side filtering (default): the grid filters items before sorting and
+pagination. For each active filter, the cell value is converted to a string
+and tested for case-insensitive inclusion of the filter text.
+
+Server-side filtering: use the ondatarequest callback. The filters are
+currently managed client-side in the grid's internal state. For server-side
+filtering, listen to ondatarequest and apply your own filter logic on the
+server.
+
+Example:
+
+  grid.isFilterable = true
+  grid.columns = [
+    { field: 'name', title: 'Name', isFilterable: true },
+    { field: 'email', title: 'Email', isFilterable: true },
+    { field: 'actions', title: '', isFilterable: false }
+  ]
+
+
+PAGINATION
+----------
+Pagination splits items across pages. Supports both client-side slicing and
+server-side data fetching.
+
+Grid properties:
+
+  isPageable          Boolean. Default: false. Enables pagination.
+
+  pageSize            Number. Default: 10. Rows displayed per page.
+
+  pageSizes           Number array. Available page sizes for the selector
+                      dropdown. Example: [10, 25, 50, 100]. If not set,
+                      the page size selector is not shown.
+
+  paginationMode      String. Default: 'client'.
+                      'client' -- the grid holds all items and slices them.
+                      'server' -- items property contains only the current
+                      page; the grid does not slice.
+
+  currentPage         Number. Default: 1. Current page, 1-based. Writable.
+                      Changing it triggers re-render. Automatically reset to
+                      1 when sort or pageSize changes.
+
+  totalItems          Number or null. Default: null. Required for server-side
+                      pagination so the grid can calculate total pages. For
+                      client-side mode, the grid uses items.length.
+
+  showPagination      Boolean or 'auto'. Default: 'auto'.
+                      true -- always show pagination bar.
+                      false -- never show.
+                      'auto' -- hide when total pages is 1 or less.
+
+  paginationPosition  String. Default: 'bottom-center'. Positions the
+                      pagination bar. Use pipe to show in multiple positions.
+                      Values: 'top-left', 'top-center', 'top-right',
+                      'bottom-left', 'bottom-center', 'bottom-right'.
+                      Example: 'top-right|bottom-right' shows pagination in
+                      both top-right and bottom-right corners.
+
+  paginationLayout    String. Controls element order inside the pagination bar.
+                      Default: 'pageSize|previous|pageInfo|next'.
+                      Elements: 'first', 'previous', 'pageInfo', 'next',
+                      'last', 'pageSize'.
+                      Example: 'first|previous|pageInfo|next|last' shows
+                      first/last buttons.
+                      Example: 'pageSize|previous|pageInfo|next' shows page
+                      size selector on the left.
+
+  paginationLabelsCallback
+                      Function. Receives context, returns partial label
+                      overrides for i18n/localization.
+
+                      Type: (context: PaginationLabelsContext) => Partial<PaginationLabels>
+
+                      PaginationLabelsContext:
+                        { currentPage, totalPages, totalItems, pageSize }
+
+                      PaginationLabels fields:
+                        first, previous, next, last, pageInfo, itemCount,
+                        perPage
+
+Example -- client-side pagination:
+
+  grid.isPageable = true
+  grid.pageSize = 25
+  grid.pageSizes = [10, 25, 50, 100]
+  grid.paginationPosition = 'bottom-center'
+  grid.paginationLayout = 'pageSize|previous|pageInfo|next'
+  grid.items = allData  // grid slices automatically
+
+Example -- custom pagination labels (i18n):
+
+  grid.paginationLabelsCallback = (ctx) => ({
+    first: 'Prvni',
+    previous: 'Predchozi',
+    next: 'Dalsi',
+    last: 'Posledni',
+    pageInfo: `Strana ${ctx.currentPage} z ${ctx.totalPages}`,
+    itemCount: `${ctx.totalItems} polozek`,
+    perPage: 'na stranku'
+  })
+
+Static labels can also be set via the labels property:
+
+  grid.labels = {
+    paginationFirst: 'First',
+    paginationPrevious: 'Previous',
+    paginationNext: 'Next',
+    paginationLast: 'Last',
+    paginationPageInfo: 'Page {current} of {total}',
+    paginationItemCount: '{count} items',
+    paginationPerPage: 'per page'
+  }
+
+
+SERVER-SIDE DATA (ondatarequest)
+--------------------------------
+The ondatarequest callback fires whenever the user changes sort, page, or
+page size. Use it to fetch data from a server.
+
+  grid.ondatarequest = (detail) => {
+    // detail is DataRequestDetail
+  }
+
+DataRequestDetail type:
+
+  {
+    sort: SortState[]           // Current sort state array
+    page: number                // Requested page (1-based)
+    pageSize: number            // Requested page size
+    trigger: DataRequestTrigger // What caused the request
+    mode: DataRequestMode       // How to handle the response
+    skip: number                // Items to skip (offset for server query)
+  }
+
+  DataRequestTrigger: 'sort' | 'page' | 'pageSize' | 'init' | 'loadMore'
+  DataRequestMode: 'replace' | 'append'
+
+The trigger field tells you what changed:
+  'sort'     -- user clicked a sortable header
+  'page'     -- user navigated to a different page
+  'pageSize' -- user changed the page size selector
+  'init'     -- initial data load (if triggered programmatically)
+  'loadMore' -- infinite scroll requested more items
+
+The mode field tells you how to apply the response:
+  'replace'  -- replace grid.items with the response (normal case)
+  'append'   -- append to grid.items (infinite scroll / loadMore)
+
+The skip field is a convenience for SQL OFFSET. For pagination it equals
+(page - 1) * pageSize. For loadMore it equals the current items.length.
+
+
+SERVER-SIDE PAGINATION SETUP
+-----------------------------
+To use server-side pagination:
+
+1. Set paginationMode to 'server'.
+2. Set totalItems to the total row count from the server.
+3. Set items to only the current page of data.
+4. Implement ondatarequest to fetch new pages from the server.
+
+Example:
+
+  const grid = document.getElementById('grid')
+
+  // Configure grid
+  grid.columns = [
+    { field: 'id', title: 'ID', width: '80px', isSortable: true },
+    { field: 'name', title: 'Name', isSortable: true },
+    { field: 'email', title: 'Email', isSortable: true }
+  ]
+  grid.isPageable = true
+  grid.pageSize = 25
+  grid.pageSizes = [10, 25, 50, 100]
+  grid.paginationMode = 'server'
+  grid.sortMode = 'single'
+  grid.paginationLayout = 'pageSize|first|previous|pageInfo|next|last'
+
+  // Fetch data from server
+  async function loadData(detail) {
+    const params = new URLSearchParams({
+      page: detail.page,
+      pageSize: detail.pageSize,
+      skip: detail.skip
+    })
+
+    // Add sort parameters
+    if (detail.sort.length > 0) {
+      params.set('sortField', detail.sort[0].column)
+      params.set('sortDir', detail.sort[0].direction)
+    }
+
+    const response = await fetch(`/api/users?${params}`)
+    const data = await response.json()
+
+    grid.items = data.rows        // Current page only
+    grid.totalItems = data.total  // Total count for pagination
+  }
+
+  // Handle user interactions (page change, sort, page size change)
+  grid.ondatarequest = (detail) => {
+    loadData(detail)
+  }
+
+  // Initial load
+  loadData({ page: 1, pageSize: 25, skip: 0, sort: [], trigger: 'init', mode: 'replace' })
+
+
+SUMMARY BAR
+-----------
+The summary bar displays custom content (totals, aggregates, metadata) in a
+configurable position, optionally sharing a row with the pagination bar.
+
+Grid properties:
+
+  summaryPosition     String. Position(s) for the summary bar.
+                      Values: 'top-left', 'top-center', 'top-right',
+                      'bottom-left', 'bottom-center', 'bottom-right'.
+                      Use pipe for multiple: 'top-right|bottom-right'.
+                      Not set by default (no summary shown).
+
+  summaryContentCallback
+                      Function returning an HTML string for the summary.
+                      Receives a SummaryContext object.
+
+                      Type: (context: SummaryContext) => string
+
+                      SummaryContext:
+                        {
+                          items: T[]          // Current page items
+                          allItems: T[]       // All items (before pagination)
+                          totalItems: number
+                          currentPage: number
+                          pageSize: number
+                          metadata: unknown   // From summaryMetadata property
+                        }
+
+  isSummaryInline     Boolean. Default: true. When true, the summary shares
+                      the same row as the pagination bar when they are in the
+                      same area (e.g., both at bottom). When false, the summary
+                      gets its own row.
+
+  summaryMetadata     Any value. Default: undefined. Server-provided metadata
+                      passed through to summaryContentCallback as
+                      context.metadata. Useful for server-calculated aggregates
+                      (sums, averages) that cannot be computed client-side.
+
+Example -- client-side summary:
+
+  grid.summaryPosition = 'bottom-left'
+  grid.summaryContentCallback = (ctx) => {
+    const total = ctx.allItems.reduce((sum, row) => sum + row.amount, 0)
+    return `<strong>Total:</strong> $${total.toFixed(2)} (${ctx.totalItems} rows)`
+  }
+
+Example -- server-side summary with metadata:
+
+  grid.summaryPosition = 'bottom-right'
+  grid.summaryContentCallback = (ctx) => {
+    const meta = ctx.metadata
+    if (!meta) return ''
+    return `Sum: $${meta.sum} | Avg: $${meta.average}`
+  }
+
+  // In your ondatarequest handler:
+  grid.ondatarequest = async (detail) => {
+    const response = await fetch(`/api/data?page=${detail.page}`)
+    const data = await response.json()
+    grid.items = data.rows
+    grid.totalItems = data.total
+    grid.summaryMetadata = data.aggregates  // { sum: 12345, average: 67.8 }
+  }
+
+Example -- summary with pagination in same row:
+
+  grid.isPageable = true
+  grid.paginationPosition = 'bottom-right'
+  grid.summaryPosition = 'bottom-left'
+  grid.isSummaryInline = true  // shares the bottom row with pagination
+
+
+DATA PIPELINE ORDER
+-------------------
+When using client-side mode, the grid processes items in this order:
+
+  items --> filteredItems --> sortedItems --> paginatedItems --> displayItems
+
+1. filteredItems: applies column filters (case-insensitive substring match)
+2. sortedItems: applies multi-column sort using localeCompare / numeric compare
+3. paginatedItems: slices by currentPage and pageSize (client mode only;
+   server mode skips slicing)
+4. displayItems: adds empty row if isNewRowEnabled
+
+For server-side mode, the grid trusts that items already represents the
+correct page with correct sort and filter applied. Set items, totalItems,
+and optionally summaryMetadata after each server fetch.

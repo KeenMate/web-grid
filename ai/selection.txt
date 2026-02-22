@@ -1,0 +1,403 @@
+SELECTION FEATURES IN @keenmate/web-grid
+=========================================
+The grid supports four distinct selection types: row selection, cell range
+selection, column selection, and row focus. Each is independent -- selecting
+in one mode clears the others (row, cell range, column are mutually exclusive).
+Row focus is a separate concept that tracks which row the user last clicked.
+
+
+ROW SELECTION
+-------------
+Rows are selected by clicking row number cells (requires isRowNumbersVisible).
+Selected row indices are tracked in a Set internally. The selectedRows property
+returns them as a sorted array.
+
+Prerequisite:
+  grid.isRowNumbersVisible = true
+
+Interaction patterns:
+  Click row number         - Select single row (replaces previous selection)
+  Ctrl+Click row number    - Toggle row in/out of selection (non-contiguous)
+  Shift+Click row number   - Select range from last selected to clicked row
+  Click+Drag row numbers   - Drag to select contiguous range (5px threshold)
+  Escape                   - Clear row selection
+  Click on data cell       - Clears row selection (only row numbers select)
+  Click row number header  - Select all cells (selectAll, creates cell range)
+
+Properties (on grid element):
+  selectedRows             - number[] (read-only, sorted ascending)
+
+Methods:
+  selectRow(rowIndex, mode?)
+    mode: 'replace' (default) - clear previous, select this row
+    mode: 'toggle'            - add/remove this row from selection
+    mode: 'range'             - select from last selected row to this row
+
+  selectRowRange(fromIndex, toIndex)
+    Selects all rows between fromIndex and toIndex (inclusive, order agnostic).
+
+  clearSelection()
+    Clears all selected rows.
+
+  isRowSelected(rowIndex)
+    Returns boolean.
+
+  getSelectedRowsData()
+    Returns T[] - the actual data objects for selected rows.
+
+  copySelectedRowsToClipboard()
+    Returns Promise<boolean>. Copies selected rows as TSV (tab-separated).
+    Respects shouldCopyWithHeaders. Uses raw values (no beforeCopyCallback).
+
+Example:
+  grid.isRowNumbersVisible = true
+  grid.selectRow(0, 'replace')
+  grid.selectRow(2, 'toggle')
+  grid.selectRow(5, 'range')
+  console.log(grid.selectedRows)         // [0, 2, 3, 4, 5]
+  console.log(grid.getSelectedRowsData()) // array of row objects
+
+
+CELL RANGE SELECTION
+--------------------
+Rectangular cell ranges are selected by click+drag or shift+click on data cells.
+The behavior depends on cellSelectionMode.
+
+Property:
+  cellSelectionMode        - CellSelectionMode
+    'disabled'  - No cell range selection
+    'click'     - Click+drag on cells to select range (default, used in excel/read-only modes)
+    'shift'     - Shift+click to select range; plain click edits (used in input-matrix mode)
+
+  selectedCellRange        - CellRange | null (read-only)
+  shouldCopyWithHeaders    - boolean (default false). Include column headers in clipboard copy.
+
+CellRange type:
+  {
+    startRowIndex: number
+    startColIndex: number
+    endRowIndex: number
+    endColIndex: number
+    startField: string
+    endField: string
+  }
+
+Interaction patterns (cellSelectionMode = 'click'):
+  Click+drag on cells      - Select rectangular range (5px drag threshold)
+  Escape during drag       - Cancel selection, restore focus to start cell
+  Return to start cell     - Cancel selection, restore focus
+  Escape after selection   - Clear cell selection
+  Ctrl+C                   - Copy selected cells to clipboard
+
+Interaction patterns (cellSelectionMode = 'shift'):
+  Shift+Click              - Select range from last clicked cell to current
+  Escape                   - Clear cell selection
+
+Methods:
+  selectCellRange(range)
+    Programmatically select a CellRange. Clears row/column selection.
+    Fires oncellselectionchange callback.
+
+  clearCellSelection()
+    Clears cell range selection. Fires oncellselectionchange with null range.
+
+  getSelectedCells()
+    Returns Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }>
+    Iterates through all cells in the rectangular range.
+
+  copyCellSelectionToClipboard()
+    Returns Promise<boolean>. Copies cells as TSV. Respects shouldCopyWithHeaders.
+
+  selectAll()
+    Selects all cells (entire visible data range as one CellRange).
+    Triggered by clicking the row number header cell (#).
+
+Callback:
+  oncellselectionchange    - (detail: { range: CellRange | null, cellCount: number }) => void
+    Fires when cell selection changes (created or cleared).
+
+Example:
+  grid.cellSelectionMode = 'click'
+
+  grid.selectCellRange({
+    startRowIndex: 0, startColIndex: 1,
+    endRowIndex: 3, endColIndex: 4,
+    startField: 'name', endField: 'status'
+  })
+
+  grid.oncellselectionchange = (detail) => {
+    console.log('Selected', detail.cellCount, 'cells')
+  }
+
+  const cells = grid.getSelectedCells()
+  // [{ row: {...}, rowIndex: 0, colIndex: 1, field: 'name', value: 'Alice' }, ...]
+
+Grid mode defaults for cellSelectionMode:
+  mode: 'read-only'      -> cellSelectionMode: 'click'
+  mode: 'excel'          -> cellSelectionMode: 'click'
+  mode: 'input-matrix'   -> cellSelectionMode: 'shift'
+
+
+COLUMN SELECTION
+----------------
+Columns are selected by clicking column headers. Supports multi-column selection
+with Ctrl and Shift modifiers, plus drag-to-select.
+
+When isColumnReorderAllowed is true:
+  Plain click on header    - Starts column reorder drag (NOT selection)
+  Ctrl+Click on header     - Toggle column selection
+  Shift+Click on header    - Range selection from last to current
+  Shift+Drag on header     - Drag to select range of columns
+
+When isColumnReorderAllowed is false:
+  Click on header          - Select single column (replace)
+  Ctrl+Click on header     - Toggle column selection
+  Shift+Click on header    - Range selection from last to current
+  Click+Drag on header     - Drag to select range of columns
+
+Selecting columns clears row selection and cell range selection.
+
+Properties (on grid instance):
+  selectedColumns          - number[] (read-only, sorted ascending, visual indices)
+
+Methods:
+  selectColumn(colIndex, mode?)
+    mode: 'replace' (default), 'toggle', 'range'
+
+  selectColumnRange(fromIndex, toIndex)
+    Selects all columns between fromIndex and toIndex (inclusive).
+
+  clearColumnSelection()
+    Clears all selected columns.
+
+  isColumnSelected(colIndex)
+    Returns boolean.
+
+  copySelectedColumnsToClipboard()
+    Returns Promise<boolean>. Copies all rows for selected columns as TSV.
+    Respects shouldCopyWithHeaders.
+
+Visual feedback:
+  Selected column headers get the CSS class: wg__header--selected
+  Selected column cells get the CSS class: wg__cell--column-selected
+  A border overlay is drawn around contiguous column segments.
+
+Example:
+  grid.isColumnReorderAllowed = false
+  // User clicks "Name" header -> column selected
+  // User Shift+clicks "Email" header -> range from Name to Email selected
+  console.log(grid.selectedColumns)  // [1, 2, 3] (visual indices)
+
+
+ROW FOCUS
+---------
+Row focus tracks which row the user most recently interacted with via a data
+cell click or programmatic focus. It is separate from row selection.
+
+Key distinction: clicking a ROW NUMBER selects the row but does NOT focus it.
+Clicking a DATA CELL focuses the row (and clears row selection).
+
+Property:
+  focusedRowIndex          - number | null (readable/writable)
+    Set to a number to programmatically focus a row.
+    Set to null to clear focus.
+
+Callback:
+  onrowfocus               - (detail: RowFocusDetail<T>) => void
+    Fires when a different row is focused.
+
+  RowFocusDetail type:
+    {
+      rowIndex: number
+      row: T
+      previousRowIndex: number | null
+    }
+
+Master/detail pattern:
+  Use onrowfocus to update a detail panel when the user clicks different rows.
+
+  grid.onrowfocus = (detail) => {
+    detailPanel.innerHTML = renderDetail(detail.row)
+    console.log('Moved from row', detail.previousRowIndex, 'to', detail.rowIndex)
+  }
+
+Behavior:
+  - Click on data cell -> sets focusedRowIndex, fires onrowfocus
+  - Click on row number -> selects row but does NOT change focus
+  - Click outside grid -> clears focus (focusedRowIndex becomes null)
+  - Starting cell range drag -> clears focus
+  - Programmatic: grid.focusedRowIndex = 3 (focuses row 3, fires onrowfocus)
+  - Programmatic: grid.focusedRowIndex = null (clears focus)
+
+The focused row gets CSS class: wg__row--focused
+
+
+CLIPBOARD
+---------
+All clipboard operations produce TSV (tab-separated values) format, which is
+compatible with Excel, Google Sheets, and other spreadsheet applications.
+
+Format:
+  Columns separated by tab (\t), rows separated by newline (\n).
+  If shouldCopyWithHeaders is true, the first line contains column titles.
+
+Built-in Ctrl+C behavior:
+  When a selection exists and the container is focused, Ctrl+C copies:
+    1. Cell range selection -> copyCellSelectionToClipboard()
+    2. Column selection     -> copySelectedColumnsToClipboard()
+    3. Row selection        -> copySelectedRowsToClipboard()
+    4. Single focused cell  -> copies that cell's value
+
+  Priority order: cell range > column > row > single cell.
+
+shouldCopyWithHeaders property:
+  grid.shouldCopyWithHeaders = true
+
+  When true, the first TSV row is column titles. Applies to all copy methods:
+  copySelectedRowsToClipboard(), copyCellSelectionToClipboard(),
+  copySelectedColumnsToClipboard().
+
+  Example output (shouldCopyWithHeaders = true):
+    Name\tAge\tEmail
+    Alice\t28\talice@example.com
+    Bob\t34\tbob@example.com
+
+  Example output (shouldCopyWithHeaders = false):
+    Alice\t28\talice@example.com
+    Bob\t34\tbob@example.com
+
+Per-column beforeCopyCallback:
+  Transforms a cell value before it is written to the clipboard.
+  Currently applied only when copying a SINGLE focused cell via Ctrl+C.
+  NOT applied by the bulk copy methods (copySelectedRowsToClipboard, etc.).
+
+  column definition:
+    { field: 'price', beforeCopyCallback: (value, row) => '$' + value }
+
+Per-column beforePasteCallback:
+  Processes a pasted value before applying it to a cell.
+
+  column definition:
+    { field: 'price', beforePasteCallback: (value, row) => parseFloat(value) }
+
+
+RANGE SHORTCUTS
+---------------
+Range shortcuts are keyboard shortcuts that operate on multiple selected rows
+or a cell range. They work with both row selection and cell range selection.
+
+Property:
+  rangeShortcuts           - RangeShortcut<T>[]
+
+RangeShortcut type:
+  {
+    key: string            // e.g., "Delete", "Ctrl+E", "Shift+F2"
+    id: string             // Unique identifier
+    label: string          // Display label for shortcuts help overlay
+    action: (ctx: RangeShortcutContext<T>) => void | Promise<void>
+    disabled?: boolean | ((ctx: RangeShortcutContext<T>) => boolean)
+  }
+
+RangeShortcutContext type:
+  {
+    rows: T[]              // Selected rows data (for row selection)
+    rowIndices: number[]   // Selected row indices (sorted ascending)
+    cellRange?: CellRange  // Present when cell range is selected
+    cells?: Array<{        // Present when cell range is selected
+      row: T
+      rowIndex: number
+      colIndex: number
+      field: string
+      value: unknown
+    }>
+  }
+
+When triggered from row selection:
+  ctx.rows and ctx.rowIndices are populated.
+  ctx.cellRange and ctx.cells are undefined.
+
+When triggered from cell range selection:
+  ctx.cellRange and ctx.cells are populated.
+  ctx.rows is empty array, ctx.rowIndices is empty array.
+
+Range shortcuts are checked in TWO places:
+  1. Container keydown (when row/column/cell selection is active and container
+     is focused -- i.e., no cell is focused in navigate mode)
+  2. Cell keydown (when rows are selected while a cell has focus)
+
+Built-in keyboard shortcuts (always active, no configuration needed):
+  Escape    - Clear selection (cell range > column > row priority)
+  Ctrl+C    - Copy selection to clipboard
+
+Example:
+  grid.rangeShortcuts = [
+    {
+      key: 'Delete',
+      id: 'delete-rows',
+      label: 'Delete selected rows',
+      action: (ctx) => {
+        // Remove selected rows from data
+        grid.items = grid.items.filter((_, i) => !ctx.rowIndices.includes(i))
+      }
+    },
+    {
+      key: 'Ctrl+E',
+      id: 'export-selection',
+      label: 'Export selection',
+      action: (ctx) => {
+        if (ctx.cellRange) {
+          // Export cell range
+          const values = ctx.cells.map(c => c.value)
+          exportData(values)
+        } else {
+          // Export selected rows
+          exportData(ctx.rows)
+        }
+      },
+      disabled: (ctx) => ctx.rows.length === 0 && !ctx.cellRange
+    }
+  ]
+
+To show a help overlay listing shortcuts:
+  grid.isShortcutsHelpVisible = true
+  grid.shortcutsHelpPosition = 'top-right'  // or 'top-left'
+
+
+SELECTION MUTUAL EXCLUSIVITY
+-----------------------------
+Row selection, cell range selection, and column selection are mutually exclusive.
+Activating one clears the others automatically:
+
+  selectRow()         -> clears cell range and column selection
+  selectCellRange()   -> clears row and column selection
+  selectColumn()      -> clears row and cell range selection
+
+Row focus (focusedRowIndex) is independent and can coexist with row selection,
+but is cleared when starting a cell range drag.
+
+The selectAll() method creates a cell range (not row selection), spanning all
+visible rows and columns. It is triggered by clicking the row number header (#).
+
+
+VISUAL FEEDBACK
+---------------
+CSS classes applied during selection:
+
+  Row selection:
+    .wg__row--selected                 - Applied to selected <tr> elements
+    .wg__row-selection-border          - Overlay border around contiguous segments
+    .wg--selecting                     - On container during row drag selection
+
+  Cell range selection:
+    .wg__cell--in-range                - Applied to cells within the range
+    .wg__cell-range-border             - Overlay border around the range
+    .wg--selecting-cells               - On container during cell drag selection
+
+  Column selection:
+    .wg__header--selected              - Applied to selected column headers
+    .wg__cell--column-selected         - Applied to cells in selected columns
+    .wg__column-selection-border       - Overlay border around contiguous segments
+    .wg--selecting-columns             - On container during column drag selection
+
+  Row focus:
+    .wg__row--focused                  - Applied to the focused row

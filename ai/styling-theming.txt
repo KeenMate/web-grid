@@ -1,0 +1,291 @@
+CSS VARIABLE ARCHITECTURE
+-------------------------
+WebGrid uses a two-level CSS variable system for theming:
+
+  Level 1: --base-* variables (cross-component theme)
+  Level 2: --wg-* variables (grid-specific)
+
+Each --wg-* variable falls back to a --base-* variable, then to a hardcoded default:
+
+  :host {
+    --wg-accent-color: var(--base-accent-color, #0078d4);
+    --wg-surface-1: var(--base-main-bg, #ffffff);
+    --wg-font-size-base: calc(var(--base-font-size-sm, 1.4) * var(--wg-rem));
+  }
+
+Priority chain:
+  1. Setting --wg-accent-color on <web-grid> overrides ONLY the grid
+  2. Setting --base-accent-color on :root themes ALL KeenMate components
+     (web-grid, web-multiselect, web-daterangepicker, etc.)
+  3. If neither is set, the hardcoded default (#0078d4) is used
+
+Example -- theme all KeenMate components at once:
+
+  :root {
+    --base-accent-color: #10b981;
+    --base-layer-1: #ffffff;
+    --base-font-family: 'Inter', sans-serif;
+  }
+
+Example -- override just the grid:
+
+  web-grid {
+    --wg-accent-color: #e11d48;
+    --wg-header-bg: #fafafa;
+  }
+
+Example -- override a specific grid instance:
+
+  web-grid#sales-grid {
+    --wg-accent-color: #7c3aed;
+  }
+
+The --wg-rem variable controls the base sizing unit. Default is 10px. All spacing,
+font sizes, and component dimensions scale proportionally from this value. Set to
+1rem for frameworks like Pure Admin where html { font-size: 10px }.
+
+
+KEY VARIABLES
+-------------
+Colors:
+  --wg-accent-color          Primary accent (focus outlines, active states, selection)
+                             Falls back to: --base-accent-color, default: #0078d4
+  --wg-text-color-1          Primary text (cells, headers)
+                             Falls back to: --base-text-color-1, default: #242424
+  --wg-text-color-2          Secondary text (row numbers, labels)
+  --wg-text-color-3          Muted text (placeholders, empty states)
+  --wg-surface-1             Main background (table body, cells)
+                             Falls back to: --base-main-bg, default: #ffffff
+  --wg-surface-2             Elevated background (headers, striped rows)
+                             Falls back to: --base-elevated-bg, default: #f5f5f5
+  --wg-surface-3             Hover background (row hover, button hover)
+  --wg-border-color          All borders (table, cells, header separators)
+                             Falls back to: --base-border-color, default: #e0e0e0
+
+Header:
+  --wg-header-bg             Header row background (defaults to --wg-surface-2)
+  --wg-header-bg-hover       Sortable header on hover
+  --wg-header-color          Header text color
+  --wg-header-border         Bottom border below header (2px solid)
+  --wg-header-padding        Header cell padding
+  --wg-header-font-weight    Header text weight (semibold)
+
+Rows:
+  --wg-row-bg-hover          Row hover when isHoverable=true (defaults to --wg-surface-3)
+  --wg-row-bg-even           Striped even rows when isStriped=true (defaults to --wg-surface-2)
+  --wg-row-border            Border between rows
+
+Typography:
+  --wg-font-family           Font for all grid text
+                             Falls back to: --base-font-family, default: inherit
+  --wg-font-size-base        Cell and editor text (14px at default scale)
+  --wg-font-size-sm          Filter inputs, pagination (12px)
+  --wg-font-size-xs          Error messages, small labels (11px)
+
+Layout:
+  --wg-cell-padding          Cell content padding (shorthand)
+  --wg-cell-padding-block    Cell vertical padding
+  --wg-cell-padding-inline   Cell horizontal padding
+  --wg-border-radius-sm      Buttons, inputs (4px)
+  --wg-border-radius-md      Dialogs, cards (6px)
+  --wg-border-radius-lg      Large elements (8px)
+
+The full list is 120+ variables. See _variables.css or the manifest for the complete set.
+
+
+DARK MODE
+---------
+Dark mode activates automatically. No configuration needed. Detection methods:
+
+  1. OS preference:      @media (prefers-color-scheme: dark)
+  2. Data attribute:     <html data-theme="dark">
+  3. Bootstrap 5.3+:     <html data-bs-theme="dark">
+  4. Tailwind CSS:       <html class="dark">
+
+All four methods apply the same dark palette overrides:
+
+  --wg-surface-1: #1f1f1f
+  --wg-surface-2: #2b2b2b
+  --wg-surface-3: #333333
+  --wg-text-color-1: #e0e0e0
+  --wg-text-color-2: #c0c0c0
+  --wg-text-color-3: #a0a0a0
+  --wg-border-color: #3d3d3d
+  --wg-input-bg: #1f1f1f
+  --wg-hover-bg: #3a3a3a
+  --wg-danger-color: #f87c86
+  --wg-danger-bg-light: #442726
+
+The attribute can be on the <web-grid> element itself or any ancestor:
+
+  <web-grid data-theme="dark">       (on the element)
+  <div data-bs-theme="dark">         (on an ancestor)
+    <web-grid></web-grid>
+  </div>
+
+If --base-* variables are set by a theme-designer dark theme, those take priority
+over the built-in dark mode overrides since --wg-* variables reference --base-*
+variables.
+
+
+DYNAMIC CELL AND ROW STYLING
+-----------------------------
+Three mechanisms for applying CSS classes to cells and rows:
+
+1. cellClass (static, per column):
+
+  grid.columns = [{
+    field: 'status',
+    cellClass: 'status-cell'
+  }]
+
+2. cellClassCallback (dynamic, per column):
+
+  grid.columns = [{
+    field: 'salary',
+    cellClassCallback: (value, row) => value > 90000 ? 'high-value' : null
+  }]
+
+3. rowClassCallback (dynamic, per row):
+
+  grid.rowClassCallback = (row, index) => {
+    if (row.status === 'inactive') return 'row-inactive'
+    if (row.isNew) return 'row-new'
+    return null
+  }
+
+IMPORTANT: These classes are applied INSIDE the Shadow DOM. External stylesheets
+cannot reach them. You MUST use customStylesCallback to define the CSS rules for
+these classes. Without it, the classes are added to elements but have no effect.
+
+
+CUSTOM STYLES INJECTION
+------------------------
+The customStylesCallback property returns a CSS string that gets injected into the
+Shadow DOM. This is the ONLY way to style custom classes from cellClassCallback or
+rowClassCallback.
+
+  grid.customStylesCallback = () => `
+    .high-value {
+      background: #d1fae5 !important;
+      font-weight: 600;
+    }
+    .row-inactive {
+      opacity: 0.5;
+    }
+    .row-new {
+      background: #fef3c7 !important;
+    }
+    .status-cell {
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  `
+
+Notes:
+  - The callback is called during rendering and should return a CSS string
+  - Use !important on background to override hover/striped/selection styles
+  - The injected styles have access to all internal CSS classes (.wg__cell, etc.)
+  - This can also be used for general style overrides beyond custom classes
+
+Full example combining all three:
+
+  grid.columns = [
+    {
+      field: 'salary',
+      cellClass: 'numeric',
+      cellClassCallback: (value, row) => {
+        if (value > 100000) return 'salary-high'
+        if (value < 30000) return 'salary-low'
+        return null
+      }
+    },
+    {
+      field: 'status',
+      cellClassCallback: (value) => 'status-' + value
+    }
+  ]
+
+  grid.rowClassCallback = (row, index) =>
+    row.deleted ? 'row-deleted' : null
+
+  grid.customStylesCallback = () => `
+    .numeric { text-align: right; font-variant-numeric: tabular-nums; }
+    .salary-high { background: #d1fae5 !important; }
+    .salary-low { background: #fee2e2 !important; }
+    .status-active { color: #059669; }
+    .status-inactive { color: #dc2626; }
+    .row-deleted { text-decoration: line-through; opacity: 0.5; }
+  `
+
+
+COMPONENT VARIABLES MANIFEST
+-----------------------------
+A machine-readable JSON manifest documents all CSS variables consumed and exposed
+by the component. It is included in the npm package.
+
+Import path:
+
+  import manifest from '@keenmate/web-grid/manifest'
+
+Manifest structure:
+
+  manifest.component          "@keenmate/web-grid"
+  manifest.prefix             "wg"
+  manifest.baseVariables      Array of --base-* variables the component consumes
+  manifest.componentVariables Array of --wg-* variables the component exposes
+
+baseVariables entry format:
+
+  {
+    "name": "base-accent-color",
+    "required": true,
+    "usage": "Editor focus outline, active sort indicator, selected pagination button"
+  }
+
+componentVariables entry format:
+
+  {
+    "name": "wg-accent-color",
+    "category": "accent",
+    "usage": "Editor focus outline, active pagination, sorted column indicator"
+  }
+
+Counts (current):
+  - 37 baseVariables (--base-* consumed)
+  - 120+ componentVariables (--wg-* exposed)
+
+Categories in componentVariables:
+  sizing, accent, text, surface, border, input, danger, state, typography,
+  radius, spacing, table, header, cell, row, filter, sort, pagination, empty,
+  error, editor, dropdown, toolbar, inline-actions, overlay, tooltip,
+  context-menu, focus, selection, row-focus, cell-selection, row-locking,
+  freeze, resize, fill-handle, transition, z-index
+
+The manifest follows the component-variables schema:
+  https://raw.githubusercontent.com/keenmate/schemas/main/component-variables.schema.json
+
+This manifest is consumed by @keenmate/theme-designer for visual theming.
+
+
+THEME DESIGNER
+--------------
+Visual theming tool for all KeenMate components:
+
+  https://theme-designer.keenmate.dev
+
+The Theme Designer:
+  - Reads the component-variables manifest to know which variables exist
+  - Provides a visual UI for adjusting --base-* variables
+  - Generates CSS that sets --base-* on :root
+  - Changes propagate to all KeenMate components using the fallback chain
+
+Workflow:
+  1. Open theme-designer.keenmate.dev
+  2. Adjust colors, typography, spacing visually
+  3. Export generated CSS
+  4. Include the CSS in your application
+  5. All KeenMate components (web-grid, web-multiselect, etc.) pick up the theme
+
+Since --wg-* falls back to --base-*, the theme applies automatically without
+any grid-specific configuration.

@@ -4,6 +4,10 @@ node_modules/
 # Build output
 dist/
 
+# README and ai docs copied to package dir during build (source is root)
+packages/web-grid/README.md
+packages/web-grid/ai/
+
 # IDE
 .idea/
 .vscode/

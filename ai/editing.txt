@@ -1,0 +1,545 @@
+EDITING IN @keenmate/web-grid
+=============================
+
+Inline cell editing with 8 editor types, draft management, validation,
+and per-column overrides. Editing operates on draft copies of rows --
+original data is never mutated until the consumer explicitly applies
+changes.
+
+
+GRID-LEVEL EDITING PROPERTIES
+------------------------------
+
+isEditable (boolean, default: false)
+  Master switch. Must be true for any editing to occur.
+
+editTrigger (EditTrigger, default: 'dblclick')
+  How editing starts. Values:
+    'click'     -- Single click on a cell starts editing.
+    'dblclick'  -- Double-click starts editing (default).
+    'button'    -- Only the edit button in the cell starts editing.
+    'always'    -- Cells are always rendered as editors (input-matrix style).
+    'navigate'  -- Arrow-key navigation mode. Typing a character starts editing
+                   the focused cell with that character as initial input. Similar
+                   to Excel behavior.
+
+editStartSelection (EditStartSelection, default: 'selectAll')
+  Where the cursor goes when entering edit mode via navigate trigger:
+    'mousePosition'  -- Cursor at click position.
+    'selectAll'      -- All text is selected (default).
+    'cursorAtStart'  -- Cursor at the beginning.
+    'cursorAtEnd'    -- Cursor at the end.
+
+dropdownToggleVisibility (ToggleVisibility, default: 'on-focus')
+  When the dropdown arrow button is visible for select/combobox/autocomplete:
+    'always'   -- Always visible in every cell.
+    'on-focus'  -- Only visible when the cell is focused.
+
+shouldShowDropdownOnFocus (boolean, default: false)
+  When true, the dropdown opens automatically as soon as the cell is focused.
+  Typically used with editTrigger='always' in input-matrix mode.
+
+shouldOpenDropdownOnEnter (boolean, default: false)
+  Controls Enter key behavior for dropdown cells:
+    true  -- Enter opens the dropdown.
+    false -- Enter commits and moves focus to the next row.
+
+isCheckboxAlwaysEditable (boolean, default: false)
+  When true, checkboxes can be toggled even when the grid is in navigate mode
+  (i.e., the cell does not need to enter full edit mode first).
+
+
+GRID MODES (PRESETS)
+--------------------
+
+The mode property sets sensible defaults for common use cases. Individual
+properties can still be overridden after setting mode.
+
+mode='read-only'
+  isEditable=false, cellSelectionMode='click',
+  dropdownToggleVisibility='on-focus', shouldShowDropdownOnFocus=false
+
+mode='excel'
+  isEditable=true, editTrigger='navigate', cellSelectionMode='click',
+  dropdownToggleVisibility='always', shouldShowDropdownOnFocus=false
+
+mode='input-matrix'
+  isEditable=true, editTrigger='always', cellSelectionMode='shift',
+  dropdownToggleVisibility='always', shouldShowDropdownOnFocus=true
+
+
+EDITOR TYPES
+------------
+
+Each column specifies its editor type via the editor property on the column
+definition. The editorOptions property holds editor-specific configuration.
+
+  column = {
+    field: 'name',
+    editor: 'text',
+    editorOptions: { maxLength: 100, placeholder: 'Enter name' }
+  }
+
+
+TEXT EDITOR (editor: 'text')
+----------------------------
+
+Standard text input. Default editor when none is specified.
+
+Options (editorOptions):
+  maxLength          (number)  -- Maximum character count.
+  placeholder        (string)  -- Placeholder text.
+  pattern            (string)  -- HTML input pattern attribute.
+  inputMode          (string)  -- Virtual keyboard hint.
+                                  Values: 'text', 'numeric', 'email', 'tel', 'url'.
+  editStartSelection (EditStartSelection) -- Per-column cursor position override.
+                                  Values: 'mousePosition', 'selectAll', 'cursorAtStart',
+                                  'cursorAtEnd'. Default: 'selectAll'.
+
+Example:
+  {
+    field: 'email',
+    editor: 'text',
+    editorOptions: {
+      placeholder: 'user@example.com',
+      inputMode: 'email',
+      maxLength: 255
+    }
+  }
+
+
+NUMBER EDITOR (editor: 'number')
+---------------------------------
+
+Numeric input rendered as type="text" with inputmode="numeric" for full cursor
+control. Values are parsed to float on commit; empty string becomes null.
+
+Options (editorOptions):
+  min            (number)  -- Minimum allowed value.
+  max            (number)  -- Maximum allowed value.
+  step           (number)  -- Step increment.
+  decimalPlaces  (number)  -- Fixed decimal places.
+  allowNegative  (boolean) -- Allow negative values.
+
+Example:
+  {
+    field: 'price',
+    editor: 'number',
+    editorOptions: { min: 0, max: 10000, step: 0.01, decimalPlaces: 2 }
+  }
+
+
+CHECKBOX EDITOR (editor: 'checkbox')
+-------------------------------------
+
+Boolean toggle. Commits immediately on change (no explicit save step).
+In navigate mode, Space toggles the value and moves focus to the next row.
+
+Options (editorOptions):
+  trueValue   (unknown, default: true)  -- Value stored when checked.
+  falseValue  (unknown, default: false) -- Value stored when unchecked.
+
+Example with custom values:
+  {
+    field: 'active',
+    editor: 'checkbox',
+    editorOptions: { trueValue: 'Y', falseValue: 'N' }
+  }
+
+
+DATE EDITOR (editor: 'date')
+-----------------------------
+
+Date picker with text input and calendar trigger button. Supports custom
+display formats and multiple output formats.
+
+Options (editorOptions):
+  minDate       (Date | string) -- Minimum selectable date.
+  maxDate       (Date | string) -- Maximum selectable date.
+  dateFormat    (string)        -- Display format. Examples: 'YYYY-MM-DD',
+                                   'DD.MM.YYYY', 'MM/DD/YYYY'.
+  outputFormat  (DateOutputFormat) -- What to store on commit:
+                   'date'      -- JavaScript Date object.
+                   'iso'       -- ISO date string (default). Actually stores
+                                  'YYYY-MM-DD' for cleaner display.
+                   'timestamp' -- Unix timestamp (milliseconds).
+
+Example:
+  {
+    field: 'birthDate',
+    editor: 'date',
+    editorOptions: {
+      dateFormat: 'DD.MM.YYYY',
+      outputFormat: 'iso',
+      minDate: '1900-01-01',
+      maxDate: new Date()
+    }
+  }
+
+
+SELECT EDITOR (editor: 'select')
+---------------------------------
+
+Dropdown list. User picks from a fixed set of options. Cannot type custom
+values. For full dropdown documentation including option loading, member
+properties, rendering callbacks, and grouping, see dropdown-editors.txt.
+
+Key options (editorOptions):
+  options               -- Static array of { value, label } objects.
+  loadOptions           -- Async function returning options.
+  optionsLoadTrigger    -- When to call loadOptions: 'immediate',
+                           'oneditstart' (default), 'ondropdownopen'.
+  valueMember           -- Property name for value (default: 'value').
+  displayMember         -- Property name for display text (default: 'label').
+  renderOptionCallback  -- Custom HTML for each option.
+  allowEmpty            -- Allow null/empty selection.
+  emptyLabel            -- Label for empty option (default: '-- Select --').
+
+Example:
+  {
+    field: 'status',
+    editor: 'select',
+    editorOptions: {
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
+      ]
+    }
+  }
+
+
+COMBOBOX EDITOR (editor: 'combobox')
+-------------------------------------
+
+Filterable dropdown. Same as select, but the user can type to filter options
+and can also enter custom values that are not in the list. For full dropdown
+documentation, see dropdown-editors.txt.
+
+Key options (editorOptions):
+  Same as select, plus:
+  placeholder  -- Placeholder text for the input.
+
+Example:
+  {
+    field: 'category',
+    editor: 'combobox',
+    editorOptions: {
+      options: [
+        { value: 'electronics', label: 'Electronics' },
+        { value: 'clothing', label: 'Clothing' }
+      ],
+      placeholder: 'Type or select...'
+    }
+  }
+
+
+AUTOCOMPLETE EDITOR (editor: 'autocomplete')
+----------------------------------------------
+
+Async search dropdown. Options are fetched from a server based on user input.
+For full dropdown documentation, see dropdown-editors.txt.
+
+Key options (editorOptions):
+  searchCallback   -- (query, row, signal?) => Promise<EditorOption[]>.
+                      Receives an AbortSignal for request cancellation.
+  initialOptions   -- Options shown before user types anything.
+  minSearchLength  -- Minimum characters before search fires (default: 1).
+  debounceMs       -- Debounce delay in ms for search calls (default: 300).
+  multiple         -- Allow multiple selections (boolean, default: false).
+  maxSelections    -- Maximum items when multiple is true.
+  placeholder      -- Placeholder text for the input.
+
+Example:
+  {
+    field: 'assignee',
+    editor: 'autocomplete',
+    editorOptions: {
+      searchCallback: async (query, row, signal) => {
+        const res = await fetch(`/api/users?q=${query}`, { signal })
+        return res.json()
+      },
+      minSearchLength: 2,
+      debounceMs: 250,
+      placeholder: 'Search users...'
+    }
+  }
+
+
+CUSTOM EDITOR (editor: 'custom')
+---------------------------------
+
+The grid renders a placeholder cell. The consumer provides all editing UI
+via the cellEditCallback on the column. Call commit(newValue) to save or
+cancel() to discard.
+
+Column property:
+  cellEditCallback  -- (context: CustomEditorContext) => void
+
+CustomEditorContext fields:
+  value     -- Current cell value.
+  row       -- The row data object.
+  rowIndex  -- Index of the row.
+  field     -- Field name.
+  commit    -- Function: call commit(newValue) to save.
+  cancel    -- Function: call cancel() to discard changes.
+
+Example:
+  {
+    field: 'color',
+    editor: 'custom',
+    cellEditCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
+      // Open a color picker modal, then:
+      //   commit('#ff0000')  -- save new value
+      //   cancel()           -- discard
+    }
+  }
+
+Public method for programmatic use:
+  grid.openCustomEditor(rowIndex, colIndex)
+
+
+EDITING LIFECYCLE
+-----------------
+
+The editing flow is: Start -> Edit -> Commit or Cancel.
+
+1. START
+   - Triggered by the configured editTrigger (click, dblclick, navigate, etc).
+   - grid.startEdit(rowIndex, field) is called internally.
+   - A draft copy of the row is created (if not already drafted).
+   - The cell DOM is replaced with the appropriate editor.
+   - The onroweditstart callback fires.
+   - For editTrigger='navigate', typing a printable character starts editing
+     with that character pre-filled.
+
+2. EDIT
+   - The user modifies the value in the editor.
+   - For checkbox, changes commit immediately.
+   - For text/number/date, the value is held in the editor until commit.
+   - For dropdown types, selecting an option commits immediately.
+
+3. COMMIT
+   - Triggered by: Enter key, Tab key, blur (clicking away), or selecting a
+     dropdown option.
+   - Validation runs (beforeCommitCallback or deprecated validateCallback).
+   - If valid: draft row is updated, cell returns to display mode, onrowchange
+     fires.
+   - If valid with transform: beforeCommitCallback can return
+     { valid: true, transformedValue: cleanedValue } to modify the value.
+   - If invalid: value is still stored in the draft (marked invalid), cell
+     shows validation error, onvalidationerror fires. The original data is
+     never modified.
+   - After commit, focus moves based on the trigger:
+       Enter  -- moves focus down one row (to the tab-start column if Tab
+                 was used before Enter).
+       Tab    -- moves focus to the next editable cell.
+       Shift+Tab -- moves focus to the previous editable cell.
+
+4. CANCEL
+   - Triggered by: Escape key.
+   - grid.cancelEdit() is called.
+   - The editor is removed; cell returns to display mode showing the draft
+     value (or original if no prior edits).
+   - The onroweditcancel callback fires.
+   - Focus returns to the cell in navigate mode.
+
+Note: The original items array is NEVER mutated. All changes live in draft
+rows. The consumer decides when/how to persist changes (e.g., after
+onrowchange fires).
+
+
+VALIDATION
+----------
+
+beforeCommitCallback (column-level, preferred)
+  Called before each cell value is committed. Receives a context object:
+    { value, oldValue, row, rowIndex, field }
+
+  Return values:
+    { valid: true }                              -- Accept value.
+    { valid: true, transformedValue: cleaned }   -- Accept with transformation.
+    { valid: false, message: 'Error text' }      -- Reject with message.
+    true / null / undefined                      -- Accept.
+    false                                        -- Reject (no message).
+    'Error text' (string)                        -- Reject with that message.
+
+  Supports async (return a Promise).
+
+  Example:
+    {
+      field: 'age',
+      editor: 'number',
+      beforeCommitCallback: ({ value, row }) => {
+        if (value < 0) return { valid: false, message: 'Age cannot be negative' }
+        if (value > 150) return 'Unrealistic age'
+        return { valid: true, transformedValue: Math.round(value) }
+      }
+    }
+
+validateCallback (column-level, DEPRECATED -- use beforeCommitCallback)
+  (value, row) => string | null | Promise<string | null>
+  Return a string to reject with that error message, or null to accept.
+
+validationTooltipCallback (grid-level and column-level)
+  Customizes the validation error tooltip. Receives:
+    { field, error, value, row, rowIndex }
+  Return an HTML string for rich error display, or null for default.
+  Column-level overrides grid-level.
+
+invalidCells (grid-level property)
+  CellValidationState[] -- External validation state. Set this to mark cells
+  as invalid from outside the grid (e.g., server-side validation).
+  Each entry: { rowIndex, field, error }.
+
+Validation helper methods:
+  grid.isCellInvalid(rowIndex, field)        -- Returns boolean.
+  grid.getCellValidationError(rowIndex, field) -- Returns error string or null.
+  grid.canEditCell(rowIndex, field)           -- Checks editability and locking.
+
+
+DRAFT MANAGEMENT
+----------------
+
+Edits are stored in draft rows, not in the original items. This allows the
+consumer to review, batch-save, or discard changes.
+
+Methods:
+  grid.getRowDraft(rowIndex)      -- Returns the draft row object (T) or
+                                     undefined if no draft exists.
+  grid.hasRowDraft(rowIndex)      -- Returns true if the row has been edited.
+  grid.discardRowDraft(rowIndex)  -- Discards all draft changes for a row.
+                                     Also clears validation errors for that row.
+  grid.getDraftRowIndices()       -- Returns number[] of all row indices that
+                                     have drafts.
+  grid.discardAllDrafts()         -- Discards all drafts and clears all
+                                     validation errors.
+  grid.discardCellDraft(rowIndex, field)
+                                  -- Discards the draft for a single cell.
+                                     If the draft row then matches the original,
+                                     the entire draft row is removed.
+
+Draft behavior:
+  - A draft is created the first time a cell in a row enters edit mode.
+  - The draft is a shallow clone of the original row ({ ...item }).
+  - Subsequent edits to other cells in the same row reuse the existing draft.
+  - Invalid values ARE stored in the draft (so the user's input is preserved).
+  - getCellRawValue returns the draft value when a draft exists.
+  - The onrowchange callback includes both row (original) and draftRow (with
+    changes) so the consumer can compare.
+
+
+EVENTS (CALLBACKS)
+------------------
+
+These are property-based callbacks set on the grid element, not DOM events.
+Return values are ignored (fire-and-forget).
+
+onroweditstart
+  Fires when editing starts on a cell.
+  Signature: (detail: { row, rowIndex, field }) => void
+
+onroweditcancel
+  Fires when editing is cancelled (Escape key).
+  Signature: (detail: { row, rowIndex, field }) => void
+
+onrowchange
+  Fires when a cell value is committed (whether valid or invalid).
+  Signature: (detail: RowChangeDetail) => void
+  RowChangeDetail fields:
+    row              -- Original row (unchanged).
+    draftRow         -- Draft row with the user's changes.
+    rowIndex         -- Index of the row.
+    field            -- Field that changed.
+    oldValue         -- Previous value.
+    newValue         -- New value (after transformation if any).
+    isValid          -- Whether validation passed.
+    validationError  -- Error message if validation failed, or null.
+
+onvalidationerror
+  Fires when validation fails during commit.
+  Signature: (detail: { row, rowIndex, field, error }) => void
+
+
+PER-COLUMN EDITING OVERRIDES
+-----------------------------
+
+Several grid-level editing properties can be overridden on individual columns.
+
+Column-level overrides:
+  isEditable                  -- Enable/disable editing for this specific column.
+  editor                      -- Editor type for this column.
+  editTrigger                 -- Override the grid's editTrigger for this column.
+                                 Example: most columns use 'navigate' but one
+                                 column uses 'click'.
+  dropdownToggleVisibility    -- Override when the dropdown arrow is visible
+                                 for this column: 'always' or 'on-focus'.
+  shouldOpenDropdownOnEnter   -- Override Enter behavior for dropdown columns
+                                 on this column.
+  isEditButtonVisible         -- Show an edit button (pencil icon) in the cell.
+  editorOptions               -- Editor-specific options for this column.
+  cellEditCallback            -- Handler for custom editor type.
+  beforeCommitCallback        -- Validation/transform for this column.
+  validationTooltipCallback   -- Custom tooltip for this column's errors.
+
+Example with per-column overrides:
+  grid.editTrigger = 'navigate'  // grid default
+  grid.columns = [
+    { field: 'id', isEditable: false },
+    { field: 'name', editor: 'text' },
+    { field: 'status', editor: 'select', editTrigger: 'click',
+      dropdownToggleVisibility: 'always',
+      shouldOpenDropdownOnEnter: true,
+      editorOptions: { options: [...] } },
+    { field: 'notes', editor: 'custom',
+      cellEditCallback: (ctx) => openModal(ctx) }
+  ]
+
+
+PUBLIC METHODS FOR EDITING
+---------------------------
+
+grid.focusCell(rowIndex, colIndex)
+  Programmatically focus a cell (navigate mode).
+
+grid.startEditing(rowIndex, colIndex)
+  Programmatically start editing a cell.
+
+grid.openCustomEditor(rowIndex, colIndex)
+  Open the custom editor for a cell with editor='custom'.
+
+
+NEW ROW ENTRY (INLINE DATA ENTRY)
+-----------------------------------
+Adds an empty row at the top or bottom of the grid for entering new records.
+The empty row is visually distinct and commits to the items array once a
+non-empty value is entered and committed.
+
+Properties:
+
+isNewRowEnabled (boolean, default: false)
+  Enable the new row entry feature.
+
+newRowPosition ('top' | 'bottom', default: 'bottom')
+  Where the empty row appears.
+
+newRowIndicator (string, default: '+')
+  Text shown in the row number column for the empty row.
+
+createEmptyRowCallback (() => T | Promise<T>)
+  Creates the blank row object. Called once when the empty row is first
+  accessed. Can be async.
+
+Example:
+
+  grid.isNewRowEnabled = true
+  grid.newRowPosition = 'bottom'
+  grid.createEmptyRowCallback = () => ({
+    id: 0,
+    name: '',
+    email: '',
+    status: 'draft'
+  })
+
+When the user edits the empty row and commits, the new row is inserted into
+the items array at the appropriate position. The empty row then resets for
+the next entry.

@@ -1,0 +1,142 @@
+FROZEN COLUMNS
+==============
+@keenmate/web-grid - Freeze columns to the left during horizontal scroll.
+
+
+OVERVIEW
+--------
+Frozen columns use CSS position: sticky to pin columns to the left edge of
+the scroll container. They remain visible while the user scrolls horizontally.
+Two mechanisms exist: per-column (isFrozen on Column) and grid-level
+(freezeColumns count).
+
+
+GRID-LEVEL PROPERTY
+-------------------
+freezeColumns (number, default: 0)
+  Freeze the first N columns. Applied after visual reorder from per-column
+  isFrozen settings. Set on the grid element:
+
+  grid.freezeColumns = 3
+
+
+PER-COLUMN PROPERTY
+-------------------
+isFrozen (boolean) on Column<T>
+  Marks an individual column as frozen. Frozen columns are reordered to the
+  left side before the freezeColumns count is applied.
+
+  grid.columns = [
+    { field: 'id', title: 'ID', isFrozen: true },
+    { field: 'name', title: 'Name' },
+    { field: 'email', title: 'Email' }
+  ]
+
+
+STICKY ROW NUMBERS
+------------------
+isStickyRowNumbers (boolean, default: false)
+  When true, the row number column sticks to the left during horizontal scroll.
+  Works independently of frozen columns.
+
+  grid.isRowNumbersVisible = true
+  grid.isStickyRowNumbers = true
+
+
+HOW IT WORKS (CSS)
+------------------
+Frozen columns use position: sticky with left offsets calculated per column.
+Each frozen column gets a left value equal to the cumulative width of all
+preceding frozen columns, so they stack side by side.
+
+Z-index stacking order:
+  - Regular body cells: default (no z-index)
+  - Frozen body cells: z-index 1
+  - Frozen row number cells: z-index 2
+  - Header cells (sticky top): z-index 1
+  - Frozen header cells: z-index 3
+  - Corner cell (row number header, both frozen and sticky): z-index 4
+
+This ensures that:
+  - Frozen columns stay above scrolling body cells
+  - Headers stay above frozen body cells
+  - The corner cell (top-left) stays above everything
+
+
+OPAQUE BACKGROUNDS REQUIREMENT
+-------------------------------
+Frozen cells MUST have opaque backgrounds. The normal selection/focus variables
+use semi-transparent values (color-mix with transparent), which would let
+non-frozen content show through when it scrolls behind sticky columns.
+
+For frozen cells in selected/focused/in-range states, the CSS mixes the accent
+color against the opaque frozen column base color instead of transparent:
+
+  .wg__row--selected > .wg__cell--frozen {
+    background: color-mix(in srgb, var(--wg-accent-color) 15%,
+      var(--wg-frozen-column-bg, var(--wg-surface-1))) !important;
+  }
+
+
+AUTO-SCROLL WHEN NAVIGATING BEHIND FROZEN COLUMNS
+--------------------------------------------------
+When keyboard navigation (arrow keys) moves focus to a cell that is hidden
+behind frozen columns, the grid auto-scrolls horizontally to reveal it. The
+ensureCellNotBehindFrozen function detects when a focused cell's left edge is
+behind the last frozen column's right edge and scrolls the container to fix it.
+
+
+FROZEN COLUMN SHADOW
+--------------------
+A visual shadow appears on the last frozen column when the grid is scrolled
+horizontally. The shadow is rendered as a ::after pseudo-element.
+
+CSS variables controlling the shadow:
+
+  --wg-frozen-column-shadow-gradient
+    Default: linear-gradient(to right, rgba(0, 0, 0, 0.15), transparent)
+    The gradient used for the shadow effect.
+
+  --wg-frozen-column-shadow-width
+    Default: 8px
+    Width of the shadow pseudo-element.
+
+The shadow only appears when the wg--scrolled-horizontal class is present
+on the container (set when scrollLeft > 0).
+
+Other frozen column CSS variables:
+  --wg-frozen-column-bg       Default: var(--wg-surface-1)
+  --wg-frozen-header-bg       Default: color-mix(in srgb, accent 8%, header-bg)
+  --wg-frozen-column-border   Default: 2px solid var(--wg-border-color)
+  --wg-cell-splitter-color    Border color for frozen column separator
+  --wg-cell-splitter-width    Width of frozen column separator (1px)
+
+
+HEADER CONTEXT MENU ACTIONS
+----------------------------
+Two predefined header context menu items for freeze management:
+
+  'freezeColumn'    Freezes the right-clicked column
+  'unfreezeColumn'  Unfreezes the right-clicked column
+
+Usage:
+  grid.headerContextMenu = [
+    'freezeColumn',
+    'unfreezeColumn',
+    'sortAsc',
+    'sortDesc'
+  ]
+
+The header context menu context includes an isFrozen boolean indicating
+whether the clicked column is currently frozen.
+
+
+STRIPED AND HOVER STATES
+-------------------------
+Frozen cells maintain correct styling for:
+  - Striped rows: even rows use --wg-row-bg-even
+  - Hover: uses --wg-row-bg-hover
+  - Row focus: opaque mix of accent + frozen bg
+  - Row selection: opaque mix of accent + frozen bg
+  - Column selection: opaque mix of accent + frozen bg
+  - Cell range selection: opaque mix of accent + frozen bg

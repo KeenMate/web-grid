@@ -55,6 +55,14 @@ else
 endif
 	@echo Building library package...
 	cd packages/web-grid && npm run build
+	@echo Copying README and ai docs to package...
+ifeq ($(OS),Windows_NT)
+	copy README.md packages\web-grid\README.md >nul
+	xcopy ai packages\web-grid\ai\ /s /e /y /q >nul
+else
+	cp README.md packages/web-grid/README.md
+	cp -r ai packages/web-grid/ai
+endif
 	@echo.
 	@echo Package built successfully
 	@echo.
@@ -100,10 +108,11 @@ clean:
 	@echo Cleaning build artifacts...
 ifeq ($(OS),Windows_NT)
 	-rd /s /q packages\web-grid\dist 2>nul
+	-rd /s /q packages\web-grid\ai 2>nul
 	-rd /s /q packages\web-grid\node_modules\.vite 2>nul
 	-rd /s /q docs\build 2>nul
 else
-	rm -rf packages/web-grid/dist packages/web-grid/node_modules/.vite
+	rm -rf packages/web-grid/dist packages/web-grid/ai packages/web-grid/node_modules/.vite
 	rm -rf docs/build
 endif
 	@echo Cleaned build artifacts

@@ -1,0 +1,486 @@
+COLUMN DEFINITIONS IN @keenmate/web-grid
+=========================================
+
+A column is defined by the Column<T> interface. Each object in the columns
+array controls how one column renders, edits, validates, and behaves.
+
+    grid.columns = [
+      { field: 'id', title: 'ID', width: '60px' },
+      { field: 'name', title: 'Name', isEditable: true, editor: 'text' },
+      { field: 'age', title: 'Age', horizontalAlign: 'right' }
+    ]
+
+The field property is the only required field. It maps to a property on
+each row object in grid.items.
+
+
+1. BASIC FIELDS
+----------------
+
+field (keyof T | string) -- REQUIRED
+    Data property name on row objects. Used to read/write cell values.
+
+title (string)
+    Text displayed in the column header. If omitted, the column has no
+    header text.
+
+headerInfo (string)
+    Info tooltip shown next to the header title. Displays an (i) icon
+    that shows this text on hover.
+
+width (string)
+    Column width as CSS value, e.g. '100px', '20%', '10rem'.
+
+minWidth (string)
+    Minimum width during column resize, e.g. '50px'.
+
+maxWidth (string)
+    Maximum width during column resize, e.g. '400px'.
+
+
+2. DISPLAY
+----------
+
+horizontalAlign ('left' | 'center' | 'right' | 'justify')
+    Horizontal alignment for cell content. Default: 'left'.
+    Also affects dropdown option alignment.
+
+verticalAlign ('top' | 'middle' | 'bottom')
+    Vertical alignment for cell content. Default: 'middle'.
+
+headerHorizontalAlign ('left' | 'center' | 'right' | 'justify')
+    Horizontal alignment for the header cell. Defaults to the value of
+    horizontalAlign if not set.
+
+headerVerticalAlign ('top' | 'middle' | 'bottom')
+    Vertical alignment for the header cell. Defaults to the value of
+    verticalAlign if not set.
+
+textOverflow ('wrap' | 'ellipsis')
+    How text overflow is handled. 'ellipsis' truncates with ... and
+    'wrap' allows multiple lines.
+
+maxLines (number)
+    Maximum number of visible lines when textOverflow is 'wrap'. Uses
+    CSS -webkit-line-clamp. Content beyond maxLines is clipped.
+
+cellClass (string)
+    Static CSS class applied to every cell in the column. Requires
+    customStylesCallback on the grid to inject styles into Shadow DOM.
+
+cellClassCallback ((value: unknown, row: T) => string | null)
+    Dynamic CSS class computed per cell. Receives the cell value and the
+    full row object. Return null to apply no class.
+
+    Example:
+      cellClassCallback: (value, row) =>
+        value > 90000 ? 'high-value' : null
+
+
+3. CONTENT RENDERING
+---------------------
+
+There are three ways to customize cell display content. They are checked
+in this priority order: templateCallback > formatCallback > default.
+
+formatCallback ((value: unknown, row: T) => string)
+    Formats the raw cell value into a display string. The result is
+    HTML-escaped before rendering. Use for text-only formatting like
+    currency, dates, percentages.
+
+    Example:
+      formatCallback: (value) => '$' + Number(value).toFixed(2)
+
+    Special behavior with checkbox editor: if formatCallback is set on a
+    checkbox column, the formatted text is shown instead of the default
+    checkbox element.
+
+templateCallback ((row: T) => string)
+    Returns raw HTML to render in the cell. NOT HTML-escaped -- you can
+    include tags, images, links, etc. Receives the full row, not just
+    the field value. Takes priority over formatCallback.
+
+    Example:
+      templateCallback: (row) =>
+        '<span style="color:red">' + row.name + '</span>'
+
+    WARNING: You are responsible for escaping user input to prevent XSS.
+
+renderCallback ((row: T, element: HTMLElement) => void)
+    Imperative rendering. Receives the <td> DOM element directly. Use
+    for complex content that needs direct DOM manipulation (e.g.,
+    mounting framework components into the cell).
+
+    Note: This is defined in the type system but is not yet wired into
+    the rendering pipeline as of the current version. Use
+    templateCallback for HTML content instead.
+
+Summary of differences:
+    formatCallback  -- text only, auto-escaped, receives (value, row)
+    templateCallback -- raw HTML, NOT escaped, receives (row)
+    renderCallback  -- imperative DOM access, receives (row, td element)
+
+
+4. EDITING
+----------
+
+isEditable (boolean)
+    Enable editing for this column. The grid-level isEditable must also
+    be true (or a grid mode like 'excel'/'input-matrix' must be set).
+
+editor (EditorType)
+    Editor type to use. One of:
+      'text'         -- Text input
+      'number'       -- Numeric input with step/min/max
+      'checkbox'     -- Boolean toggle
+      'select'       -- Dropdown list
+      'combobox'     -- Filterable dropdown
+      'autocomplete' -- Async search dropdown
+      'date'         -- Date picker
+      'custom'       -- Consumer-controlled via cellEditCallback
+
+editTrigger (EditTrigger)
+    Per-column override for how editing starts. One of:
+      'click'    -- Single click
+      'dblclick' -- Double click (grid default)
+      'button'   -- Edit button in cell
+      'always'   -- Cell is always in edit mode
+      'navigate' -- Type to start editing (Excel-like)
+
+    If not set, uses the grid-level editTrigger.
+
+editorOptions (EditorOptions<T>)
+    Configuration specific to the editor type. See the web-grid README
+    for full options per editor type. Common options:
+
+    Text: maxLength, placeholder, pattern, inputMode, editStartSelection
+    Number: min, max, step, decimalPlaces, allowNegative
+    Checkbox: trueValue, falseValue
+    Date: minDate, maxDate, dateFormat, outputFormat
+    Dropdown (select/combobox/autocomplete):
+      options, loadOptions, optionsLoadTrigger,
+      valueMember, displayMember, searchMember,
+      iconMember, subtitleMember, disabledMember, groupMember,
+      getValueCallback, getDisplayCallback, getSearchCallback,
+      getIconCallback, getSubtitleCallback, getDisabledCallback,
+      getGroupCallback, renderOptionCallback, onselect,
+      allowEmpty, emptyLabel, noOptionsText, searchingText,
+      dropdownMinWidth, placeholder
+    Autocomplete-specific:
+      searchCallback, initialOptions, minSearchLength, debounceMs,
+      multiple, maxSelections
+
+dropdownToggleVisibility (ToggleVisibility)
+    Per-column override for when the dropdown toggle button is visible.
+      'always'   -- Always show the dropdown arrow
+      'on-focus' -- Show only when cell is focused/hovered
+
+shouldOpenDropdownOnEnter (boolean)
+    Per-column override. When true, pressing Enter opens the dropdown
+    instead of moving to the next row.
+
+cellEditCallback ((context: CustomEditorContext<T>) => void)
+    Handler for 'custom' editor type. The context provides:
+      value     -- Current cell value
+      row       -- Row data object
+      rowIndex  -- Row index
+      field     -- Field name
+      commit    -- Function: call commit(newValue) to save
+      cancel    -- Function: call cancel() to discard
+
+    Example:
+      editor: 'custom',
+      cellEditCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
+        const result = prompt('Enter value:', value)
+        if (result !== null) commit(result)
+        else cancel()
+      }
+
+isEditButtonVisible (boolean)
+    Show an edit button inside the cell. Clicking it triggers editing.
+    Useful with editTrigger: 'button'.
+
+
+5. VALIDATION
+-------------
+
+beforeCommitCallback
+    Signature:
+      (context: BeforeCommitContext<T>) => BeforeCommitResult | Promise<BeforeCommitResult>
+
+    Called before a cell edit is committed to the data. Can validate and
+    optionally transform the value. Supports async (return a Promise).
+
+    The context object contains:
+      value     -- The new value being committed
+      oldValue  -- The previous value
+      row       -- The row data object
+      rowIndex  -- The row index
+      field     -- The field name
+
+    Return values and their meaning:
+
+      { valid: true }
+          Accept the value as-is.
+
+      { valid: true, transformedValue: newVal }
+          Accept but replace with transformedValue. Use for
+          normalization (trim whitespace, clamp ranges, etc.).
+
+      { valid: false, message: 'Error text' }
+          Reject. Show 'Error text' in a validation tooltip on the
+          cell. The cell keeps the invalid value as a draft.
+
+      true
+          Accept (shorthand for { valid: true }).
+
+      null or undefined
+          Accept (shorthand for { valid: true }).
+
+      false
+          Reject with no error message displayed.
+
+      'Error text' (string)
+          Reject. The string is used as the error message.
+
+    Example:
+      beforeCommitCallback: ({ value, oldValue, row }) => {
+        if (value === '') return { valid: false, message: 'Required' }
+        if (value < 0) return { valid: true, transformedValue: 0 }
+        return { valid: true }
+      }
+
+    Async example:
+      beforeCommitCallback: async ({ value, field }) => {
+        const exists = await checkDuplicate(field, value)
+        if (exists) return 'Value already exists'
+        return true
+      }
+
+    When validation fails:
+      - The cell shows a red border (invalid state)
+      - A tooltip with the error message appears on hover
+      - The value is stored as a draft (uncommitted change)
+      - The original row data is NOT modified
+      - The onrowchange callback fires with isValid: false
+
+validationTooltipCallback
+    Signature:
+      (context: ValidationTooltipContext<T>) => string | null
+
+    Customize the HTML content of the validation error tooltip for this
+    column. Context contains: field, error, value, row, rowIndex.
+    Return null to use the default error display. Can return HTML.
+
+validateCallback (DEPRECATED)
+    Signature:
+      (value: unknown, row: T) => string | null | Promise<string | null>
+
+    Legacy validation. Return null for valid, or an error string.
+    Use beforeCommitCallback instead -- it supports value transformation
+    and richer return types.
+
+
+6. TOOLTIP
+----------
+
+tooltipMember (string)
+    Property name on the row object that contains tooltip text for
+    this column's cells.
+
+    Example:
+      // Row: { name: 'Alice', nameTooltip: 'Full name: Alice Smith' }
+      { field: 'name', tooltipMember: 'nameTooltip' }
+
+tooltipCallback ((value: unknown, row: T) => string | null)
+    Dynamic tooltip computed per cell. Takes priority over tooltipMember.
+    Return null for no tooltip.
+
+    Example:
+      tooltipCallback: (value, row) =>
+        row.description ? row.description : null
+
+    Tooltip show/hide delays are controlled by grid-level properties:
+      tooltipShowDelay (default: 400ms)
+      tooltipHideDelay (default: 100ms)
+
+
+7. CLIPBOARD
+-------------
+
+beforeCopyCallback ((value: unknown, row: T) => string)
+    Transform the cell value before it is copied to the clipboard.
+    Useful for formatting values differently for clipboard than for
+    display (e.g., removing currency symbols, using ISO dates).
+
+    Example:
+      beforeCopyCallback: (value) => new Date(value).toISOString()
+
+beforePasteCallback ((value: string, row: T) => unknown)
+    Process a pasted value before applying it to the cell. The input
+    is always a string (from clipboard TSV). Return the value in the
+    type the data model expects.
+
+    Example:
+      beforePasteCallback: (value) => parseFloat(value) || 0
+
+
+8. LAYOUT
+---------
+
+isFrozen (boolean)
+    Column sticks to the left side during horizontal scrolling. Frozen
+    columns are visually reordered to appear first (before non-frozen
+    columns), regardless of their position in the columns array.
+
+isResizable (boolean, default: true)
+    Allow the column width to be changed by dragging the column border.
+    Drag uses minWidth/maxWidth constraints if set.
+
+isMovable (boolean, default: true)
+    Allow the column to be reordered by dragging. Requires
+    isColumnReorderAllowed on the grid to be true.
+
+isHidden (boolean)
+    Column is not rendered in the table but remains in the columns
+    array. Useful for toggling visibility at runtime (e.g., via header
+    context menu 'columnVisibility' action).
+
+isSortable (boolean)
+    Enable sorting for this column. The grid must also have sortMode
+    set to 'single' or 'multi'. Clicking the header toggles sort.
+
+isFilterable (boolean)
+    Enable the per-column filter input for this column. The grid must
+    also have isFilterable set to true.
+
+
+9. FILL
+-------
+
+fillDirection (FillDirection)
+    Override the grid-level fill direction for this column.
+      'vertical' -- Fill handle drags only up/down
+      'all'      -- Fill handle drags in any direction
+
+    This only applies when the grid has a fillDragCallback set.
+
+
+10. FULL COLUMN DEFINITION EXAMPLE
+------------------------------------
+
+    {
+      // Basic
+      field: 'salary',
+      title: 'Annual Salary',
+      headerInfo: 'Base salary before bonuses',
+      width: '140px',
+      minWidth: '80px',
+      maxWidth: '300px',
+
+      // Display
+      horizontalAlign: 'right',
+      verticalAlign: 'middle',
+      headerHorizontalAlign: 'center',
+      textOverflow: 'ellipsis',
+      cellClass: 'salary-cell',
+      cellClassCallback: (value) => value > 100000 ? 'high-salary' : null,
+
+      // Content
+      formatCallback: (value) => '$' + Number(value).toLocaleString(),
+
+      // Editing
+      isEditable: true,
+      editor: 'number',
+      editTrigger: 'dblclick',
+      editorOptions: {
+        min: 0,
+        max: 1000000,
+        step: 1000,
+        decimalPlaces: 2
+      },
+
+      // Validation
+      beforeCommitCallback: ({ value, oldValue }) => {
+        if (value === null || value === '') {
+          return { valid: false, message: 'Salary is required' }
+        }
+        if (value < 0) {
+          return { valid: true, transformedValue: 0 }
+        }
+        if (value > 1000000) {
+          return { valid: false, message: 'Max salary is $1,000,000' }
+        }
+        return { valid: true }
+      },
+
+      // Tooltip
+      tooltipCallback: (value, row) =>
+        'Last updated: ' + row.salaryUpdatedAt,
+
+      // Clipboard
+      beforeCopyCallback: (value) => String(value),
+      beforePasteCallback: (value) => parseFloat(value.replace(/[$,]/g, '')) || 0,
+
+      // Layout
+      isFrozen: false,
+      isResizable: true,
+      isMovable: true,
+      isSortable: true,
+      isFilterable: true,
+      isHidden: false,
+
+      // Fill
+      fillDirection: 'vertical'
+    }
+
+Here is a dropdown column example with editorOptions:
+
+    {
+      field: 'department',
+      title: 'Department',
+      width: '180px',
+      isEditable: true,
+      editor: 'combobox',
+      dropdownToggleVisibility: 'always',
+      shouldOpenDropdownOnEnter: true,
+      editorOptions: {
+        options: [
+          { value: 'eng', label: 'Engineering' },
+          { value: 'sales', label: 'Sales' },
+          { value: 'hr', label: 'Human Resources' }
+        ],
+        allowEmpty: true,
+        emptyLabel: '-- None --',
+        placeholder: 'Search departments...',
+        dropdownMinWidth: '250px',
+        onselect: (option, row) => {
+          console.log('Selected:', option.label, 'for row', row.id)
+        }
+      },
+      beforeCommitCallback: ({ value }) => {
+        if (!value) return { valid: false, message: 'Department required' }
+        return true
+      }
+    }
+
+Here is a custom editor column example:
+
+    {
+      field: 'color',
+      title: 'Color',
+      isEditable: true,
+      editor: 'custom',
+      cellEditCallback: ({ value, row, commit, cancel }) => {
+        const picker = document.createElement('input')
+        picker.type = 'color'
+        picker.value = value || '#000000'
+        picker.onchange = () => commit(picker.value)
+        document.body.appendChild(picker)
+        picker.click()
+      },
+      templateCallback: (row) =>
+        '<span style="display:inline-block;width:20px;height:20px;'
+        + 'background:' + (row.color || '#ccc') + '"></span> '
+        + (row.color || 'None')
+    }

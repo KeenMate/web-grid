@@ -27,6 +27,7 @@
 	"files": [
 		"dist",
 		"src/css",
+		"ai",
 		"component-variables.manifest.json"
 	],
 	"scripts": {

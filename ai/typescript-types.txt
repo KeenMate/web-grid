@@ -1,0 +1,498 @@
+TYPESCRIPT TYPES
+================
+@keenmate/web-grid - Key exported types reference.
+
+All types are exported from the package entry point:
+  import type { Column, EditorOptions, SortState } from '@keenmate/web-grid'
+
+
+----------------------------------------------------------------------
+COLUMN<T>
+----------------------------------------------------------------------
+Defines how a column renders, edits, and behaves.
+
+  type Column<T> = {
+    field: keyof T | string          REQUIRED. Data field name.
+    title: string                    Column header text.
+    headerInfo?: string              Info tooltip (shows i icon in header).
+    width?: string                   e.g., '100px', '20%'
+    minWidth?: string                Minimum width during resize.
+    maxWidth?: string                Maximum width during resize.
+    horizontalAlign?: 'left' | 'center' | 'right' | 'justify'
+    verticalAlign?: 'top' | 'middle' | 'bottom'
+    headerHorizontalAlign?: 'left' | 'center' | 'right' | 'justify'
+    headerVerticalAlign?: 'top' | 'middle' | 'bottom'
+    textOverflow?: 'wrap' | 'ellipsis'
+    maxLines?: number                Line-clamp when textOverflow is 'wrap'.
+    cellClass?: string               Static CSS class for all cells.
+    cellClassCallback?: (value: unknown, row: T) => string | null
+    formatCallback?: (value: unknown, row: T) => string
+    templateCallback?: (row: T) => string
+    renderCallback?: (row: T, element: HTMLElement) => void
+    isEditable?: boolean
+    editor?: EditorType
+    editTrigger?: EditTrigger
+    editorOptions?: EditorOptions<T>
+    dropdownToggleVisibility?: ToggleVisibility
+    shouldOpenDropdownOnEnter?: boolean
+    cellEditCallback?: (context: CustomEditorContext<T>) => void
+    isEditButtonVisible?: boolean
+    validateCallback?: (value: unknown, row: T) => string | null | Promise<string | null>
+    beforeCommitCallback?: (context: BeforeCommitContext<T>) => BeforeCommitResult | Promise<BeforeCommitResult>
+    validationTooltipCallback?: (context: ValidationTooltipContext<T>) => string | null
+    tooltipMember?: string
+    tooltipCallback?: (value: unknown, row: T) => string | null
+    beforeCopyCallback?: (value: unknown, row: T) => string
+    beforePasteCallback?: (value: string, row: T) => unknown
+    isFrozen?: boolean
+    isResizable?: boolean             Default: true
+    isMovable?: boolean               Default: true
+    isHidden?: boolean
+    isSortable?: boolean
+    isFilterable?: boolean
+    fillDirection?: FillDirection
+  }
+
+
+----------------------------------------------------------------------
+EDITOROPTIONS<T>
+----------------------------------------------------------------------
+Configuration for all editor types. Properties are grouped by editor type.
+
+  type EditorOptions<T> = {
+    // Shared (select/combobox/autocomplete)
+    options?: EditorOption[]
+    loadOptions?: (row: T, field: string) => Promise<EditorOption[]>
+    optionsLoadTrigger?: OptionsLoadTrigger
+    valueMember?: string
+    displayMember?: string
+    searchMember?: string
+    iconMember?: string
+    subtitleMember?: string
+    disabledMember?: string
+    groupMember?: string
+    getValueCallback?: (option: EditorOption) => string | number
+    getDisplayCallback?: (option: EditorOption) => string
+    getSearchCallback?: (option: EditorOption) => string
+    getIconCallback?: (option: EditorOption) => string
+    getSubtitleCallback?: (option: EditorOption) => string
+    getDisabledCallback?: (option: EditorOption) => boolean
+    getGroupCallback?: (option: EditorOption) => string
+    renderOptionCallback?: (option: EditorOption, context: OptionRenderContext) => string
+    onselect?: (option: EditorOption, row: T) => void
+    allowEmpty?: boolean
+    emptyLabel?: string
+    noOptionsText?: string
+    searchingText?: string
+    dropdownMinWidth?: string
+    placeholder?: string
+    // Text
+    maxLength?: number
+    pattern?: string
+    inputMode?: 'text' | 'numeric' | 'email' | 'tel' | 'url'
+    editStartSelection?: EditStartSelection
+    // Number
+    min?: number
+    max?: number
+    step?: number
+    decimalPlaces?: number
+    allowNegative?: boolean
+    // Checkbox
+    trueValue?: unknown
+    falseValue?: unknown
+    // Date
+    minDate?: Date | string
+    maxDate?: Date | string
+    dateFormat?: string
+    outputFormat?: DateOutputFormat
+    // Autocomplete
+    initialOptions?: EditorOption[]
+    searchCallback?: (query: string, row: T, signal?: AbortSignal) => Promise<EditorOption[]>
+    minSearchLength?: number
+    debounceMs?: number
+    multiple?: boolean
+    maxSelections?: number
+  }
+
+
+----------------------------------------------------------------------
+SIMPLE TYPE ALIASES
+----------------------------------------------------------------------
+
+  type EditorType = 'text' | 'number' | 'checkbox' | 'select' | 'combobox' | 'date' | 'autocomplete' | 'custom'
+
+  type EditTrigger = 'click' | 'dblclick' | 'button' | 'always' | 'navigate'
+
+  type GridMode = 'read-only' | 'excel' | 'input-matrix'
+
+  type SortMode = 'none' | 'single' | 'multi'
+
+  type SortDirection = 'asc' | 'desc'
+
+  type CellSelectionMode = 'disabled' | 'click' | 'shift'
+
+  type ToggleVisibility = 'always' | 'on-focus'
+
+  type OptionsLoadTrigger = 'immediate' | 'oneditstart' | 'ondropdownopen'
+
+  type DateOutputFormat = 'date' | 'iso' | 'timestamp'
+
+  type EditStartSelection = 'mousePosition' | 'selectAll' | 'cursorAtStart' | 'cursorAtEnd'
+
+  type FillDirection = 'vertical' | 'all'
+
+  type ToolbarPosition = 'auto' | 'left' | 'right' | 'top' | 'inline'
+
+  type LockedRowEditBehavior = 'block' | 'allow' | 'callback'
+
+  type DataRequestTrigger = 'sort' | 'page' | 'pageSize' | 'init' | 'loadMore'
+
+  type DataRequestMode = 'replace' | 'append'
+
+
+----------------------------------------------------------------------
+SORTSTATE
+----------------------------------------------------------------------
+
+  type SortState = {
+    column: string
+    direction: SortDirection       'asc' | 'desc'
+  }
+
+
+----------------------------------------------------------------------
+ROWTOOLBARCONFIG<T>
+----------------------------------------------------------------------
+
+  type RowToolbarConfig<T> = PredefinedToolbarItemType | RowToolbarItem<T>
+
+  type PredefinedToolbarItemType = 'add' | 'delete' | 'duplicate' | 'moveUp' | 'moveDown'
+
+  type RowToolbarItem<T> = {
+    id: string
+    icon: string
+    title: string
+    label?: string
+    row?: number                   Row in multi-row toolbar (1 = closest)
+    group?: number                 Group number for divider placement
+    minWidth?: string
+    type?: PredefinedToolbarItemType
+    danger?: boolean
+    disabled?: boolean | ((row: T, rowIndex: number) => boolean)
+    hidden?: boolean | ((row: T, rowIndex: number) => boolean)
+    tooltip?: ToolbarTooltip
+    tooltipCallback?: (row: T, rowIndex: number) => string
+    onclick?: (detail: { row: T, rowIndex: number }) => void | Promise<void>
+  }
+
+
+----------------------------------------------------------------------
+CONTEXTMENUITEM<T>
+----------------------------------------------------------------------
+
+  type ContextMenuItem<T> = {
+    id: string
+    label: string | ((context: ContextMenuContext<T>) => string)
+    icon?: string | ((context: ContextMenuContext<T>) => string)
+    shortcut?: string
+    disabled?: boolean | ((context: ContextMenuContext<T>) => boolean)
+    visible?: boolean | ((context: ContextMenuContext<T>) => boolean)
+    danger?: boolean
+    dividerBefore?: boolean
+    onclick?: (context: ContextMenuContext<T>) => void | Promise<void>
+  }
+
+  type ContextMenuContext<T> = {
+    row: T
+    rowIndex: number
+    colIndex: number
+    column: Column<T>
+    cellValue: unknown
+  }
+
+
+----------------------------------------------------------------------
+HEADERMENUCONFIG<T>
+----------------------------------------------------------------------
+
+  type HeaderMenuConfig<T> = PredefinedHeaderMenuItemType | HeaderMenuItem<T>
+
+  type PredefinedHeaderMenuItemType = 'sortAsc' | 'sortDesc' | 'clearSort' | 'hideColumn' | 'freezeColumn' | 'unfreezeColumn' | 'columnVisibility'
+
+  type HeaderMenuItem<T> = {
+    id: string
+    label: string | ((context: HeaderMenuContext<T>) => string)
+    icon?: string | ((context: HeaderMenuContext<T>) => string)
+    shortcut?: string
+    disabled?: boolean | ((context: HeaderMenuContext<T>) => boolean)
+    visible?: boolean | ((context: HeaderMenuContext<T>) => boolean)
+    danger?: boolean
+    dividerBefore?: boolean
+    onclick?: (context: HeaderMenuContext<T>) => void | Promise<void>
+    children?: HeaderMenuItem<T>[]
+    submenu?: (context: HeaderMenuContext<T>) => HeaderMenuItem<T>[]
+  }
+
+  type HeaderMenuContext<T> = {
+    column: Column<T>
+    field: string
+    columnIndex: number
+    sortDirection: 'asc' | 'desc' | null
+    isFrozen: boolean
+    allColumns: Column<T>[]
+    labels: GridLabels
+  }
+
+
+----------------------------------------------------------------------
+ROWSHORTCUT<T> AND RANGESHORTCUT<T>
+----------------------------------------------------------------------
+
+  type RowShortcut<T> = {
+    key: string                    e.g., 'Delete', 'Ctrl+D', 'F3'
+    id: string
+    label: string
+    action: (ctx: ShortcutContext<T>) => void | Promise<void>
+    disabled?: boolean | ((ctx: ShortcutContext<T>) => boolean)
+  }
+
+  type ShortcutContext<T> = {
+    row: T
+    rowIndex: number
+    colIndex: number
+    column: Column<T>
+    cellValue: unknown
+  }
+
+  type RangeShortcut<T> = {
+    key: string
+    id: string
+    label: string
+    action: (ctx: RangeShortcutContext<T>) => void | Promise<void>
+    disabled?: boolean | ((ctx: RangeShortcutContext<T>) => boolean)
+  }
+
+  type RangeShortcutContext<T> = {
+    rows: T[]
+    rowIndices: number[]
+    cellRange?: CellRange
+    cells?: Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }>
+  }
+
+
+----------------------------------------------------------------------
+FILLDRAGDETAIL
+----------------------------------------------------------------------
+
+  type FillDragDetail = {
+    sourceCell: {
+      rowIndex: number
+      colIndex: number
+      field: string
+      value: unknown
+    }
+    targetCells: Array<{
+      rowIndex: number
+      colIndex: number
+      field: string
+    }>
+    direction: 'up' | 'down' | 'left' | 'right'
+  }
+
+
+----------------------------------------------------------------------
+ROWLOCKINGOPTIONS<T> AND ROWLOCKINFO
+----------------------------------------------------------------------
+
+  type RowLockingOptions<T> = {
+    lockedMember?: keyof T
+    lockInfoMember?: keyof T
+    isLockedCallback?: (row: T, rowIndex: number) => boolean
+    getLockInfoCallback?: (row: T, rowIndex: number) => RowLockInfo | null
+    lockedEditBehavior?: LockedRowEditBehavior
+    canEditLockedCallback?: (row: T, lockInfo: RowLockInfo) => boolean
+    lockTooltipCallback?: (lockInfo: RowLockInfo, row: T) => string | null
+  }
+
+  type RowLockInfo = {
+    isLocked: boolean
+    lockedBy?: string
+    lockedAt?: Date | string
+    reason?: string
+    [key: string]: unknown
+  }
+
+  type RowLockChangeDetail<T> = {
+    rowId: unknown
+    row: T | null
+    rowIndex: number
+    lockInfo: RowLockInfo | null
+    source: 'property' | 'callback' | 'external'
+  }
+
+
+----------------------------------------------------------------------
+BEFORECOMMITCONTEXT<T> AND BEFORECOMMITRESULT
+----------------------------------------------------------------------
+
+  type BeforeCommitContext<T> = {
+    value: unknown
+    oldValue: unknown
+    row: T
+    rowIndex: number
+    field: string
+  }
+
+  type BeforeCommitResult = ValidationResult | boolean | string | null | undefined
+
+  type ValidationResult = {
+    valid: boolean
+    message?: string
+    transformedValue?: unknown
+  }
+
+
+----------------------------------------------------------------------
+ROWCHANGEDETAIL<T>
+----------------------------------------------------------------------
+
+  type RowChangeDetail<T> = {
+    row: T                     Original row (unchanged)
+    draftRow: T                Draft with user's changes (including invalid)
+    rowIndex: number
+    field: string
+    oldValue: unknown
+    newValue: unknown
+    isValid: boolean
+    validationError?: string | null
+  }
+
+
+----------------------------------------------------------------------
+DATAREQUESTDETAIL
+----------------------------------------------------------------------
+
+  type DataRequestDetail = {
+    sort: SortState[]
+    page: number
+    pageSize: number
+    trigger: DataRequestTrigger
+    mode: DataRequestMode
+    skip: number
+  }
+
+
+----------------------------------------------------------------------
+PAGINATIONLABELSCALLBACK
+----------------------------------------------------------------------
+
+  type PaginationLabelsCallback = (context: PaginationLabelsContext) => Partial<PaginationLabels>
+
+  type PaginationLabelsContext = {
+    currentPage: number
+    totalPages: number
+    totalItems: number
+    pageSize: number
+  }
+
+  type PaginationLabels = {
+    first: string
+    previous: string
+    next: string
+    last: string
+    pageInfo: string
+    itemCount: string
+    perPage: string
+  }
+
+
+----------------------------------------------------------------------
+GRIDLABELS
+----------------------------------------------------------------------
+
+  type GridLabels = {
+    rowActions: string
+    inlineActionsHeader: string
+    keyboardShortcuts: string
+    paginationFirst: string
+    paginationPrevious: string
+    paginationNext: string
+    paginationLast: string
+    paginationPageInfo: string
+    paginationItemCount: string
+    paginationPerPage: string
+    dropdownNoOptions: string
+    dropdownSearching: string
+    contextMenu: {
+      sortAsc: string
+      sortDesc: string
+      clearSort: string
+      hideColumn: string
+      freezeColumn: string
+      unfreezeColumn: string
+      columnVisibility: string
+      showAll: string
+    }
+  }
+
+
+----------------------------------------------------------------------
+CELLVALIDATIONSTATE
+----------------------------------------------------------------------
+
+  type CellValidationState = {
+    rowIndex: number
+    field: string
+    error: string
+  }
+
+Used by the invalidCells grid property for external validation state.
+
+
+----------------------------------------------------------------------
+CELLRANGE
+----------------------------------------------------------------------
+
+  type CellRange = {
+    startRowIndex: number
+    startColIndex: number
+    endRowIndex: number
+    endColIndex: number
+    startField: string
+    endField: string
+  }
+
+
+----------------------------------------------------------------------
+ADDITIONAL EXPORTED TYPES
+----------------------------------------------------------------------
+
+  type EditorOption = { value: string | number | boolean, label: string, [key: string]: unknown }
+  type OptionRenderContext = { index: number, isHighlighted: boolean, isSelected: boolean, isDisabled: boolean }
+  type CustomEditorContext<T> = { value: unknown, row: T, rowIndex: number, field: string, commit: (newValue: unknown) => void, cancel: () => void }
+  type ValidationTooltipContext<T> = { field: string, error: string, value: unknown, row: T, rowIndex: number }
+  type RowFocusDetail<T> = { rowIndex: number, row: T, previousRowIndex: number | null }
+  type CellSelectionChangeDetail = { range: CellRange | null, cellCount: number }
+  type ColumnWidthState = { field: string, width: string }
+  type ColumnOrderState = { field: string, order: number }
+  type ColumnResizeDetail = { field: string, oldWidth: string, newWidth: string, allWidths: ColumnWidthState[] }
+  type ColumnReorderDetail = { field: string, fromIndex: number, toIndex: number, allOrder: ColumnOrderState[] }
+  type ToolbarClickDetail<T> = { item: NormalizedToolbarItem<T>, rowIndex: number, row: T }
+  type ToolbarTooltip = { description?: string, shortcut?: string }
+  type SummaryContext<T> = { items: T[], allItems: T[], totalItems: number, currentPage: number, pageSize: number, metadata: unknown }
+  type SummaryContentCallback<T> = (context: SummaryContext<T>) => string
+  type NewRowPosition = 'top' | 'bottom'  (experimental)
+
+  type BeforePasteDetail<T> = {
+    rawText: string, parsedRows: string[][], hasHeaders: boolean,
+    headerMapping: PasteColumnMapping[] | null,
+    targetRowIndex: number, targetColIndex: number, newRowsCount: number,
+    cancel: boolean, skipCells: Set<string>
+  }
+  type PasteCellResult = { rowIndex: number, field: string, oldValue: unknown, newValue: unknown, success: boolean, error?: string }
+  type PasteDetail<T> = {
+    totalCells: number, successfulCells: number, failedCells: number,
+    skippedCells: number, newRowsCreated: number,
+    cellResults: PasteCellResult[], hadHeaders: boolean
+  }
+  type CreateRowCallback<T> = (pastedData: Record<string, unknown>, rowIndex: number) => T

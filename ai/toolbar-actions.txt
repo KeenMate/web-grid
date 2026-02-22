@@ -1,0 +1,475 @@
+TOOLBAR, INLINE ACTIONS, CELL TOOLBAR, AND CONTEXT MENUS
+=========================================================
+Reference for @keenmate/web-grid row toolbar, inline actions,
+cell-specific toolbar, and context menus (cell and header).
+
+
+ROW TOOLBAR BASICS
+------------------
+The row toolbar is a floating (or inline) set of action buttons
+that appear per-row. Enable it with two properties:
+
+    grid.isRowToolbarVisible = true
+    grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
+
+The rowToolbar array accepts predefined action strings or custom
+item objects (mixed in any order).
+
+Predefined action strings:
+    'add'        - Insert a new row after the current row
+    'delete'     - Delete the current row
+    'duplicate'  - Duplicate the current row
+    'moveUp'     - Move row up one position
+    'moveDown'   - Move row down one position
+
+Each predefined string is expanded internally to a normalized item
+with a built-in SVG icon, title, and (for 'delete') danger styling.
+
+Toolbar trigger controls how the toolbar appears:
+    grid.toolbarTrigger = 'hover'   (default) show on row hover
+    grid.toolbarTrigger = 'click'   show on row click
+    grid.toolbarTrigger = 'button'  show a trigger button in each row
+
+When toolbarTrigger is 'button', a column with a vertical ellipsis
+button is rendered. Clicking the button opens the floating toolbar.
+
+
+CUSTOM TOOLBAR ITEMS
+--------------------
+Custom items are objects mixed into the rowToolbar array alongside
+predefined strings.
+
+Full type definition (RowToolbarItem<T>):
+
+    {
+      id: string                  // unique identifier (required)
+      icon: string                // icon HTML/emoji/SVG (required)
+      title: string               // tooltip title text (required)
+      label: string               // optional text label next to icon
+      row: number                 // toolbar row (1 = closest to grid row, default: 1)
+      group: number               // group number for visual dividers (default: 1)
+      danger: boolean             // red/danger styling (default: false)
+      disabled: boolean | (row: T, rowIndex: number) => boolean
+      hidden: boolean | (row: T, rowIndex: number) => boolean
+      minWidth: string            // per-button min-width override (e.g. '40px')
+      tooltip: {
+        description: string       // additional description text
+        shortcut: string          // keyboard shortcut hint (e.g. 'Ctrl+D')
+      }
+      tooltipCallback: (row: T, rowIndex: number) => string  // custom HTML tooltip
+      onclick: (detail: { row: T, rowIndex: number }) => void | Promise<void>
+    }
+
+Example with mixed predefined and custom items:
+
+    grid.rowToolbar = [
+      'add',
+      'delete',
+      {
+        id: 'edit',
+        icon: '<svg>...</svg>',
+        title: 'Edit Record',
+        label: 'Edit',
+        row: 1,
+        group: 2,
+        disabled: (row, idx) => row.locked,
+        hidden: (row, idx) => row.archived,
+        tooltip: { description: 'Open editor', shortcut: 'Enter' },
+        onclick: ({ row, rowIndex }) => openEditor(row)
+      },
+      {
+        id: 'archive',
+        icon: '📦',
+        title: 'Archive',
+        row: 2,
+        group: 1,
+        danger: true,
+        onclick: ({ row }) => archiveRow(row)
+      }
+    ]
+
+Grouping and multi-row layout:
+- Items with the same 'row' number appear on the same horizontal row.
+- Items with different 'group' numbers within a row are separated by
+  a visual divider.
+- Row 1 is closest to the grid data row. Higher row numbers stack
+  outward from the data row.
+
+
+TOOLBAR POSITIONING
+-------------------
+Properties that control where and how the toolbar appears:
+
+    grid.toolbarPosition = 'auto'     (default) prefers left, falls back to right, then top
+    grid.toolbarPosition = 'left'     to the left of the row
+    grid.toolbarPosition = 'right'    to the right of the row
+    grid.toolbarPosition = 'top'      above the row
+    grid.toolbarPosition = 'inline'   renders as a fixed table column (see INLINE ACTIONS)
+
+For left/right positions, vertical alignment controls where the
+toolbar aligns relative to the row:
+
+    grid.toolbarVerticalAlign = 'bottom'   (default) toolbar top aligns with row, stacks downward
+    grid.toolbarVerticalAlign = 'center'   toolbar centered on row
+    grid.toolbarVerticalAlign = 'top'      toolbar bottom aligns with row, stacks upward
+
+For top position, horizontal alignment controls left-right placement:
+
+    grid.toolbarHorizontalAlign = 'center'   (default) centered above row
+    grid.toolbarHorizontalAlign = 'start'    aligned with left edge
+    grid.toolbarHorizontalAlign = 'end'      aligned with right edge
+    grid.toolbarHorizontalAlign = 'cursor'   positioned at mouse cursor X
+
+Additional positioning properties:
+
+    grid.toolbarFollowsCursor = false     (default) toolbar stays at initial position
+    grid.toolbarFollowsCursor = true      toolbar follows mouse cursor horizontally
+
+    grid.toolbarColumn = 'fieldName'      pin toolbar above a specific column (for 'top' position)
+    grid.toolbarColumn = 2                or by column index
+
+    grid.toolbarBtnMinWidth = '32px'      min-width for toolbar buttons (CSS value)
+                                          overrides --wg-toolbar-btn-min-width variable
+
+    grid.cellToolbarOffset = 0.2          (default) horizontal offset for cell toolbar
+                                          number 0-1: fraction of cell width
+                                          string: CSS length like '2rem' or '24px'
+
+Deprecated aliases:
+    toolbarAlign       -> use toolbarVerticalAlign
+    toolbarTopPosition -> use toolbarHorizontalAlign
+
+The toolbar uses @floating-ui/dom for smart positioning with automatic
+flip and shift. If the preferred position would go off-screen, it
+falls back to alternative positions.
+
+Connector arrow: When moveUp/moveDown actions are used, a bracket-shaped
+SVG connector line tracks from the toolbar to the row's current position,
+even when the row scrolls out of view.
+
+
+INLINE ACTIONS
+--------------
+When toolbarPosition is set to 'inline', toolbar items render as a
+fixed column in the table instead of a floating popup.
+
+    grid.isRowToolbarVisible = true
+    grid.toolbarPosition = 'inline'
+    grid.rowToolbar = ['add', 'delete', 'duplicate']
+
+Behavior differences from floating toolbar:
+- Actions render as buttons directly in each row's cell.
+- No hover/click trigger needed; buttons are always visible.
+- No floating-ui positioning; it is a regular table column.
+- Hidden items (via hidden callback) are excluded from the DOM entirely.
+- Disabled items render as disabled buttons.
+- Multi-row layout (via the 'row' property) is supported within the cell.
+
+Column header title:
+
+    grid.inlineActionsTitle = 'Actions'   (default)
+    grid.inlineActionsTitle = ''          no header text
+
+The column width auto-sizes based on the maximum number of buttons
+across all rows, using --wg-toolbar-btn-min-width and --wg-inline-actions-gap
+CSS variables.
+
+Clicking an inline action button fires the same ontoolbarclick callback
+and calls the item's onclick handler, identical to the floating toolbar.
+
+
+CELL-SPECIFIC TOOLBAR
+---------------------
+The cellToolbar callback provides context-sensitive toolbar items
+that appear when hovering/clicking a specific cell, not just a row.
+
+    grid.cellToolbar = (row, rowIndex, field, colIndex) => {
+      if (field === 'status') {
+        return [
+          { id: 'approve', icon: '✅', title: 'Approve', onclick: ({ row }) => approve(row) },
+          { id: 'reject', icon: '❌', title: 'Reject', danger: true, onclick: ({ row }) => reject(row) }
+        ]
+      }
+      return undefined   // no cell toolbar for other columns
+    }
+
+Callback signature:
+    cellToolbar: (row: T, rowIndex: number, field: string, colIndex: number)
+                 => RowToolbarConfig<T>[] | undefined
+
+Return an array of toolbar items (same format as rowToolbar items -
+predefined strings or custom objects) or undefined for no cell toolbar.
+
+The cell toolbar position is controlled by cellToolbarOffset:
+
+    grid.cellToolbarOffset = 0.2    (default) 20% from left edge of the cell
+    grid.cellToolbarOffset = 0      left edge of cell
+    grid.cellToolbarOffset = 0.5    center of cell
+    grid.cellToolbarOffset = '2rem' 2rem from left edge of cell
+
+When cellToolbar returns items, the toolbar appears above the hovered
+cell. When it returns undefined, the regular row toolbar (if configured)
+is used instead. The toolbar uses 'top' position when showing
+cell-specific items.
+
+
+CONTEXT MENU
+-------------
+Right-click context menu for data cells/rows.
+
+    grid.contextMenu = [
+      {
+        id: 'view',
+        label: 'View Details',
+        icon: '👁️',
+        shortcut: 'Enter',
+        visible: true,
+        disabled: false,
+        danger: false,
+        dividerBefore: false,
+        onclick: (context) => viewDetails(context.row)
+      },
+      {
+        id: 'delete',
+        label: 'Delete Row',
+        icon: '🗑️',
+        shortcut: 'Delete',
+        danger: true,
+        dividerBefore: true,
+        disabled: (context) => context.row.locked,
+        onclick: (context) => deleteRow(context.rowIndex)
+      }
+    ]
+
+ContextMenuItem<T> type:
+
+    {
+      id: string                                                    // unique identifier
+      label: string | (context: ContextMenuContext<T>) => string    // display text (static or dynamic)
+      icon: string | (context: ContextMenuContext<T>) => string     // icon (static or dynamic)
+      shortcut: string                // display-only shortcut hint (also used as keyboard trigger)
+      visible: boolean | (context: ContextMenuContext<T>) => boolean  // show/hide item
+      disabled: boolean | (context: ContextMenuContext<T>) => boolean // disable item
+      danger: boolean                 // red/danger styling
+      dividerBefore: boolean          // render horizontal divider above this item
+      onclick: (context: ContextMenuContext<T>) => void | Promise<void>
+    }
+
+onclick context object (ContextMenuContext<T>):
+
+    {
+      row: T                 // the row data object
+      rowIndex: number       // index of the row in display items
+      colIndex: number       // column index that was right-clicked
+      column: Column<T>      // the column definition
+      cellValue: unknown     // the cell's current value
+    }
+
+Shortcut matching: When the context menu is open, pressing a key that
+matches an item's shortcut string (case-insensitive for single letters)
+triggers that item's onclick and closes the menu.
+
+Positioning offsets:
+
+    grid.contextMenuXOffset = 0    (default) horizontal offset from click
+    grid.contextMenuYOffset = 4    (default) vertical offset from click
+
+The context menu renders in the document body (outside Shadow DOM) and
+uses @floating-ui/dom for viewport-aware positioning with flip/shift.
+
+Closing behavior:
+- Click outside the menu
+- Press Escape
+- Scroll the page or grid
+- Press a matching shortcut key
+
+
+HEADER CONTEXT MENU
+-------------------
+Right-click context menu for column headers with predefined actions
+and custom items.
+
+    grid.headerContextMenu = [
+      'sortAsc',
+      'sortDesc',
+      'clearSort',
+      'hideColumn',
+      'freezeColumn',
+      'unfreezeColumn',
+      'columnVisibility',
+      {
+        id: 'custom-action',
+        label: 'Custom Action',
+        icon: '⚙️',
+        onclick: (context) => doSomething(context.column)
+      }
+    ]
+
+Predefined string actions:
+
+    'sortAsc'           - Sort column ascending (hidden if column not sortable)
+    'sortDesc'          - Sort column descending (hidden if column not sortable)
+    'clearSort'         - Clear sort for this column (hidden if not sorted)
+    'hideColumn'        - Hide this column (sets isHidden=true)
+    'freezeColumn'      - Freeze columns up to and including this one (hidden if already frozen)
+    'unfreezeColumn'    - Unfreeze this column (hidden if not frozen)
+    'columnVisibility'  - Submenu to toggle visibility of all columns
+
+Each predefined action has automatic visibility rules:
+- sortAsc/sortDesc: visible only if column.isSortable is not false
+- clearSort: visible only if column is currently sorted
+- freezeColumn: visible only if column is not frozen
+- unfreezeColumn: visible only if column is frozen
+- columnVisibility: always visible, generates a dynamic submenu with
+  a "Show all" option and individual toggles for each column
+
+The columnVisibility submenu stays open after toggling items, updating
+checkmarks in real time.
+
+Custom header menu items (HeaderMenuItem<T>):
+
+    {
+      id: string
+      label: string | (context: HeaderMenuContext<T>) => string
+      icon: string | (context: HeaderMenuContext<T>) => string
+      shortcut: string
+      disabled: boolean | (context: HeaderMenuContext<T>) => boolean
+      visible: boolean | (context: HeaderMenuContext<T>) => boolean
+      danger: boolean
+      dividerBefore: boolean
+      children: HeaderMenuItem<T>[]                                  // static submenu
+      submenu: (context: HeaderMenuContext<T>) => HeaderMenuItem<T>[] // dynamic submenu
+      onclick: (context: HeaderMenuContext<T>) => void | Promise<void>
+    }
+
+onclick context object (HeaderMenuContext<T>):
+
+    {
+      column: Column<T>          // the column definition
+      field: string              // column field name
+      columnIndex: number        // column index
+      sortDirection: 'asc' | 'desc' | null    // current sort direction for this column
+      isFrozen: boolean          // whether this column is frozen
+      allColumns: Column<T>[]   // all columns including hidden (for visibility menus)
+      labels: GridLabels         // grid labels for i18n
+    }
+
+Submenu support: Use 'children' for a static array of sub-items, or
+'submenu' for a function that returns items dynamically based on context.
+Submenus render as nested fly-out menus to the right.
+
+Dividers: Set dividerBefore: true on an item to render a horizontal
+line above it. You can also use a standalone divider marker object
+{ dividerBefore: true } in the array; the divider will be applied
+to the next actual item.
+
+
+EVENTS
+------
+Three callback events relate to toolbars and context menus:
+
+ontoolbarclick:
+    Fires when any toolbar button is clicked (floating or inline).
+    Set as a property on the grid element.
+
+    grid.ontoolbarclick = (detail) => {
+      // detail.item      - NormalizedToolbarItem (id, icon, title, type, etc.)
+      // detail.rowIndex  - current row index (updated if row moved)
+      // detail.row       - the row data object
+    }
+
+    Type: ToolbarClickDetail<T>:
+        {
+          item: NormalizedToolbarItem<T>
+          rowIndex: number
+          row: T
+        }
+
+    This fires AFTER the item's own onclick handler. For predefined
+    actions (add, delete, duplicate, moveUp, moveDown), the built-in
+    action has already been applied to the items array by the time
+    ontoolbarclick fires.
+
+    Note: For move actions (moveUp, moveDown), the rowIndex in the
+    detail reflects the row's CURRENT position after the move.
+
+oncontextmenuopen:
+    Fires when the cell/row context menu is opened (before rendering).
+    Set as a property on the grid element.
+
+    grid.oncontextmenuopen = (context) => {
+      // context.row, context.rowIndex, context.colIndex,
+      // context.column, context.cellValue
+    }
+
+    Type: ContextMenuContext<T> (same object passed to menu item callbacks)
+
+onheadercontextmenuopen:
+    Fires when the header context menu is opened (before rendering).
+    Set as a property on the grid element.
+
+    grid.onheadercontextmenuopen = (context) => {
+      // context.column, context.field, context.columnIndex,
+      // context.sortDirection, context.isFrozen, context.allColumns, context.labels
+    }
+
+    Type: HeaderMenuContext<T> (same object passed to menu item callbacks)
+
+Legacy event:
+    onrowaction is deprecated. Use ontoolbarclick instead.
+    onrowaction fires with { action, rowIndex, row } for predefined actions only.
+
+
+I18N LABELS
+-----------
+Relevant labels that can be customized:
+
+    grid.labels = {
+      rowActions: 'Actions',          // toolbar trigger button title
+      inlineActionsHeader: 'Actions', // default inline actions column header
+      contextMenu: {
+        sortAsc: 'Sort Ascending',
+        sortDesc: 'Sort Descending',
+        clearSort: 'Clear Sort',
+        hideColumn: 'Hide Column',
+        freezeColumn: 'Freeze Column',
+        unfreezeColumn: 'Unfreeze Column',
+        columnVisibility: 'Column Visibility',
+        showAll: 'Show all'
+      }
+    }
+
+The inlineActionsTitle property overrides inlineActionsHeader label
+when toolbarPosition is 'inline'.
+
+
+CSS VARIABLES
+-------------
+Key CSS variables for styling toolbar and context menu:
+
+Toolbar:
+    --wg-toolbar-btn-min-width    min-width for toolbar buttons
+    --wg-inline-actions-gap       gap between inline action buttons
+    --wg-spacing-sm               used for inline actions cell padding
+
+Context menu (set on .wg-context-menu-container):
+    --wg-cm-z-index               z-index (default: 10000)
+    --wg-cm-background            menu background
+    --wg-cm-border-color          menu border color
+    --wg-cm-text-color            text color
+    --wg-cm-text-secondary        shortcut text color
+    --wg-cm-text-danger           danger item text color
+    --wg-cm-hover-bg              item hover background
+    --wg-cm-disabled-opacity      opacity for disabled items
+    --wg-cm-font-family           font family
+    --wg-cm-font-size             font size
+    --wg-cm-padding               menu padding
+    --wg-cm-item-padding          item padding
+    --wg-cm-min-width             menu minimum width
+    --wg-cm-border-radius         border radius
+    --wg-cm-icon-size             icon size
+    --wg-cm-icon-gap              gap between icon and label
+    --wg-cm-shadow                box shadow
+
+Context menu variables fall back to --base-* theme variables from
+@keenmate/theme-designer when available.

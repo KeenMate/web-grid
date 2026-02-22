@@ -1,32 +1,6 @@
-# Web Grid Component
+# @keenmate/web-grid
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![npm version](https://img.shields.io/npm/v/@keenmate/web-grid.svg)](https://www.npmjs.com/package/@keenmate/web-grid)
-
-A lightweight, accessible data grid web component with sorting, filtering, inline editing, and excellent keyboard navigation.
-
-## Features
-
-- **Sorting** - Single and multi-column sorting with visual indicators
-- **Filtering** - Column-based filtering with customizable inputs
-- **Pagination** - Built-in pagination with customizable page sizes
-- **Inline Editing** - Text, number, date, select, combobox, autocomplete, checkbox, custom editors
-- **Keyboard Navigation** - Excel-like navigation with Enter, Tab, Arrow keys
-- **Row Toolbar** - Floating action buttons (add, delete, duplicate, move)
-- **Inline Actions Column** - Render toolbar buttons as a fixed table column
-- **Context Menu** - Right-click menus with custom actions for rows and headers
-- **Keyboard Shortcuts** - Custom grid-level shortcuts with help overlay
-- **Row Selection** - Multi-row selection via row numbers with range shortcuts
-- **Row Focus** - Track which row the user is interacting with (master/detail patterns)
-- **Cell Range Selection** - Excel-like click+drag cell selection with copy to clipboard
-- **Virtual Scrolling** - Efficient rendering for large datasets (10,000+ rows)
-- **Infinite Scroll** - Load more data as user scrolls
-- **Custom Styling** - Cell and row styling via callbacks
-- **Row Locking** - Lock rows for collaborative editing (property, callback, or external API)
-- **Dark Mode** - Automatic dark mode support via CSS variables
-- **i18n/Labels** - Centralized labels object for translations
-- **Shadow DOM** - Encapsulated styles that don't leak
-- **Framework Agnostic** - Works with any framework or vanilla JS
+A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
 ## Installation
 
@@ -34,9 +8,9 @@ A lightweight, accessible data grid web component with sorting, filtering, inlin
 npm install @keenmate/web-grid
 ```
 
-## Usage
+## Quick Start
 
-### Basic HTML
+### ES Module (recommended)
 
 ```html
 <script type="module">
@@ -44,827 +18,827 @@ npm install @keenmate/web-grid
 </script>
 
 <web-grid id="grid"></web-grid>
+
+<script type="module">
+  const grid = document.getElementById('grid')
+  grid.items = [
+    { id: 1, name: 'Alice', age: 28 },
+    { id: 2, name: 'Bob', age: 34 }
+  ]
+  grid.columns = [
+    { field: 'id', title: 'ID', width: '60px' },
+    { field: 'name', title: 'Name' },
+    { field: 'age', title: 'Age' }
+  ]
+  grid.sortMode = 'multi'  // Enable multi-column sorting
+</script>
 ```
 
-### With JavaScript/TypeScript
+### UMD (Script Tag)
 
-```typescript
-import '@keenmate/web-grid'
-
-const grid = document.querySelector('web-grid')
-
-// Define columns
-grid.columns = [
-  { field: 'name', title: 'Name', editor: 'text' },
-  { field: 'email', title: 'Email', editor: 'text' },
-  { field: 'department', title: 'Department', editor: 'select',
-    editorOptions: {
-      options: [
-        { value: 'eng', label: 'Engineering' },
-        { value: 'sales', label: 'Sales' }
-      ]
-    }
-  },
-  { field: 'salary', title: 'Salary', horizontalAlign: 'right', editor: 'number',
-    formatCallback: (val) => `$${val.toLocaleString()}`
-  }
-]
-
-// Set data
-grid.items = [
-  { name: 'John', email: 'john@example.com', department: 'eng', salary: 85000 },
-  { name: 'Jane', email: 'jane@example.com', department: 'sales', salary: 72000 }
-]
-
-// Configure behavior
-grid.isEditable = true
-grid.editTrigger = 'navigate'
-grid.sortMode = 'multi'
-grid.isPageable = true
-grid.pageSize = 25
-
-// Listen for changes
-grid.onrowchange = (detail) => {
-  console.log('Changed:', detail.field, detail.oldValue, '→', detail.newValue)
-}
+```html
+<script src="https://unpkg.com/@keenmate/web-grid"></script>
+<web-grid id="grid"></web-grid>
 ```
 
-## Attributes
+## Features
 
-| Attribute | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `is-striped` | boolean | `false` | Alternating row colors |
-| `is-hoverable` | boolean | `false` | Highlight row on hover |
-| `sort-mode` | `'none' \| 'single' \| 'multi'` | `'none'` | Sorting mode |
-| `is-filterable` | boolean | `false` | Show column filters |
-| `is-pageable` | boolean | `false` | Enable pagination |
-| `page-size` | number | `10` | Rows per page |
-| `is-editable` | boolean | `false` | Enable inline editing |
-| `edit-trigger` | `'click' \| 'dblclick' \| 'navigate'` | `'dblclick'` | How to start editing |
-| `is-row-numbers-visible` | boolean | `false` | Show row number column |
-| `is-virtual-scroll-enabled` | boolean | `false` | Enable virtual scrolling |
-| `virtual-scroll-threshold` | number | `100` | Auto-enable when items >= threshold |
+- **Sorting** — Single or multi-column with visual indicators
+- **Filtering** — Per-column text input filters
+- **Pagination** — Client-side or server-side, configurable layout and labels
+- **Inline Editing** — 8 editor types: `text`, `number`, `checkbox`, `select`, `combobox`, `autocomplete`, `date`, `custom`
+- **Grid Modes** — `read-only`, `excel`, `input-matrix` — each sets sensible defaults
+- **Keyboard Navigation** — Spreadsheet-like Arrow/Tab/Home/End/PageUp/PageDown navigation
+- **Cell Range Selection** — Click+drag or Shift+click to select rectangular ranges
+- **Clipboard** — Copy/paste TSV data (Excel-compatible), per-column transform callbacks
+- **Row Toolbar** — Floating, inline, or cell-specific action buttons
+- **Context Menu** — Right-click menu for cells and column headers (with predefined actions)
+- **Keyboard Shortcuts** — Per-row and per-range custom shortcuts with help overlay
+- **Column Reordering** — Drag-to-reorder with optional localStorage persistence
+- **Column Resizing** — Drag column borders with min/max constraints and persistence
+- **Frozen Columns** — Stick columns to the left during horizontal scroll
+- **Fill Handle** — Excel-like autofill by dragging a cell's corner
+- **Row Locking** — Optimistic locking with external lock management (WebSocket-ready)
+- **Row Identification** — `idValueMember`/`idValueCallback` for `updateRowById`, `replaceRowById`
+- **Virtual Scroll** — Render only visible rows for large datasets
+- **Infinite Scroll** — Load-more pattern triggered near bottom of scroll
+- **Dark Mode** — Auto-detects OS/attribute/class preferences
+- **CSS Variable Theming** — 120+ `--wg-*` variables with `--base-*` fallback for cross-component themes
+- **Shadow DOM** — Encapsulated styles, no CSS leakage
+- **Summary Bar** — Configurable summary content at any corner position
+- **Validation** — `beforeCommitCallback` with tooltip display (custom HTML supported)
+- **Row Focus Tracking** — `onrowfocus` for master/detail patterns
+- **i18n** — All UI labels customizable via `labels` property
+- **TypeScript** — Full type definitions exported
+
+## Architecture
+
+WebGrid uses an **action pipeline** pattern for user interactions. DOM events are captured by the `ActionPipelineAdapter`, which translates them into typed action objects (34 action types). These actions flow through a pipeline that dispatches them to specialized executors (16 executors covering focus, editing, navigation, selection, clipboard, dropdown, fill-handle, etc.). Executors can emit child actions for composability — e.g., committing an edit can trigger a focus-move.
+
+```
+DOM Event → Adapter → Action → Pipeline → Executor → State Change → Render
+```
+
+This architecture separates mode detection (the adapter decides *what* action a click means based on grid mode, edit trigger, cell state) from business logic (executors handle *how* to focus, edit, select). It also allows incremental migration from legacy event handlers.
 
 ## Properties
 
-```typescript
-// Data
-grid.items = [...];           // Array of row objects
-grid.columns = [...];         // Column definitions
+### Core Data
 
-// Sorting & filtering
-grid.sortMode = 'multi';      // 'none' | 'single' | 'multi'
-grid.sort = [{ column: 'name', direction: 'asc' }];  // Current sort state
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `items` | `T[]` | `[]` | Data array to display |
+| `columns` | `Column<T>[]` | `[]` | Column definitions (see [Column Definition](#column-definition)) |
 
-// Pagination
-grid.isPageable = true;
-grid.pageSize = 25;
-grid.currentPage = 1;
-grid.totalItems = 1000;       // For server-side pagination
-grid.pageSizes = [10, 25, 50, 100];
+### Display
 
-// Editing
-grid.isEditable = true;
-grid.editTrigger = 'navigate';
-grid.dropdownToggleVisibility = 'on-focus';  // 'always' | 'on-focus'
-
-// Row toolbar
-grid.isRowToolbarVisible = true;
-grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown'];
-grid.toolbarPosition = 'right';  // 'auto' | 'left' | 'right' | 'top' | 'inline'
-grid.toolbarTrigger = 'hover';   // 'hover' | 'click' | 'button'
-grid.inlineActionsTitle = 'Actions';  // Header for inline mode
-
-// Context menus
-grid.contextMenu = [...];        // Right-click on cells/rows
-grid.headerContextMenu = [...];  // Right-click on column headers
-
-// Keyboard shortcuts
-grid.rowShortcuts = [...];
-grid.rangeShortcuts = [...];  // Shortcuts for selected rows
-grid.isShortcutsHelpVisible = true;
-
-// Row selection
-grid.selectedRows;            // Array of selected row indices (read-only)
-grid.selectRow(index, mode);  // mode: 'replace' | 'toggle' | 'range'
-grid.selectRowRange(from, to);
-grid.clearSelection();
-grid.isRowSelected(index);
-grid.getSelectedRowsData();
-
-// Row focus (master/detail)
-grid.focusedRowIndex;             // Current focused row (null if none)
-grid.focusedRowIndex = 3;         // Focus row 3 programmatically
-grid.focusedRowIndex = null;      // Clear focus
-grid.onrowfocus = ({ rowIndex, row, previousRowIndex }) => { ... };
-
-// Cell range selection
-grid.cellSelectionMode = 'click';  // 'disabled' | 'click' | 'shift'
-grid.selectedCellRange;            // Current range (read-only)
-grid.selectCellRange(range);
-grid.clearCellSelection();
-grid.getSelectedCells();
-
-// Copy to clipboard
-grid.shouldCopyWithHeaders = false;  // Include headers when copying
-grid.copyCellSelectionToClipboard(); // Copy cell range as TSV
-grid.copySelectedRowsToClipboard();  // Copy selected rows as TSV
-
-// Virtual scroll
-grid.isVirtualScrollEnabled = true;
-grid.virtualScrollRowHeight = 38;
-grid.virtualScrollBuffer = 10;
-
-// Infinite scroll
-grid.isInfiniteScrollEnabled = true;
-grid.hasMoreItems = true;
-
-// Labels/i18n
-grid.labels = {
-  rowActions: 'Row actions',
-  keyboardShortcuts: 'Keyboard shortcuts',
-  paginationPageInfo: 'Page {current} of {total}'
-};
-
-// Row identification (for locking & updates)
-grid.idValueMember = 'id';           // Property name for row ID
-grid.idValueCallback = (row) => row.id;  // Or callback for complex IDs
-
-// Row locking
-grid.rowLocking = {
-  lockedMember: 'isLocked',          // Property-based
-  lockInfoMember: 'lockInfo',        // Or full lock info object
-  lockedEditBehavior: 'block'        // 'block' | 'allow' | 'callback'
-};
-```
-
-## Column Definition
-
-```typescript
-{
-  field: 'name',              // Property name in row data (required)
-  title: 'Full Name',         // Header text (required)
-  width: '150px',             // Fixed width
-  minWidth: '100px',          // Minimum width
-  horizontalAlign: 'left',    // 'left' | 'center' | 'right' | 'justify'
-  textOverflow: 'ellipsis',   // 'wrap' | 'ellipsis'
-
-  // Sorting & filtering
-  isSortable: true,
-  isFilterable: true,
-
-  // Display
-  headerInfo: 'Tooltip text', // Info icon in header
-  formatCallback: (value, row) => value.toUpperCase(),
-  tooltipCallback: (value, row) => `Details: ${value}`,
-  cellClass: 'custom-class',
-  cellClassCallback: (value, row) => value > 100 ? 'high' : null,
-
-  // Editing
-  isEditable: true,
-  editor: 'text',             // 'text' | 'number' | 'date' | 'select' | 'combobox' | 'autocomplete' | 'checkbox' | 'custom'
-  editorOptions: { ... },
-  validateCallback: (value, row) => value ? null : 'Required',
-  beforeCommitCallback: (ctx) => ({ valid: true, transformedValue: ctx.value.trim() })
-}
-```
-
-## Editor Types
-
-### Text Editor
-```javascript
-{ editor: 'text', editorOptions: { placeholder: 'Enter...', maxLength: 100 } }
-```
-
-### Number Editor
-```javascript
-{ editor: 'number', editorOptions: { min: 0, max: 1000, step: 10, decimalPlaces: 2 } }
-```
-
-### Date Editor
-```javascript
-{ editor: 'date', editorOptions: { dateFormat: 'DD.MM.YYYY', outputFormat: 'iso' } }
-```
-
-### Select Editor
-```javascript
-{
-  editor: 'select',
-  editorOptions: {
-    options: [
-      { value: 'eng', label: 'Engineering', icon: '⚙️', subtitle: 'Tech team' },
-      { value: 'sales', label: 'Sales', disabled: true }
-    ],
-    iconMember: 'icon',
-    subtitleMember: 'subtitle',
-    disabledMember: 'disabled'
-  }
-}
-```
-
-### Combobox Editor
-```javascript
-{ editor: 'combobox', editorOptions: { options: [...] } }  // User can type custom values
-```
-
-### Autocomplete Editor
-```javascript
-{
-  editor: 'autocomplete',
-  editorOptions: {
-    initialOptions: [...],
-    placeholder: 'Search...',
-    minSearchLength: 2,
-    debounceMs: 300,
-    onSearchCallback: async (query, row, signal) => {
-      const response = await fetch(`/api/search?q=${query}`, { signal })
-      return response.json()
-    }
-  }
-}
-```
-
-### Checkbox Editor
-```javascript
-{ editor: 'checkbox', editorOptions: { trueValue: 'yes', falseValue: 'no' } }
-```
-
-### Custom Editor
-```javascript
-{
-  editor: 'custom',
-  cellEditCallback: (ctx) => {
-    const value = prompt('Edit:', ctx.value)
-    value !== null ? ctx.commit(value) : ctx.cancel()
-  }
-}
-```
-
-## Methods
-
-| Method | Description |
-|--------|-------------|
-| `focusCell(rowIndex, colIndex)` | Focus a specific cell |
-| `startEdit(rowIndex, colIndex)` | Start editing a cell |
-| `commitEdit()` | Commit current edit |
-| `cancelEdit()` | Cancel current edit |
-| `moveRow(fromIndex, toIndex)` | Move a row |
-| `deleteRow(index)` | Delete a row |
-| `getRowId(row)` | Get row's ID value |
-| `findRowById(id)` | Find row and index by ID |
-| `isRowLocked(rowOrId)` | Check if row is locked |
-| `getRowLockInfo(rowOrId)` | Get lock info for row |
-| `lockRowById(id, info?)` | Lock row externally |
-| `unlockRowById(id)` | Unlock row externally |
-| `updateRowById(id, data)` | Partial update row by ID |
-| `replaceRowById(id, row)` | Replace entire row by ID |
-| `isRowFocused(index)` | Check if row is focused |
-| `selectRow(index, mode)` | Select row ('replace', 'toggle', 'range') |
-| `selectRowRange(from, to)` | Select range of rows |
-| `clearSelection()` | Clear all selected rows |
-| `isRowSelected(index)` | Check if row is selected |
-| `getSelectedRowsData()` | Get data for selected rows |
-| `selectCellRange(range)` | Select cell range programmatically |
-| `clearCellSelection()` | Clear cell range selection |
-| `getSelectedCells()` | Get array of selected cell info |
-| `copyCellSelectionToClipboard()` | Copy cell range as TSV (Excel-compatible) |
-| `copySelectedRowsToClipboard()` | Copy selected rows as TSV (Excel-compatible) |
-
-## Events
-
-| Event | Detail | Description |
-|-------|--------|-------------|
-| `onrowchange` | `{ row, field, oldValue, newValue, isValid }` | Value changed |
-| `ondatarequest` | `{ sort, page, pageSize, skip, trigger }` | Sort/page changed |
-| `onroweditstart` | `{ row, rowIndex, field }` | Edit started |
-| `onroweditcancel` | `{ row, rowIndex, field }` | Edit cancelled |
-| `onvalidationerror` | `{ row, rowIndex, field, error }` | Validation failed |
-| `onrowdelete` | `{ row, rowIndex }` | Ctrl+Delete pressed |
-| `onrowfocus` | `{ rowIndex, row, previousRowIndex }` | Different row focused via cell click |
-| `ontoolbarclick` | `{ item, row, rowIndex }` | Toolbar button clicked |
-
-## Keyboard Shortcuts
-
-### Navigation
-| Key | Action |
-|-----|--------|
-| Arrow keys | Navigate cells |
-| Tab / Shift+Tab | Next/previous editable cell |
-| Home / End | First/last cell in row |
-| Ctrl+Home / Ctrl+End | First/last cell in grid |
-| PageUp / PageDown | Move by ~10 rows |
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `isFilterable` | `boolean` | `false` | Show per-column filter inputs |
+| `isStriped` | `boolean` | `false` | Alternate row background colors |
+| `isHoverable` | `boolean` | `false` | Highlight row on hover |
+| `isRowNumbersVisible` | `boolean` | `false` | Show row number column |
+| `isStickyRowNumbers` | `boolean` | `false` | Freeze row number column during horizontal scroll |
+| `freezeColumns` | `number` | `0` | Freeze first N columns (applied after visual reorder from `isFrozen`) |
+| `mode` | `GridMode` | — | Grid mode: `'read-only'`, `'excel'`, `'input-matrix'` (see [Grid Modes](#grid-modes)) |
+| `focusedRowIndex` | `number \| null` | `null` | Currently focused row index (readable/writable) |
 
 ### Editing
-| Key | Action |
-|-----|--------|
-| Enter / F2 | Start editing |
-| Escape | Cancel edit / clear focus |
-| Space | Toggle checkbox / open dropdown |
-| Type any character | Start editing with that character |
 
-### Row Operations
-| Key | Action |
-|-----|--------|
-| Ctrl+Up / Ctrl+Down | Move row up/down |
-| Ctrl+Delete | Delete row (fires `onrowdelete`) |
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `isEditable` | `boolean` | `false` | Enable cell editing |
+| `editTrigger` | `EditTrigger` | `'dblclick'` | How editing starts: `'click'`, `'dblclick'`, `'button'`, `'always'`, `'navigate'` |
+| `editStartSelection` | `EditStartSelection` | `'selectAll'` | Cursor position when entering edit via navigate: `'mousePosition'`, `'selectAll'`, `'cursorAtStart'`, `'cursorAtEnd'` |
+| `dropdownToggleVisibility` | `ToggleVisibility` | `'on-focus'` | When to show dropdown toggle button: `'always'`, `'on-focus'` |
+| `shouldShowDropdownOnFocus` | `boolean` | `false` | Auto-open dropdown when cell is focused |
+| `shouldOpenDropdownOnEnter` | `boolean` | `false` | Enter key opens dropdown (`true`) or moves to next row (`false`) |
+| `isCheckboxAlwaysEditable` | `boolean` | `false` | Checkboxes are always clickable, even in navigate mode |
 
-## Advanced Features
+### Sorting
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `sort` | `SortState[]` | `[]` | Current sort state (set for initial/server-side sort) |
+| `sortMode` | `SortMode` | `'none'` | Sort mode: `'none'` (disabled), `'single'`, `'multi'` |
+
+### Pagination
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `isPageable` | `boolean` | `false` | Enable pagination |
+| `pageSize` | `number` | `10` | Rows per page |
+| `pageSizes` | `number[]` | — | Available page sizes for selector (e.g., `[10, 25, 50, 100]`) |
+| `paginationMode` | `'client' \| 'server'` | `'client'` | `'client'` = grid slices items; `'server'` = items are already current page |
+| `currentPage` | `number` | `1` | Current page (1-based) |
+| `totalItems` | `number \| null` | `null` | Total item count for server-side pagination |
+| `showPagination` | `boolean \| 'auto'` | `'auto'` | `true` = always show, `false` = never, `'auto'` = hide when ≤1 page |
+| `paginationPosition` | `string` | `'bottom-center'` | Position(s): `'bottom-center'`, `'top-right\|bottom-right'` for multiple |
+| `paginationLabelsCallback` | `PaginationLabelsCallback` | — | Callback to customize/translate pagination text |
+| `paginationLayout` | `string` | — | Element order: `'pageSize\|previous\|pageInfo\|next'` or `'first\|previous\|pageInfo\|next\|last'` |
 
 ### Row Toolbar
 
-```javascript
-grid.isRowToolbarVisible = true
-grid.toolbarPosition = 'right'
-grid.toolbarTrigger = 'hover'
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `isRowToolbarVisible` | `boolean` | `false` | Show row action toolbar |
+| `rowToolbar` | `RowToolbarConfig<T>[]` | `[]` | Toolbar items (predefined strings or custom objects) |
+| `toolbarTrigger` | `'hover' \| 'click' \| 'button'` | `'hover'` | How to show toolbar |
+| `toolbarPosition` | `ToolbarPosition` | `'auto'` | Preferred position: `'auto'`, `'left'`, `'right'`, `'top'`, `'inline'` |
+| `toolbarVerticalAlign` | `'top' \| 'center' \| 'bottom'` | `'bottom'` | Vertical alignment for left/right position |
+| `toolbarHorizontalAlign` | `'start' \| 'center' \| 'end' \| 'cursor'` | `'center'` | Horizontal alignment for top position |
+| `toolbarColumn` | `string \| number` | — | Column to pin toolbar over (field name or index) for `'top'` position |
+| `toolbarFollowsCursor` | `boolean` | `false` | Toolbar follows mouse cursor horizontally |
+| `cellToolbar` | `(row, rowIndex, field, colIndex) => RowToolbarConfig[] \| undefined` | — | Cell-specific toolbar items |
+| `cellToolbarOffset` | `number \| string` | `0.2` | Horizontal offset: `0`–`1` as fraction of cell width, or CSS length (e.g., `'2rem'`) |
+| `toolbarBtnMinWidth` | `string` | — | Min-width for toolbar buttons (CSS value). Overrides `--wg-toolbar-btn-min-width` |
+| `inlineActionsTitle` | `string` | `'Actions'` | Header title for inline actions column (when `toolbarPosition='inline'`). Set to `''` for no title |
 
-grid.rowToolbar = [
-  'delete',  // Predefined action
-  {
-    id: 'edit',
-    icon: '✏️',
-    title: 'Edit',
-    onclick: ({ row, rowIndex }) => openDialog(row)
-  },
-  {
-    id: 'archive',
-    icon: '📦',
-    title: 'Archive',
-    danger: true,
-    disabled: (row) => row.archived,
-    onclick: ({ row }) => archive(row)
-  }
-]
-```
-
-### Inline Actions Column
-
-Render toolbar buttons as a fixed table column instead of floating popup:
-
-```javascript
-grid.isRowToolbarVisible = true
-grid.toolbarPosition = 'inline'
-grid.inlineActionsTitle = 'Actions'
-
-grid.rowToolbar = [
-  {
-    id: 'edit',
-    icon: '✏️',
-    title: 'Edit',
-    disabled: (row) => row.status === 'Done'
-  },
-  {
-    id: 'delete',
-    icon: '🗑️',
-    title: 'Delete',
-    danger: true,
-    hidden: (row) => row.protected
-  }
-]
-```
+> **Deprecated aliases:** `toolbarAlign` → use `toolbarVerticalAlign`; `toolbarTopPosition` → use `toolbarHorizontalAlign`.
 
 ### Context Menu
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `contextMenu` | `ContextMenuItem<T>[]` | — | Cell/row context menu items |
+| `contextMenuXOffset` | `number` | `0` | Horizontal offset from click position |
+| `contextMenuYOffset` | `number` | `4` | Vertical offset from click position |
+| `headerContextMenu` | `HeaderMenuConfig<T>[]` | — | Header context menu items (predefined strings or custom objects) |
+
+### Cell Selection
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `cellSelectionMode` | `CellSelectionMode` | `'click'` | How to select cell ranges: `'disabled'`, `'click'`, `'shift'` |
+| `shouldCopyWithHeaders` | `boolean` | `false` | Include column headers when copying cell selection to clipboard |
+
+### Keyboard Shortcuts
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `rowShortcuts` | `RowShortcut<T>[]` | — | Row-level shortcut definitions |
+| `rangeShortcuts` | `RangeShortcut<T>[]` | — | Multi-row/range shortcut definitions |
+| `isShortcutsHelpVisible` | `boolean` | `false` | Show keyboard shortcuts help icon |
+| `shortcutsHelpPosition` | `'top-right' \| 'top-left'` | `'top-right'` | Help icon position |
+| `shortcutsHelpContentCallback` | `() => string` | — | Custom HTML content to display alongside shortcuts list |
+
+### Column Management
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `gridName` | `string \| null` | `null` | Unique name for localStorage persistence |
+| `shouldPersistColumnWidths` | `boolean` | `false` | Persist column widths to localStorage (requires `gridName`) |
+| `isColumnReorderAllowed` | `boolean` | `false` | Enable drag-to-reorder columns |
+| `shouldPersistColumnOrder` | `boolean` | `false` | Persist column order to localStorage (requires `gridName`) |
+
+### Fill Handle
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `fillDragCallback` | `(detail: FillDragDetail) => boolean \| void` | — | Called when fill handle is dragged. Return `false` to cancel. |
+
+### Row Identification
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `idValueMember` | `keyof T` | — | Property name containing the row's unique ID |
+| `idValueCallback` | `(row: T) => unknown` | — | Callback returning the row's unique ID |
+
+### Row Locking
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `rowLocking` | `RowLockingOptions<T>` | — | Row locking configuration (see [RowLockingOptions](#row-locking-options)) |
+
+#### RowLockingOptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lockedMember` | `keyof T` | Property with boolean lock state |
+| `lockInfoMember` | `keyof T` | Property with `RowLockInfo` object |
+| `isLockedCallback` | `(row, rowIndex) => boolean` | Callback-based lock check |
+| `getLockInfoCallback` | `(row, rowIndex) => RowLockInfo \| null` | Callback-based lock info |
+| `lockedEditBehavior` | `'block' \| 'allow' \| 'callback'` | Edit behavior for locked rows (default: `'block'`) |
+| `canEditLockedCallback` | `(row, lockInfo) => boolean` | Per-row edit decision (when `'callback'`) |
+| `lockTooltipCallback` | `(lockInfo, row) => string \| null` | Custom tooltip HTML for locked rows |
+
+### Scroll
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `isScrollable` | `boolean` | `false` | Enable scroll container with max-height |
+| `scrollMaxHeight` | `string` | `'100vh'` | Max-height when `isScrollable` is `true` |
+| `tableBorderOnly` | `boolean` | `false` | Border only around table, not pagination/toolbar |
+
+### Virtual Scroll
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `isVirtualScrollEnabled` | `boolean` | `false` | Enable virtual scroll |
+| `virtualScrollThreshold` | `number` | `100` | Auto-enable when items ≥ threshold |
+| `virtualScrollRowHeight` | `number` | `38` | Fixed row height in pixels |
+| `virtualScrollBuffer` | `number` | `10` | Extra rows rendered above/below viewport |
+
+### Infinite Scroll
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `isInfiniteScrollEnabled` | `boolean` | `false` | Enable infinite scroll |
+| `infiniteScrollThreshold` | `number` | `100` | Distance from bottom (px) to trigger load |
+| `hasMoreItems` | `boolean` | `true` | Set to `false` when no more data |
+
+### Tooltip
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `tooltipShowDelay` | `number` | `400` | Delay in ms before showing tooltip |
+| `tooltipHideDelay` | `number` | `100` | Delay in ms before hiding tooltip |
+
+### Summary
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `summaryPosition` | `string` | — | Position(s): `'bottom-left'`, `'top-right\|bottom-right'`, etc. |
+| `summaryContentCallback` | `SummaryContentCallback<T>` | — | Callback returning HTML content for the summary bar |
+| `isSummaryInline` | `boolean` | `true` | Share row with pagination when in same area |
+| `summaryMetadata` | `unknown` | — | Server-provided metadata passed to `summaryContentCallback` |
+
+### Styling
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `customStylesCallback` | `() => string` | — | Returns CSS string injected into shadow DOM |
+| `rowClassCallback` | `(row, rowIndex) => string \| null` | — | Dynamic CSS class for rows |
+| `labels` | `Partial<GridLabels>` | — | Override UI labels for i18n (see [i18n](#i18n)) |
+| `validationTooltipCallback` | `(context) => string \| null` | — | Custom HTML for validation error tooltip (grid-level default) |
+| `invalidCells` | `CellValidationState[]` | `[]` | External validation state for cells |
+
+## Column Definition
+
+The `Column<T>` interface defines how each column renders, edits, and behaves.
+
+### Basic
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `field` | `keyof T \| string` | Data field name (**required**) |
+| `title` | `string` | Column header title |
+| `headerInfo` | `string` | Info tooltip shown next to header (displays ⓘ icon) |
+| `width` | `string` | Column width (e.g., `'100px'`, `'20%'`) |
+| `minWidth` | `string` | Minimum width during resize |
+| `maxWidth` | `string` | Maximum width during resize |
+
+### Display
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `horizontalAlign` | `'left' \| 'center' \| 'right' \| 'justify'` | Cell horizontal alignment (default: `'left'`) |
+| `verticalAlign` | `'top' \| 'middle' \| 'bottom'` | Cell vertical alignment (default: `'middle'`) |
+| `headerHorizontalAlign` | `'left' \| 'center' \| 'right' \| 'justify'` | Header horizontal alignment (defaults to `horizontalAlign`) |
+| `headerVerticalAlign` | `'top' \| 'middle' \| 'bottom'` | Header vertical alignment (defaults to `verticalAlign`) |
+| `textOverflow` | `'wrap' \| 'ellipsis'` | Text overflow behavior |
+| `maxLines` | `number` | Maximum visible lines when `textOverflow` is `'wrap'` (CSS line-clamp) |
+| `cellClass` | `string` | Static CSS class applied to all cells in this column |
+| `cellClassCallback` | `(value, row) => string \| null` | Dynamic CSS class based on value/row |
+
+### Content
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `formatCallback` | `(value, row) => string` | Format value for display (text only) |
+| `templateCallback` | `(row) => string` | Custom cell HTML string |
+| `renderCallback` | `(row, element) => void` | Imperative cell rendering (receives the `<td>` element) |
+
+### Editing
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `isEditable` | `boolean` | Enable editing for this column |
+| `editor` | `EditorType` | Editor type: `'text'`, `'number'`, `'checkbox'`, `'select'`, `'combobox'`, `'autocomplete'`, `'date'`, `'custom'` |
+| `editTrigger` | `EditTrigger` | Per-column override for edit trigger |
+| `editorOptions` | `EditorOptions<T>` | Editor-specific configuration (see [Editor Types](#editor-types)) |
+| `dropdownToggleVisibility` | `ToggleVisibility` | Per-column override: `'always'` or `'on-focus'` |
+| `shouldOpenDropdownOnEnter` | `boolean` | Per-column override: Enter opens dropdown or moves down |
+| `cellEditCallback` | `(context: CustomEditorContext<T>) => void` | Handler for `'custom'` editor type |
+| `isEditButtonVisible` | `boolean` | Show an edit button in the cell |
+
+### Validation
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `beforeCommitCallback` | `(context: BeforeCommitContext<T>) => BeforeCommitResult \| Promise<...>` | Validates and optionally transforms value before commit |
+| `validateCallback` | `(value, row) => string \| null \| Promise<...>` | **Deprecated** — use `beforeCommitCallback` instead |
+| `validationTooltipCallback` | `(context) => string \| null` | Custom HTML for this column's validation error tooltip |
+
+`beforeCommitCallback` receives `{ value, oldValue, row, rowIndex, field }` and can return:
+- `{ valid: true }` or `{ valid: true, transformedValue: ... }` — accept (optionally transform)
+- `{ valid: false, message: 'Error text' }` — reject with message
+- `true` / `null` / `undefined` — accept
+- `false` — reject (no message)
+- `string` — reject with that string as error message
+
+### Tooltip
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tooltipMember` | `string` | Property name in row data containing tooltip text |
+| `tooltipCallback` | `(value, row) => string \| null` | Dynamic tooltip (takes priority over `tooltipMember`) |
+
+### Clipboard
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `beforeCopyCallback` | `(value, row) => string` | Transform value before copying to clipboard |
+| `beforePasteCallback` | `(value, row) => unknown` | Process pasted value before applying to cell |
+
+### Layout
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `isFrozen` | `boolean` | Column sticks to left side during horizontal scroll |
+| `isResizable` | `boolean` | Allow column width to be changed by dragging (default: `true`) |
+| `isMovable` | `boolean` | Allow column to be reordered by dragging (default: `true`) |
+| `isHidden` | `boolean` | Column is not rendered but kept in array for visibility toggling |
+| `isSortable` | `boolean` | Enable sorting for this column (when grid has `sortMode` enabled) |
+| `isFilterable` | `boolean` | Enable filtering for this column |
+
+### Fill
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `fillDirection` | `FillDirection` | Override grid-level fill direction for this column: `'vertical'` or `'all'` |
+
+## Editor Types
+
+| Type | Description |
+|------|-------------|
+| `text` | Text input |
+| `number` | Numeric input with step/min/max |
+| `checkbox` | Boolean toggle |
+| `select` | Dropdown list |
+| `combobox` | Filterable dropdown |
+| `autocomplete` | Async search dropdown |
+| `date` | Date picker |
+| `custom` | Consumer-controlled via `cellEditCallback` |
+
+### Text Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `maxLength` | `number` | — | Maximum character count |
+| `placeholder` | `string` | — | Placeholder text |
+| `pattern` | `string` | — | Input pattern attribute |
+| `inputMode` | `'text' \| 'numeric' \| 'email' \| 'tel' \| 'url'` | — | Virtual keyboard hint |
+| `editStartSelection` | `EditStartSelection` | `'selectAll'` | Cursor position when entering edit |
+
+### Number Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `min` | `number` | — | Minimum value |
+| `max` | `number` | — | Maximum value |
+| `step` | `number` | — | Step increment |
+| `decimalPlaces` | `number` | — | Fixed decimal places |
+| `allowNegative` | `boolean` | — | Allow negative values |
+
+### Checkbox Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `trueValue` | `unknown` | `true` | Value to store when checked |
+| `falseValue` | `unknown` | `false` | Value to store when unchecked |
+
+### Date Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `minDate` | `Date \| string` | — | Minimum selectable date |
+| `maxDate` | `Date \| string` | — | Maximum selectable date |
+| `dateFormat` | `string` | — | Display format: `'YYYY-MM-DD'`, `'DD.MM.YYYY'`, etc. |
+| `outputFormat` | `DateOutputFormat` | — | What to store: `'date'` (Date object), `'iso'` (ISO string), `'timestamp'` |
+
+### Shared Dropdown Options (select, combobox, autocomplete)
+
+These options are shared across `select`, `combobox`, and `autocomplete` editor types.
+
+#### Providing Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `options` | `EditorOption[]` | Static array of options: `{ value, label, ...extra }` |
+| `loadOptions` | `(row, field) => Promise<EditorOption[]>` | Async option loader |
+| `optionsLoadTrigger` | `OptionsLoadTrigger` | When to call `loadOptions`: `'immediate'`, `'oneditstart'` (default), `'ondropdownopen'` |
+
+#### Display Mapping
+
+By default, options use `value` and `label` properties. Override with member strings or callback functions:
+
+| Member Property | Callback Alternative | Description |
+|-----------------|---------------------|-------------|
+| `valueMember` | `getValueCallback` | Property/callback for the option value |
+| `displayMember` | `getDisplayCallback` | Property/callback for display text |
+| `searchMember` | `getSearchCallback` | Property/callback for searchable text (falls back to display) |
+| `iconMember` | `getIconCallback` | Property/callback for icon/emoji |
+| `subtitleMember` | `getSubtitleCallback` | Property/callback for subtitle/description |
+| `disabledMember` | `getDisabledCallback` | Property/callback for disabled state |
+| `groupMember` | `getGroupCallback` | Property/callback for grouping options |
+
+#### Rendering & Behavior
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `renderOptionCallback` | `(option, context) => string` | Custom HTML for each option. `context` has `{ index, isHighlighted, isSelected, isDisabled }` |
+| `onselect` | `(option, row) => void` | Fires when an option is selected |
+| `allowEmpty` | `boolean` | Allow null/empty selection |
+| `emptyLabel` | `string` | Label for empty option (default: `'-- Select --'`) |
+| `noOptionsText` | `string` | Override "No options" message |
+| `searchingText` | `string` | Override "Searching..." message |
+| `dropdownMinWidth` | `string` | Minimum width for dropdown (e.g., `'300px'`) |
+| `placeholder` | `string` | Placeholder text (combobox/autocomplete) |
+
+### Autocomplete-Specific Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `searchCallback` | `(query, row, signal?) => Promise<EditorOption[]>` | — | Async search function (receives `AbortSignal` for cancellation) |
+| `initialOptions` | `EditorOption[]` | — | Options shown before user starts typing |
+| `minSearchLength` | `number` | `1` | Minimum characters before triggering search |
+| `debounceMs` | `number` | `300` | Debounce delay for search calls |
+| `multiple` | `boolean` | `false` | Allow multiple selections |
+| `maxSelections` | `number` | — | Maximum items when `multiple` is `true` |
+
+### Custom Editor
+
+Set `editor: 'custom'` and provide a `cellEditCallback` on the column:
+
+```javascript
+{
+  field: 'color',
+  editor: 'custom',
+  cellEditCallback: ({ value, row, rowIndex, field, commit, cancel }) => {
+    // Open your own UI (modal, popover, etc.)
+    // Call commit(newValue) to save, cancel() to discard
+  }
+}
+```
+
+## Grid Modes
+
+The `mode` property sets sensible defaults for common use cases:
+
+| Mode | `isEditable` | `editTrigger` | `cellSelectionMode` | `dropdownToggleVisibility` | `shouldShowDropdownOnFocus` |
+|------|-------------|--------------|--------------------|--------------------------|-----------------------------|
+| `'read-only'` | `false` | — | `'click'` | `'on-focus'` | `false` |
+| `'excel'` | `true` | `'navigate'` | `'click'` | `'always'` | `false` |
+| `'input-matrix'` | `true` | `'always'` | `'shift'` | `'always'` | `true` |
+
+- **`read-only`** — No editing. Click to select cells. Useful for display grids with copy support.
+- **`excel`** — Navigate cells with arrows, type to start editing, Escape to cancel. Click+drag for cell selection.
+- **`input-matrix`** — All cells are always in edit mode. Shift+click for cell selection. Tab to navigate between fields.
+
+Setting `mode` applies these defaults, but you can override individual properties afterward.
+
+## Row Toolbar
+
+### Basic Setup
+
+```javascript
+grid.isRowToolbarVisible = true
+grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
+```
+
+### Predefined Items
+
+| String | Action |
+|--------|--------|
+| `'add'` | Insert a new row after the current row |
+| `'delete'` | Delete the current row |
+| `'duplicate'` | Duplicate the current row |
+| `'moveUp'` | Move row up |
+| `'moveDown'` | Move row down |
+
+### Custom Items
+
+```javascript
+grid.rowToolbar = [
+  'add',
+  {
+    id: 'edit',
+    icon: '✏️',
+    title: 'Edit Record',
+    label: 'Edit',          // Optional text label next to icon
+    row: 1,                  // Row in multi-row toolbar (1 = closest to grid row)
+    group: 1,                // Group number for visual dividers
+    danger: false,
+    disabled: (row, rowIndex) => row.locked,
+    hidden: (row, rowIndex) => row.archived,
+    tooltip: { description: 'Open editor', shortcut: 'Enter' },
+    onclick: ({ row, rowIndex }) => { /* ... */ }
+  }
+]
+```
+
+### Positioning
+
+| Property | Values | Description |
+|----------|--------|-------------|
+| `toolbarPosition` | `'auto'`, `'left'`, `'right'`, `'top'`, `'inline'` | Where the toolbar appears relative to the row |
+| `toolbarVerticalAlign` | `'top'`, `'center'`, `'bottom'` | Vertical alignment for `left`/`right` positions |
+| `toolbarHorizontalAlign` | `'start'`, `'center'`, `'end'`, `'cursor'` | Horizontal alignment for `top` position |
+| `toolbarFollowsCursor` | `boolean` | Toolbar tracks mouse position horizontally |
+| `toolbarColumn` | `string \| number` | Pin toolbar above a specific column (for `top` position) |
+
+### Cell-Specific Toolbar
+
+```javascript
+grid.cellToolbar = (row, rowIndex, field, colIndex) => {
+  if (field === 'status') {
+    return [
+      { id: 'approve', icon: '✅', title: 'Approve', onclick: ({ row }) => approve(row) }
+    ]
+  }
+  return undefined  // No cell-specific toolbar
+}
+```
+
+## Context Menu
+
+### Cell Context Menu
 
 ```javascript
 grid.contextMenu = [
   {
-    id: 'copy',
-    label: 'Copy value',
-    icon: '📋',
-    shortcut: 'Ctrl+C',
-    onclick: (ctx) => navigator.clipboard.writeText(ctx.cellValue)
-  },
-  {
-    id: 'delete',
-    label: 'Delete row',
-    icon: '🗑️',
-    danger: true,
-    dividerBefore: true,
-    disabled: (ctx) => ctx.row.protected,
-    onclick: (ctx) => deleteRow(ctx.rowIndex)
+    id: 'view',
+    label: 'View Details',                         // or (context) => `View ${context.row.name}`
+    icon: '👁️',                                    // or (context) => context.row.active ? '🟢' : '🔴'
+    shortcut: 'Enter',                             // Display-only shortcut hint
+    visible: (context) => true,                    // or static boolean
+    disabled: (context) => context.row.locked,     // or static boolean
+    danger: false,
+    dividerBefore: false,
+    onclick: (context) => { /* context: { row, rowIndex, colIndex, column, cellValue } */ }
   }
 ]
 ```
 
 ### Header Context Menu
 
-Right-click context menu for column headers with predefined actions:
-
 ```javascript
 grid.headerContextMenu = [
-  'sortAsc',           // Sort ascending
-  'sortDesc',          // Sort descending
-  'clearSort',         // Clear sort (visible only if sorted)
-  { dividerBefore: true },
-  'freezeColumn',      // Freeze up to this column
-  'unfreezeColumn',    // Unfreeze this column
-  { dividerBefore: true },
-  'columnVisibility',  // Submenu to show/hide columns
-  'hideColumn',        // Hide this column
+  'sortAsc',                    // Predefined: sort ascending
+  'sortDesc',                   // Predefined: sort descending
+  'clearSort',                  // Predefined: clear sort
+  'hideColumn',                 // Predefined: hide this column
+  'freezeColumn',               // Predefined: freeze/unfreeze column
+  'unfreezeColumn',
+  'columnVisibility',           // Predefined: submenu to toggle column visibility
   {
     id: 'custom',
     label: 'Custom Action',
-    icon: '⚡',
-    onclick: (ctx) => console.log('Column:', ctx.column.field)
+    icon: '⚙️',
+    children: [...],             // Static submenu items
+    submenu: (context) => [...], // Dynamic submenu items
+    onclick: (context) => { /* context: { column, field, columnIndex, sortDirection, isFrozen, allColumns, labels } */ }
   }
 ]
-
-// Labels are translatable via grid.labels.contextMenu.*
 ```
 
-### Custom Keyboard Shortcuts
+## Callbacks
 
-```javascript
-grid.rowShortcuts = [
-  {
-    key: 'Delete',
-    id: 'delete-row',
-    label: 'Delete row',
-    action: (ctx) => deleteRow(ctx.rowIndex)
-  },
-  {
-    key: 'Ctrl+D',
-    id: 'duplicate',
-    label: 'Duplicate row',
-    action: (ctx) => duplicateRow(ctx.row)
-  }
-]
+These are **callback properties** set on the grid element, not DOM events. Use the naming convention: `on*` callbacks are fire-and-forget notifications; `*Callback` properties return a value that affects behavior (see column-level callbacks above).
 
-grid.isShortcutsHelpVisible = true
-```
+| Callback | Signature | Description |
+|----------|-----------|-------------|
+| `onrowchange` | `(detail: RowChangeDetail<T>) => void` | Cell value changed. Detail includes `row`, `draftRow`, `rowIndex`, `field`, `oldValue`, `newValue`, `isValid`, `validationError` |
+| `onroweditstart` | `(detail: { row, rowIndex, field }) => void` | Editing started on a cell |
+| `onroweditcancel` | `(detail: { row, rowIndex, field }) => void` | Edit was cancelled (Escape) |
+| `onvalidationerror` | `(detail: { row, rowIndex, field, error }) => void` | Validation failed on commit |
+| `ontoolbarclick` | `(detail: ToolbarClickDetail<T>) => void` | Toolbar button clicked. Detail: `{ item, rowIndex, row }` |
+| `onrowaction` | `(detail: { action, rowIndex, row }) => void` | *Legacy* — use `ontoolbarclick` |
+| `oncontextmenuopen` | `(context: ContextMenuContext<T>) => void` | Cell context menu opened |
+| `onheadercontextmenuopen` | `(context: HeaderMenuContext<T>) => void` | Header context menu opened |
+| `ondatarequest` | `(detail: DataRequestDetail) => void` | Sort/page/pageSize changed. Detail: `{ sort, page, pageSize, trigger, mode, skip }` |
+| `onrowdelete` | `(detail: { rowIndex, row }) => void` | Ctrl+Delete pressed on a row. Also dispatched as a DOM `CustomEvent` |
+| `onrowfocus` | `(detail: RowFocusDetail<T>) => void` | Different row was focused. Detail: `{ rowIndex, row, previousRowIndex }` |
+| `onrowlockchange` | `(detail: RowLockChangeDetail<T>) => void` | Row lock state changed |
+| `oncolumnresize` | `(detail: ColumnResizeDetail) => void` | Column resized. Detail: `{ field, oldWidth, newWidth, allWidths }` |
+| `oncolumnreorder` | `(detail: ColumnReorderDetail) => void` | Column reordered. Detail: `{ field, fromIndex, toIndex, allOrder }` |
+| `oncellselectionchange` | `(detail: CellSelectionChangeDetail) => void` | Cell selection changed. Detail: `{ range, cellCount }` |
 
-### Row Selection
+> **Note:** Only `rowdelete` is also dispatched as a DOM `CustomEvent`. All other callbacks are property-based only.
 
-Select multiple rows by clicking row numbers, then perform batch operations:
+## Public Methods
 
-```javascript
-// Enable row numbers (required for selection)
-grid.isRowNumbersVisible = true
+### Focus & Editing
 
-// Selection interactions:
-// - Click row number → select (clears others)
-// - Ctrl+Click → toggle in selection
-// - Shift+Click → select range
-// - Click+Drag → select range while dragging
-// - Escape → clear selection
+| Method | Description |
+|--------|-------------|
+| `focusCell(rowIndex, colIndex)` | Programmatically focus a cell |
+| `startEditing(rowIndex, colIndex)` | Programmatically start editing a cell |
+| `openCustomEditor(rowIndex, colIndex)` | Open the custom editor for a cell with `editor: 'custom'` |
 
-// Define shortcuts for selected rows
-grid.rangeShortcuts = [
-  {
-    key: 'Ctrl+C',
-    id: 'copy-rows',
-    label: 'Copy to clipboard',
-    action: async ({ rows }) => {
-      await grid.copySelectedRowsToClipboard()
-    }
-  },
-  {
-    key: 'Delete',
-    id: 'delete-selected',
-    label: 'Delete selected rows',
-    action: ({ rows, rowIndices }) => {
-      // Delete from end to preserve indices
-      for (const idx of [...rowIndices].reverse()) {
-        grid.items.splice(idx, 1)
-      }
-      grid.items = [...grid.items]
-      grid.clearSelection()
-    }
-  }
-]
+### Draft Management
 
-// Programmatic selection
-grid.selectRow(5, 'replace')      // Select row 5
-grid.selectRow(7, 'toggle')       // Toggle row 7
-grid.selectRowRange(0, 4)         // Select rows 0-4
-console.log(grid.selectedRows)    // [0, 1, 2, 3, 4, 5, 7]
-console.log(grid.getSelectedRowsData())  // Array of row objects
-grid.clearSelection()
-```
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `getRowDraft(rowIndex)` | `T \| undefined` | Get the draft (uncommitted changes) for a row |
+| `hasRowDraft(rowIndex)` | `boolean` | Check if a row has uncommitted changes |
+| `discardRowDraft(rowIndex)` | `void` | Discard all draft changes for a row |
+| `getDraftRowIndices()` | `number[]` | Get indices of all rows with drafts |
+| `discardAllDrafts()` | `void` | Discard all draft changes across all rows |
 
-### Row Focus (Master/Detail)
+### Validation
 
-Track which row the user is interacting with — click any data cell to focus its row:
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `isCellInvalid(rowIndex, field)` | `boolean` | Check if a cell has a validation error |
+| `getCellValidationError(rowIndex, field)` | `string \| null` | Get the validation error message for a cell |
+| `canEditCell(rowIndex, field)` | `boolean` | Check if a cell can be edited (considers row locking, column editability) |
 
-```javascript
-// Listen for row focus changes
-grid.onrowfocus = ({ rowIndex, row, previousRowIndex }) => {
-  detailPanel.innerHTML = renderDetail(row)
-  console.log(`Row ${rowIndex} focused (was: ${previousRowIndex})`)
-}
+### Row Identification
 
-// Programmatic control
-grid.focusedRowIndex = 3     // Focus row 3
-grid.focusedRowIndex = null  // Clear focus
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `getRowId(row)` | `unknown \| undefined` | Get the ID of a row using `idValueMember`/`idValueCallback` |
+| `findRowById(id)` | `{ row, index } \| null` | Find a row by its ID |
 
-// Check focus state
-grid.isRowFocused(3)  // true/false
-```
+### Row Updates
 
-**Behavior:**
-- Click a data cell → focuses that row, fires `onrowfocus`
-- Click row number → selects row (does **not** trigger focus)
-- Click outside grid → clears row focus
-- CSS variables: `--wg-row-focus-bg`, `--wg-row-focus-row-number-bg`
-
-### Cell Range Selection
-
-Select rectangular cell ranges with click+drag, then copy to clipboard:
-
-```javascript
-// Enable cell selection (default is 'click')
-grid.cellSelectionMode = 'click'  // 'disabled' | 'click' | 'shift'
-
-// Selection interactions:
-// - Click+Drag → select rectangular range
-// - Shift+Click → extend range to clicked cell
-// - Escape → clear selection
-
-// Copy settings
-grid.shouldCopyWithHeaders = true  // Include column headers when copying
-
-// Define shortcuts for cell ranges
-grid.rangeShortcuts = [
-  {
-    key: 'Ctrl+C',
-    id: 'copy-cells',
-    label: 'Copy to clipboard',
-    action: async ({ cells, cellRange }) => {
-      if (cellRange) {
-        await grid.copyCellSelectionToClipboard()
-      }
-    }
-  },
-  {
-    key: 'Delete',
-    id: 'clear-cells',
-    label: 'Clear selected cells',
-    action: ({ cells, cellRange }) => {
-      if (!cellRange) return
-      cells.forEach(({ row, field }) => {
-        row[field] = null
-      })
-      grid.items = [...grid.items]
-      grid.clearCellSelection()
-    }
-  }
-]
-
-// Programmatic selection
-grid.selectCellRange({
-  startRowIndex: 0, endRowIndex: 2,
-  startColIndex: 1, endColIndex: 3,
-  startField: 'name', endField: 'salary'
-})
-console.log(grid.getSelectedCells())  // Array of { row, rowIndex, colIndex, field, value }
-```
-
-**Copy format:** Tab-separated values (TSV) compatible with Excel, Google Sheets, etc.
-
-### Labels/i18n
-
-Customize or translate UI strings:
-
-```javascript
-grid.labels = {
-  // Toolbar
-  rowActions: 'Akce řádku',
-  inlineActionsHeader: 'Akce',
-
-  // Shortcuts help
-  keyboardShortcuts: 'Klávesové zkratky',
-
-  // Pagination (use {placeholders} for dynamic values)
-  paginationFirst: '⏮',
-  paginationPrevious: '◀',
-  paginationNext: '▶',
-  paginationLast: '⏭',
-  paginationPageInfo: 'Stránka {current} z {total}',
-  paginationItemCount: '{count} položek',
-  paginationPerPage: 'na stránku'
-}
-```
-
-### Virtual Scrolling
-
-```javascript
-grid.isVirtualScrollEnabled = true
-grid.virtualScrollRowHeight = 38
-grid.virtualScrollBuffer = 10
-grid.virtualScrollThreshold = 100  // Auto-enable when items >= 100
-```
-
-### Server-Side Data
-
-```javascript
-grid.ondatarequest = async (detail) => {
-  const response = await fetch('/api/data?' + new URLSearchParams({
-    sort: JSON.stringify(detail.sort),
-    skip: detail.skip,
-    take: detail.pageSize
-  }))
-
-  const data = await response.json()
-  grid.items = data.items
-  grid.totalItems = data.total
-}
-```
-
-### Custom Cell & Row Styling
-
-```javascript
-// Static cell class
-{ field: 'status', cellClass: 'status-cell' }
-
-// Dynamic cell class
-{ field: 'salary', cellClassCallback: (val, row) => val > 100000 ? 'high' : null }
-
-// Dynamic row class
-grid.rowClassCallback = (row, index) => row.status === 'inactive' ? 'row-inactive' : null
-
-// Inject CSS into shadow DOM
-grid.customStylesCallback = () => `
-  .high { background-color: #d1fae5 !important; }
-  .row-inactive { opacity: 0.6; }
-`
-```
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `updateRowById(id, newData)` | `boolean` | Merge partial data into a row (for WebSocket/live updates) |
+| `replaceRowById(id, newRow)` | `boolean` | Replace an entire row by ID |
 
 ### Row Locking
 
-Lock rows for collaborative editing scenarios. Three sources: property-based, callback-based, or external API.
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `isRowLocked(rowOrId)` | `boolean` | Check if a row is locked |
+| `getRowLockInfo(rowOrId)` | `RowLockInfo \| null` | Get lock information for a row |
+| `lockRowById(id, lockerInfo?)` | `boolean` | Lock a row externally (e.g., from WebSocket message) |
+| `unlockRowById(id)` | `boolean` | Unlock an externally locked row |
+| `getExternalLocks()` | `Map<unknown, RowLockInfo>` | Get all external locks |
+| `clearExternalLocks()` | `void` | Remove all external locks |
 
-**Property-based** - Lock status from row data:
-```javascript
-grid.idValueMember = 'id'
-grid.rowLocking = {
-  lockedMember: 'isLocked',    // boolean field
-  // Or with full lock info:
-  lockInfoMember: 'lockInfo'   // { isLocked, lockedBy, lockedAt, reason }
-}
-```
+### Row Selection
 
-**Callback-based** - Compute lock status:
-```javascript
-grid.rowLocking = {
-  getLockInfoCallback: (row) => row.status === 'editing'
-    ? { isLocked: true, lockedBy: row.editingUser }
-    : null
-}
-```
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `selectRow(rowIndex, mode?)` | `void` | Select a row. Mode: `'replace'` (default), `'toggle'`, `'range'` |
+| `selectRowRange(fromIndex, toIndex)` | `void` | Select a range of rows |
+| `clearSelection()` | `void` | Clear row selection |
+| `isRowSelected(rowIndex)` | `boolean` | Check if a row is selected |
+| `getSelectedRowsData()` | `T[]` | Get data for all selected rows |
+| `copySelectedRowsToClipboard()` | `Promise<boolean>` | Copy selected rows as TSV to clipboard |
 
-**External API** - Lock via JavaScript (WebSocket scenario):
-```javascript
-// Lock row when server notifies
-socket.on('row-locked', ({ id, user }) => {
-  grid.lockRowById(id, { lockedBy: user })
-})
+### Cell Selection
 
-// Unlock when released
-socket.on('row-unlocked', ({ id }) => {
-  grid.unlockRowById(id)
-})
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `selectCellRange(range)` | `void` | Select a cell range programmatically |
+| `clearCellSelection()` | `void` | Clear cell selection |
+| `getSelectedCells()` | `Array<{ row, rowIndex, colIndex, field, value }>` | Get data for all selected cells |
+| `copyCellSelectionToClipboard()` | `Promise<boolean>` | Copy selected cells as TSV to clipboard |
 
-// Update row data from server
-socket.on('row-updated', ({ id, data }) => {
-  grid.updateRowById(id, data)  // Partial update
-  // or
-  grid.replaceRowById(id, newRow)  // Full replacement
-})
-```
+### Column Width
 
-**Visual indicators:**
-- Row shows muted styling with `--wg-row-locked-bg` background
-- Lock icon (🔒) replaces row number when `isRowNumbersVisible` is enabled
-- Tooltip shows who locked the row (via Floating UI)
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `setColumnWidth(field, width)` | `void` | Set width of a single column |
+| `setColumnWidths(widths)` | `void` | Set widths for multiple columns. `widths`: `ColumnWidthState[]` |
+| `getColumnWidthsState()` | `ColumnWidthState[]` | Get current widths of all columns |
 
-**Edit behavior** - Control what happens when editing locked rows:
-```javascript
-grid.rowLocking = {
-  lockedEditBehavior: 'block',  // Cannot edit (default)
-  // or 'allow' - can edit, just visual indicator
-  // or 'callback' - use canEditLockedCallback to decide
-  canEditLockedCallback: (row, lockInfo) => lockInfo.lockedBy === currentUser
-}
-```
+### Column Order
 
-## Theming
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `setColumnOrder(order)` | `void` | Set column order. `order`: `ColumnOrderState[]` |
+| `getColumnOrderState()` | `ColumnOrderState[]` | Get current column order |
 
-### Theme Designer
+## Styling
 
-The easiest way to customize the appearance is using the **KeenMate Theme Designer**:
+### CSS Variable Architecture
 
-**[theme-designer.keenmate.dev](https://theme-designer.keenmate.dev)**
-
-1. Choose 3 base colors - background, text, and accent
-2. Preview changes live
-3. Export your theme as CSS, JSON, or SCSS
-
-### CSS Variable Layers
-
-KeenMate components support a **two-layer theming architecture**:
-
-**Standalone Mode** - Override component-specific variables:
-
-```css
-:root {
-  --wg-accent-color: #your-brand-color;
-  --wg-header-background: #your-background;
-  --wg-text-color: #your-text-color;
-}
-```
-
-**Cascading Mode** - Share a base layer across all KeenMate components:
-
-```css
-:root {
-  /* Base layer - single source of truth */
-  --base-accent-color: #3b82f6;
-  --base-layer-1: #ffffff;
-  --base-text-color-1: #111827;
-
-  /* Components reference base layer automatically */
-}
-```
-
-Change `--base-accent-color` once → web-grid, web-multiselect, and web-daterangepicker all update.
-
-### CSS Custom Properties
+WebGrid uses a two-level CSS variable system:
 
 ```css
 web-grid {
-  /* Colors */
-  --wg-accent-color: #0078d4;
-  --wg-text-color: #1a1a1a;
-  --wg-header-background: #f8fafc;
-  --wg-row-hover-background: #f1f5f9;
-  --wg-row-stripe-background: #fafafa;
-  --wg-border-color: #e2e8f0;
+  /* Override component variables directly */
+  --wg-accent-color: #10b981;
+  --wg-header-bg: #f5f5f5;
+}
 
-  /* Typography */
-  --wg-font-family: system-ui, sans-serif;
-  --wg-font-size-base: 14px;
-
-  /* Spacing */
-  --wg-cell-padding: 8px 12px;
-  --wg-border-radius: 4px;
-
-  /* Editor */
-  --wg-input-focus-border-color: var(--wg-accent-color);
-  --wg-dropdown-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+/* Or set base variables for all KeenMate components */
+:root {
+  --base-accent-color: #10b981;
+  --base-layer-1: #ffffff;
 }
 ```
 
-### Unified Variable Naming
+Each `--wg-*` variable falls back to a `--base-*` variable, then to a hardcoded default:
 
-All KeenMate components follow consistent naming:
+```css
+:host {
+  --wg-accent-color: var(--base-accent-color, #0078d4);
+}
+```
 
-| Purpose | web-grid | web-multiselect | web-daterangepicker |
-|---------|----------|-----------------|---------------------|
-| Brand color | `--wg-accent-color` | `--ms-accent-color` | `--drp-accent-color` |
-| Background | `--wg-header-background` | `--ms-primary-bg` | `--drp-primary-bg` |
-| Text color | `--wg-text-color` | `--ms-text-primary` | `--drp-text-primary` |
-| Border | `--wg-border-color` | `--ms-border-color` | `--drp-border-color` |
+This means:
+1. Setting `--base-accent-color` on `:root` themes all KeenMate components at once
+2. Setting `--wg-accent-color` on `web-grid` overrides just the grid
+3. Without either, the component uses its built-in defaults
 
-## Development
+### Key Variables
 
-```bash
-# Install dependencies
-make setup
+| Variable | Description |
+|----------|-------------|
+| `--wg-accent-color` | Primary accent color |
+| `--wg-text-color-1` | Primary text color |
+| `--wg-surface-1` | Background color |
+| `--wg-surface-2` | Alternate row/header background |
+| `--wg-border-color` | Border color |
 
-# Start dev server with HMR
-make dev
+### Component Variables Manifest
 
-# Build library and docs
-make build
+A machine-readable manifest documenting all CSS variables is included in the package:
 
-# Build library for publishing
-make package
+```javascript
+import manifest from '@keenmate/web-grid/manifest'
 
-# Publish to npm
-make publish
+console.log(manifest.prefix)              // "wg"
+console.log(manifest.baseVariables)       // 37 --base-* variables consumed
+console.log(manifest.componentVariables)  // 178 --wg-* variables exposed
+```
+
+The manifest follows the [component-variables schema](https://raw.githubusercontent.com/keenmate/schemas/main/component-variables.schema.json) and contains:
+
+- **baseVariables** — Theme variables (`--base-*`) the component consumes from `@keenmate/theme-designer`
+- **componentVariables** — Component-specific variables (`--wg-*`) with category and usage descriptions
+
+### Dark Mode
+
+Dark mode is triggered automatically by:
+- OS preference: `@media (prefers-color-scheme: dark)`
+- Attribute: `data-theme="dark"` on ancestor
+- Bootstrap: `data-bs-theme="dark"` on ancestor
+- Class: `.dark` on ancestor (Tailwind CSS)
+
+### Dynamic Cell & Row Styling
+
+```javascript
+// Per-cell styling via column callback
+grid.columns = [{
+  field: 'salary',
+  cellClass: 'salary-cell',                                    // Static class
+  cellClassCallback: (value, row) => value > 90000 ? 'high-value' : null  // Dynamic class
+}]
+
+// Per-row styling
+grid.rowClassCallback = (row, index) => row.status === 'inactive' ? 'row-inactive' : null
+
+// Inject custom CSS into shadow DOM
+grid.customStylesCallback = () => `
+  .high-value { background: #d1fae5 !important; }
+  .row-inactive { opacity: 0.5; }
+`
+```
+
+### i18n
+
+All UI labels can be customized via the `labels` property:
+
+```javascript
+grid.labels = {
+  rowActions: 'Actions',
+  keyboardShortcuts: 'Keyboard shortcuts',
+  paginationFirst: 'First',
+  paginationPrevious: 'Previous',
+  paginationNext: 'Next',
+  paginationLast: 'Last',
+  paginationPageInfo: 'Page {current} of {total}',
+  paginationItemCount: '{count} items',
+  paginationPerPage: 'per page',
+  dropdownNoOptions: 'No options',
+  dropdownSearching: 'Searching...',
+  contextMenu: {
+    sortAsc: 'Sort Ascending',
+    sortDesc: 'Sort Descending',
+    clearSort: 'Clear Sort',
+    hideColumn: 'Hide Column',
+    freezeColumn: 'Freeze Column',
+    unfreezeColumn: 'Unfreeze Column',
+    columnVisibility: 'Column Visibility',
+    showAll: 'Show all'
+  }
+}
 ```
 
 ## Browser Support
 
-Modern browsers with Custom Elements v1 support:
-- Chrome 67+
-- Firefox 63+
-- Safari 10.1+
-- Edge 79+
-
-## Documentation
-
-See the [live showcase](https://web-grid.keenmate.com) for interactive examples and full API documentation.
+- Chrome/Edge 88+
+- Firefox 78+
+- Safari 14+
 
 ## License
 
 MIT
-
-## Credits
-
-Created by [Keenmate](https://github.com/keenmate) as part of the Pure Admin design system.
-
-## Related
-
-- [@keenmate/web-multiselect](https://github.com/keenmate/web-multiselect) - Multiselect dropdown component
-- [@keenmate/web-daterangepicker](https://github.com/keenmate/web-daterangepicker) - Date range picker component
-- [@keenmate/theme-designer](https://github.com/keenmate/theme-designer) - CSS variable theming system

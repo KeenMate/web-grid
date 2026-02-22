@@ -2,8 +2,6 @@
 
 A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
-> **RC15 Note:** This release includes a complete rewrite of how the component handles user input and renders content, based on an action pipeline architecture. All DOM events are now translated into typed actions and dispatched through a centralized pipeline with specialized executors, replacing the previous scattered event handler approach. See [Architecture](#architecture) for details.
-
 ## Installation
 
 ```bash

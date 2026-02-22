@@ -1,0 +1,504 @@
+DROPDOWN EDITORS IN @keenmate/web-grid
+=======================================
+
+Three editor types use dropdown menus: select, combobox, and autocomplete.
+All three share a common set of options (EditorOptions) plus type-specific behavior.
+
+
+EDITOR TYPES
+------------
+
+select
+  Static dropdown list. User clicks to open, picks from list.
+  Cannot type to filter directly in the trigger, but typing while open
+  filters the list. Renders a styled div trigger (not native <select>).
+  CSS class: wg__editor--select, trigger: wg__select-trigger
+
+combobox
+  Filterable dropdown. User types in a text input to narrow options.
+  Options are filtered client-side by matching against display text.
+  CSS class: wg__editor--combobox, input: wg__combobox-input
+
+autocomplete
+  Async search dropdown. User types, then after debounce, searchCallback
+  is called to fetch results from a server. Supports AbortSignal for
+  cancellation, loading indicator, initialOptions, and multiple selection.
+  CSS class: wg__editor--autocomplete, input: wg__autocomplete-input
+
+Column definition example:
+
+  {
+    field: 'status',
+    title: 'Status',
+    editor: 'select',
+    isEditable: true,
+    editorOptions: {
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
+      ]
+    }
+  }
+
+
+PROVIDING OPTIONS
+-----------------
+
+There are two ways to supply options to any dropdown editor:
+
+1. Static array (options)
+
+  editorOptions: {
+    options: [
+      { value: 1, label: 'One' },
+      { value: 2, label: 'Two' }
+    ]
+  }
+
+  The EditorOption type requires value (string | number | boolean) and
+  label (string), plus allows arbitrary extra properties via [key: string]: unknown.
+
+2. Async loader (loadOptions)
+
+  editorOptions: {
+    loadOptions: async (row, field) => {
+      const response = await fetch('/api/options')
+      return response.json()
+    },
+    optionsLoadTrigger: 'oneditstart'
+  }
+
+  loadOptions receives the current row and field name, returns Promise<EditorOption[]>.
+
+optionsLoadTrigger controls when loadOptions is called:
+
+  'immediate'       Load options as soon as the grid renders.
+  'oneditstart'     Load options when the cell enters edit mode (default).
+  'ondropdownopen'  Load options when the dropdown is actually opened.
+
+
+DISPLAY MAPPING
+---------------
+
+By default, options use { value, label } properties. When your data uses
+different property names, use member strings or callback functions.
+
+Each mapping has two alternatives: a member (string property name) and a
+callback (function that receives the option object and returns the value).
+Callbacks take priority over members when both are set.
+
+valueMember / getValueCallback
+  Which property holds the option's committed value.
+  Default property: "value"
+
+  valueMember: 'id'
+  -- or --
+  getValueCallback: (opt) => opt.id
+
+displayMember / getDisplayCallback
+  Which property holds the text shown in the dropdown and in the cell.
+  Default property: "label"
+
+  displayMember: 'name'
+  -- or --
+  getDisplayCallback: (opt) => opt.firstName + ' ' + opt.lastName
+
+searchMember / getSearchCallback
+  Which property to search/filter against. Falls back to displayMember.
+  Useful when display text differs from searchable text.
+
+  searchMember: 'searchText'
+  -- or --
+  getSearchCallback: (opt) => opt.code + ' ' + opt.name
+
+iconMember / getIconCallback
+  Property containing an icon string (emoji or text) shown before the label.
+
+  iconMember: 'emoji'
+  -- or --
+  getIconCallback: (opt) => opt.priority === 'high' ? '!' : ''
+
+subtitleMember / getSubtitleCallback
+  Property containing a subtitle/description shown below the label.
+
+  subtitleMember: 'description'
+  -- or --
+  getSubtitleCallback: (opt) => opt.department + ' - ' + opt.role
+
+disabledMember / getDisabledCallback
+  Property indicating the option cannot be selected.
+
+  disabledMember: 'isArchived'
+  -- or --
+  getDisabledCallback: (opt) => opt.stock === 0
+
+groupMember / getGroupCallback
+  Property for grouping options under headers.
+
+  groupMember: 'category'
+  -- or --
+  getGroupCallback: (opt) => opt.type === 'fruit' ? 'Fruits' : 'Vegetables'
+
+Fallback chain for resolving display value in non-editing cells:
+  1. Find option by valueMember (or getValueCallback)
+  2. Use getDisplayCallback if provided
+  3. Use displayMember property
+  4. Use 'label' property
+  5. Fall back to raw value as string
+
+
+RENDERING AND BEHAVIOR
+----------------------
+
+renderOptionCallback(option, context)
+  Returns an HTML string for a single dropdown option. When provided,
+  completely replaces the default option rendering. The context object has:
+
+    index         number    Zero-based position in filtered list.
+    isHighlighted boolean   True if this option has keyboard/mouse highlight.
+    isSelected    boolean   True if this option matches the cell's current value.
+    isDisabled    boolean   True if the option is disabled.
+
+  Example:
+
+    renderOptionCallback: (opt, ctx) => {
+      const classes = ['wg__dropdown-option']
+      if (ctx.isHighlighted) classes.push('wg__dropdown-option--highlighted')
+      if (ctx.isSelected) classes.push('wg__dropdown-option--selected')
+      if (ctx.isDisabled) classes.push('wg__dropdown-option--disabled')
+      return '<div class="' + classes.join(' ') + '" data-index="' + ctx.index + '">' +
+        '<strong>' + opt.label + '</strong>' +
+        '<small style="margin-left:8px;opacity:0.6">' + opt.code + '</small>' +
+      '</div>'
+    }
+
+  IMPORTANT: The returned HTML must include data-index="N" on the clickable
+  element for mouse selection to work. Use data-disabled="true" on disabled
+  options to prevent selection.
+
+onselect(option, row)
+  Event fired after an option is selected and committed. The row parameter
+  is the current row data. Return value is ignored (fire-and-forget event).
+
+  editorOptions: {
+    onselect: (option, row) => {
+      console.log('Selected', option.label, 'for row', row.id)
+    }
+  }
+
+allowEmpty (boolean)
+  When true, adds an empty/null option at the top of the dropdown.
+  Selecting it commits null/empty to the cell.
+
+emptyLabel (string)
+  Label for the empty option. Default: "-- Select --"
+
+noOptionsText (string)
+  Message shown when filter returns no matches.
+  Falls back to grid.labels.dropdownNoOptions (default: "No options").
+
+searchingText (string)
+  Message shown during async search.
+  Falls back to grid.labels.dropdownSearching (default: "Searching...").
+
+dropdownMinWidth (string)
+  CSS minimum width for the dropdown popup. Useful when the cell is narrow
+  but options need more space. Example: '300px'
+  By default, dropdown matches the cell width.
+
+placeholder (string)
+  Placeholder text for combobox and autocomplete input fields.
+
+Grid-level dropdown settings (set on the grid element, overridable per-column):
+
+  dropdownToggleVisibility   'always' or 'on-focus'
+    Controls when the dropdown arrow is visible in display mode.
+    'always' shows it permanently; 'on-focus' shows it on hover/focus.
+    Per-column override: column.dropdownToggleVisibility
+
+  shouldShowDropdownOnFocus   boolean (default: false)
+    When true, the dropdown opens automatically when a cell is focused.
+
+  shouldOpenDropdownOnEnter   boolean (default: false)
+    When true, pressing Enter opens the dropdown instead of moving down.
+    Per-column override: column.shouldOpenDropdownOnEnter
+
+
+AUTOCOMPLETE-SPECIFIC OPTIONS
+------------------------------
+
+searchCallback(query, row, signal?)
+  Async function called after debounce when user types. Returns
+  Promise<EditorOption[]>. Receives the search query, current row data,
+  and an optional AbortSignal for cancellation of in-flight requests.
+
+  editorOptions: {
+    searchCallback: async (query, row, signal) => {
+      const res = await fetch('/api/search?q=' + query, { signal })
+      return res.json()
+    }
+  }
+
+  If searchCallback is not provided, autocomplete falls back to local
+  filtering of initialOptions (same behavior as combobox).
+
+initialOptions (EditorOption[])
+  Options shown before the user starts typing. Also used as the base
+  list for fallback local filtering when no searchCallback is set.
+
+minSearchLength (number, default: 1)
+  Minimum characters the user must type before searchCallback fires.
+  Below this threshold, initialOptions are shown.
+
+debounceMs (number, default: 300)
+  Delay in milliseconds before searchCallback is invoked after
+  the user stops typing. Previous in-flight requests are aborted.
+
+multiple (boolean, default: false)
+  Allow selecting more than one option.
+
+maxSelections (number)
+  Maximum number of selected items when multiple is true.
+
+
+CUSTOM OPTION RENDERING
+------------------------
+
+When using renderOptionCallback, you must include certain CSS classes and
+data attributes for the dropdown interaction to work correctly.
+
+Required CSS classes:
+
+  wg__dropdown-option              Base class for every option div.
+  wg__dropdown-option--highlighted Applied to the keyboard/mouse-highlighted option.
+  wg__dropdown-option--selected    Applied to the option matching the current value.
+  wg__dropdown-option--disabled    Applied to disabled options. Also add data-disabled="true".
+
+Available inner-element classes (used by default rendering):
+
+  wg__dropdown-option-icon         Container for icon/emoji (flex-shrink: 0, 1.5em wide).
+  wg__dropdown-option-content      Flex container for label + subtitle.
+  wg__dropdown-option-label        Primary text (ellipsis overflow).
+  wg__dropdown-option-subtitle     Secondary text (smaller, muted color, ellipsis overflow).
+
+Alignment classes (inherited from column.horizontalAlign):
+
+  wg__dropdown-option--align-left
+  wg__dropdown-option--align-center
+  wg__dropdown-option--align-right
+  wg__dropdown-option--align-justify
+
+Empty state class:
+
+  wg__dropdown-empty               Shown when no options match (italic, centered, muted).
+
+Full custom rendering example:
+
+  editorOptions: {
+    options: [
+      { id: 'us', name: 'United States', flag: 'US', population: '331M' },
+      { id: 'de', name: 'Germany', flag: 'DE', population: '83M' },
+      { id: 'jp', name: 'Japan', flag: 'JP', population: '125M' }
+    ],
+    valueMember: 'id',
+    displayMember: 'name',
+    renderOptionCallback: (opt, ctx) => {
+      const cls = ['wg__dropdown-option']
+      if (ctx.isHighlighted) cls.push('wg__dropdown-option--highlighted')
+      if (ctx.isSelected) cls.push('wg__dropdown-option--selected')
+      if (ctx.isDisabled) cls.push('wg__dropdown-option--disabled')
+      return '<div class="' + cls.join(' ') + '" data-index="' + ctx.index + '"' +
+        (ctx.isDisabled ? ' data-disabled="true"' : '') + '>' +
+        '<span class="wg__dropdown-option-icon">' + opt.flag + '</span>' +
+        '<div class="wg__dropdown-option-content">' +
+          '<span class="wg__dropdown-option-label">' + opt.name + '</span>' +
+          '<span class="wg__dropdown-option-subtitle">Pop: ' + opt.population + '</span>' +
+        '</div>' +
+      '</div>'
+    }
+  }
+
+
+EXAMPLES
+--------
+
+Example 1: Select with custom value/display members
+
+  {
+    field: 'countryId',
+    title: 'Country',
+    editor: 'select',
+    isEditable: true,
+    editorOptions: {
+      options: [
+        { code: 'US', name: 'United States', region: 'Americas' },
+        { code: 'DE', name: 'Germany', region: 'Europe' },
+        { code: 'JP', name: 'Japan', region: 'Asia' }
+      ],
+      valueMember: 'code',
+      displayMember: 'name',
+      groupMember: 'region',
+      allowEmpty: true,
+      emptyLabel: '(none)'
+    }
+  }
+
+Example 2: Combobox with icons and subtitles
+
+  {
+    field: 'priority',
+    title: 'Priority',
+    editor: 'combobox',
+    isEditable: true,
+    editorOptions: {
+      options: [
+        { value: 'critical', label: 'Critical', icon: '!', desc: 'Immediate action' },
+        { value: 'high', label: 'High', icon: 'H', desc: 'Resolve within 24h' },
+        { value: 'medium', label: 'Medium', icon: 'M', desc: 'Resolve within 1 week' },
+        { value: 'low', label: 'Low', icon: 'L', desc: 'When time permits' }
+      ],
+      iconMember: 'icon',
+      subtitleMember: 'desc',
+      placeholder: 'Search priorities...',
+      dropdownMinWidth: '280px',
+      onselect: (option, row) => {
+        console.log('Priority changed to', option.label)
+      }
+    }
+  }
+
+Example 3: Autocomplete with async search
+
+  {
+    field: 'assigneeId',
+    title: 'Assignee',
+    editor: 'autocomplete',
+    isEditable: true,
+    editorOptions: {
+      initialOptions: [
+        { value: 1, label: 'Alice Smith' },
+        { value: 2, label: 'Bob Johnson' }
+      ],
+      searchCallback: async (query, row, signal) => {
+        const response = await fetch(
+          '/api/users?search=' + encodeURIComponent(query),
+          { signal }
+        )
+        const users = await response.json()
+        return users.map(u => ({
+          value: u.id,
+          label: u.name,
+          subtitle: u.email
+        }))
+      },
+      subtitleMember: 'subtitle',
+      minSearchLength: 2,
+      debounceMs: 250,
+      placeholder: 'Search users...',
+      dropdownMinWidth: '350px',
+      allowEmpty: true
+    }
+  }
+
+Example 4: Combobox with callback-based display mapping
+
+  {
+    field: 'productId',
+    title: 'Product',
+    editor: 'combobox',
+    isEditable: true,
+    editorOptions: {
+      options: products,
+      getValueCallback: (opt) => opt.sku,
+      getDisplayCallback: (opt) => opt.sku + ' - ' + opt.productName,
+      getSearchCallback: (opt) => opt.sku + ' ' + opt.productName + ' ' + opt.category,
+      getIconCallback: (opt) => opt.inStock ? '' : '!',
+      getSubtitleCallback: (opt) => '$' + opt.price.toFixed(2) + ' | ' + opt.category,
+      getDisabledCallback: (opt) => opt.discontinued,
+      dropdownMinWidth: '400px'
+    }
+  }
+
+Example 5: Select with async options loaded on edit start
+
+  {
+    field: 'departmentId',
+    title: 'Department',
+    editor: 'select',
+    isEditable: true,
+    editorOptions: {
+      loadOptions: async (row, field) => {
+        const response = await fetch('/api/departments?company=' + row.companyId)
+        return response.json()
+      },
+      optionsLoadTrigger: 'oneditstart',
+      valueMember: 'id',
+      displayMember: 'name',
+      noOptionsText: 'No departments found'
+    }
+  }
+
+Example 6: Autocomplete with multiple selection
+
+  {
+    field: 'tags',
+    title: 'Tags',
+    editor: 'autocomplete',
+    isEditable: true,
+    editorOptions: {
+      searchCallback: async (query, row, signal) => {
+        const res = await fetch('/api/tags?q=' + query, { signal })
+        return res.json()
+      },
+      multiple: true,
+      maxSelections: 5,
+      minSearchLength: 1,
+      debounceMs: 200,
+      placeholder: 'Add tags...'
+    }
+  }
+
+
+DROPDOWN POSITIONING
+--------------------
+
+Dropdowns are positioned using Floating UI (@floating-ui/dom).
+They appear below the cell by default, flipping above if not enough space.
+The dropdown is appended to the shadow DOM root (not inside the cell)
+and uses position: fixed with z-index: 1000.
+
+The dropdown width defaults to the cell width (via minWidth), but can be
+made wider with dropdownMinWidth in editorOptions.
+
+
+GRID MODE DEFAULTS FOR DROPDOWNS
+---------------------------------
+
+Grid modes set different defaults for dropdown behavior:
+
+  read-only      dropdownToggleVisibility: 'on-focus', shouldShowDropdownOnFocus: false
+  excel          dropdownToggleVisibility: 'always',  shouldShowDropdownOnFocus: false
+  input-matrix   dropdownToggleVisibility: 'always',  shouldShowDropdownOnFocus: true
+
+In input-matrix mode, dropdown cells auto-open when focused, making it
+behave like a form. In excel mode, toggles are always visible but require
+explicit interaction to open.
+
+
+TYPE DEFINITIONS
+----------------
+
+EditorOption = {
+  value: string | number | boolean
+  label: string
+  [key: string]: unknown
+}
+
+OptionRenderContext = {
+  index: number
+  isHighlighted: boolean
+  isSelected: boolean
+  isDisabled: boolean
+}
+
+OptionsLoadTrigger = 'immediate' | 'oneditstart' | 'ondropdownopen'

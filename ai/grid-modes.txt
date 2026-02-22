@@ -1,0 +1,267 @@
+GRID MODES IN @keenmate/web-grid
+=================================
+
+The mode property configures the grid for common interaction patterns.
+Setting mode applies a set of defaults. Individual properties can be
+overridden after setting mode.
+
+
+THE MODE PROPERTY
+-----------------
+
+Type: GridMode = "read-only" | "excel" | "input-matrix"
+
+Set on the grid element:
+
+  grid.mode = "excel"
+
+Or via HTML attribute:
+
+  <web-grid mode="excel"></web-grid>
+
+Setting mode calls applyModeDefaults() internally, which sets
+isEditable, editTrigger, cellSelectionMode, dropdownToggleVisibility,
+and shouldShowDropdownOnFocus to mode-appropriate values.
+
+
+READ-ONLY MODE
+--------------
+
+  grid.mode = "read-only"
+
+Defaults applied:
+  isEditable               = false
+  cellSelectionMode        = "click"
+  dropdownToggleVisibility = "on-focus"
+  shouldShowDropdownOnFocus = false
+
+Use case: Display grids with copy support. Users can browse data,
+select cell ranges by clicking and dragging, and copy selections to
+clipboard with Ctrl+C.
+
+Behavior:
+- No editing. Cells are never editable.
+- Arrow keys move the focused cell highlight between cells.
+- Click a cell to focus it; click+drag to select a range of cells.
+- Ctrl+C copies the selected cell range as TSV (Excel-compatible).
+- Dropdown toggles appear only when a cell is focused (on-focus).
+- editTrigger="always" is not supported and logs a console warning.
+
+Common configuration:
+
+  grid.mode = "read-only"
+  grid.sortMode = "multi"
+  grid.isFilterable = true
+  grid.isHoverable = true
+
+
+EXCEL MODE
+----------
+
+  grid.mode = "excel"
+
+Defaults applied:
+  isEditable               = true
+  editTrigger              = "navigate"
+  cellSelectionMode        = "click"
+  dropdownToggleVisibility = "always"
+  shouldShowDropdownOnFocus = false
+
+Use case: Spreadsheet-like editing. Navigate cells with arrow keys,
+type to start editing, Escape to cancel. Click+drag for cell range
+selection.
+
+Behavior:
+- Cells start in "navigate" state (focused but not editing).
+- Arrow keys move focus between cells without entering edit mode.
+- Typing a printable character starts editing with that character as
+  initial input (replaces cell content).
+- F2 starts editing with the current cell value preserved.
+- Enter on a text cell moves focus down (does not start editing).
+- Enter on a dropdown cell opens the dropdown if
+  shouldOpenDropdownOnEnter is true; otherwise moves down.
+- Space toggles checkboxes; Space on dropdown/date cells starts editing.
+- Double-click also starts editing (dblclick is handled for navigate
+  mode as well).
+- Escape cancels the current edit and returns to navigate state.
+- Tab/Shift+Tab move to the next/previous editable cell, committing
+  any active edit first.
+- When editing a dropdown in navigate mode, Left/Right arrow keys
+  cancel the edit and navigate to the adjacent cell (allowing quick
+  horizontal traversal).
+- Click+drag selects a rectangular cell range.
+- Delete clears the focused cell content.
+- Ctrl+C copies the selected range to clipboard.
+- Dropdown toggle buttons are always visible on dropdown columns.
+
+Common configuration:
+
+  grid.mode = "excel"
+  grid.isRowToolbarVisible = true
+  grid.rowToolbar = ["add", "delete", "duplicate"]
+  grid.fillDragCallback = (detail) => { /* handle fill */ }
+  grid.isCheckboxAlwaysEditable = true
+
+
+INPUT-MATRIX MODE
+-----------------
+
+  grid.mode = "input-matrix"
+
+Defaults applied:
+  isEditable               = true
+  editTrigger              = "always"
+  cellSelectionMode        = "shift"
+  dropdownToggleVisibility = "always"
+  shouldShowDropdownOnFocus = true
+
+Use case: All editable cells are always in edit mode. The grid behaves
+like a form with a table layout. Every cell renders its editor (text
+input, dropdown, checkbox, etc.) at all times.
+
+Behavior:
+- All editable cells render their editors immediately (no navigate
+  state for those cells).
+- Clicking a cell focuses its editor input directly.
+- Tab/Shift+Tab move between editor inputs across cells, behaving like
+  a form tab order.
+- Arrow keys behave as cursor navigation within text inputs (left/right
+  move the text cursor, up/down move between cells).
+- For dropdown columns, focusing the cell automatically opens the
+  dropdown (shouldShowDropdownOnFocus = true).
+- Dropdown toggle buttons are always visible.
+- Escape within a cell cancels the edit and restores the previous value.
+- Cell range selection uses Shift+Click (not plain click), because plain
+  click is needed to focus editor inputs.
+- Non-editable columns still display as read-only text.
+
+Common configuration:
+
+  grid.mode = "input-matrix"
+  grid.isRowToolbarVisible = true
+  grid.rowToolbar = ["add", "delete"]
+  grid.shouldOpenDropdownOnEnter = true
+
+
+OVERRIDING MODE DEFAULTS
+-------------------------
+
+Setting mode applies defaults, but any property can be overridden
+afterward. The override persists until mode is set again.
+
+  grid.mode = "excel"
+  grid.cellSelectionMode = "shift"       // Override: use Shift+Click for selection
+  grid.shouldShowDropdownOnFocus = true   // Override: auto-open dropdowns
+
+  grid.mode = "read-only"
+  grid.isEditable = true                  // Override: allow editing in "read-only" layout
+  grid.editTrigger = "dblclick"           // Override: double-click to edit
+
+  grid.mode = "input-matrix"
+  grid.shouldShowDropdownOnFocus = false  // Override: don't auto-open dropdowns
+
+Per-column overrides also work. Column-level editTrigger and
+dropdownToggleVisibility take precedence over grid-level values:
+
+  grid.columns = [
+    { field: "name", editor: "text" },
+    { field: "status", editor: "select", editTrigger: "always" },  // Always-editing in excel mode
+    { field: "notes", editor: "text", dropdownToggleVisibility: "on-focus" }
+  ]
+
+
+KEYBOARD NAVIGATION BY MODE
+----------------------------
+
+Read-only mode:
+  Arrow keys     Move focus between cells
+  Tab            Move focus to next cell (wraps to next row)
+  Shift+Tab      Move focus to previous cell
+  Home           Move focus to first cell in row
+  End            Move focus to last cell in row
+  PageUp/Down    Move focus up/down by visible page height
+  Ctrl+C         Copy selected cell range to clipboard
+  No editing keys are active
+
+Excel mode (navigate state, not editing):
+  Arrow keys     Move focus between cells
+  Tab            Move to next editable cell (commits any edit)
+  Shift+Tab      Move to previous editable cell
+  Home           Move to first cell in row
+  End            Move to last cell in row
+  PageUp/Down    Move up/down by visible page height
+  Enter          Move focus down (or open dropdown if configured)
+  F2             Start editing current cell (preserves value)
+  Delete         Clear cell content
+  Space          Toggle checkbox / open dropdown / start date edit
+  Printable char Start editing with that character (replaces value)
+  Escape         (no effect when not editing)
+  Ctrl+C         Copy selected range
+
+Excel mode (editing state):
+  Escape         Cancel edit, return to navigate state
+  Enter          Commit edit, move focus down
+  Tab            Commit edit, move to next editable cell
+  Shift+Tab      Commit edit, move to previous editable cell
+  Arrow Up/Down  Commit edit, move focus (for text editors)
+  Arrow Left/Right  Cursor movement in text input (native browser)
+  Arrow Left/Right  Cancel edit and navigate (dropdown editors only)
+
+Input-matrix mode:
+  Tab            Move to next editor input (like form tabbing)
+  Shift+Tab      Move to previous editor input
+  Enter          Commit and move down (or open dropdown if configured)
+  Escape         Cancel current edit, restore previous value
+  Arrow Up/Down  Move between cells (commits current edit)
+  Arrow Left/Right  Cursor movement within text input (native)
+  Printable chars  Typed directly into the active editor input
+
+
+CELL SELECTION BY MODE
+----------------------
+
+cellSelectionMode = "click" (read-only, excel):
+  Click+drag on cells to select a rectangular range.
+  Click a single cell to focus it (clears any selection).
+  Shift+Click extends the selection from the focused cell.
+  Ctrl+C copies the selection as TSV text.
+  Note: if editTrigger="click" conflicts with cellSelectionMode="click",
+  cell selection takes priority. A console warning is logged.
+
+cellSelectionMode = "shift" (input-matrix):
+  Plain click focuses the cell (and its editor in input-matrix mode).
+  Shift+Click starts or extends a cell range selection.
+  This avoids conflict with always-editing cells that need plain clicks
+  to position the cursor in their editor inputs.
+
+cellSelectionMode = "disabled":
+  No cell range selection. Clicks only focus cells or start editing.
+
+For all modes, the shouldCopyWithHeaders property controls whether
+column headers are included when copying cell selections:
+
+  grid.shouldCopyWithHeaders = true
+
+
+PROPERTIES REFERENCE
+--------------------
+
+Properties set by mode (grid-level):
+
+  Property                      read-only   excel       input-matrix
+  ----------------------------  ----------  ----------  ------------
+  isEditable                    false       true        true
+  editTrigger                   (unchanged) "navigate"  "always"
+  cellSelectionMode             "click"     "click"     "shift"
+  dropdownToggleVisibility      "on-focus"  "always"    "always"
+  shouldShowDropdownOnFocus     (unchanged) false       true
+
+Note: "unchanged" means the property is not set by the mode and retains
+its current value (or its default if never explicitly set).
+
+Related properties not set by mode but commonly configured alongside:
+  isCheckboxAlwaysEditable   - Checkboxes clickable even in navigate state
+  shouldOpenDropdownOnEnter  - Enter key opens dropdown vs moves down
+  editStartSelection         - Cursor position on edit start: "selectAll",
+                               "cursorAtStart", "cursorAtEnd", "mousePosition"
+  shouldCopyWithHeaders      - Include headers when copying cell selection

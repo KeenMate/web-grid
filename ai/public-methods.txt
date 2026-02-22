@@ -1,0 +1,231 @@
+PUBLIC METHODS
+==============
+@keenmate/web-grid - Complete reference for all public methods.
+
+
+All methods are called on the <web-grid> DOM element:
+  const grid = document.getElementById('grid')
+  grid.focusCell(0, 1)
+
+
+----------------------------------------------------------------------
+FOCUS AND EDITING
+----------------------------------------------------------------------
+
+focusCell(rowIndex: number, colIndex: number): void
+  Programmatically focus a cell. In navigate mode (editTrigger='navigate'),
+  this sets the blue focus border on the specified cell. Does not start
+  editing.
+
+startEditing(rowIndex: number, colIndex: number): void
+  Programmatically start editing a cell. The cell must be editable
+  (column.isEditable = true, row not locked). Opens the appropriate
+  editor for the column's editor type.
+
+openCustomEditor(rowIndex: number, colIndex: number): void
+  Open the custom editor for a cell with editor: 'custom'. Invokes the
+  column's cellEditCallback with { value, row, rowIndex, field, commit,
+  cancel }.
+
+
+----------------------------------------------------------------------
+DRAFT MANAGEMENT
+----------------------------------------------------------------------
+Drafts are uncommitted cell edits. When a user edits a cell, the new value
+is stored in a draft row until committed. Invalid values remain in the
+draft but are flagged with validation errors.
+
+getRowDraft(rowIndex: number): T | undefined
+  Get the draft (edited but uncommitted values) for a row. Returns
+  undefined if the row has no draft.
+
+hasRowDraft(rowIndex: number): boolean
+  Check if a row has any uncommitted changes.
+
+discardRowDraft(rowIndex: number): void
+  Discard all draft changes for a specific row. Reverts cells to their
+  original values.
+
+getDraftRowIndices(): number[]
+  Get indices of all rows that have drafts (uncommitted changes).
+
+discardAllDrafts(): void
+  Discard all draft changes across all rows. Reverts every edited cell
+  to its original value.
+
+
+----------------------------------------------------------------------
+VALIDATION
+----------------------------------------------------------------------
+
+isCellInvalid(rowIndex: number, field: string): boolean
+  Check if a cell has a validation error (from beforeCommitCallback or
+  external invalidCells).
+
+getCellValidationError(rowIndex: number, field: string): string | null
+  Get the validation error message for a cell. Returns null if the cell
+  is valid.
+
+canEditCell(rowIndex: number, field: string): boolean
+  Check if a cell can be edited. Considers:
+  - Column isEditable setting
+  - Row locking state and lockedEditBehavior
+  - canEditLockedCallback result
+
+
+----------------------------------------------------------------------
+ROW IDENTIFICATION
+----------------------------------------------------------------------
+Requires idValueMember or idValueCallback to be configured.
+
+getRowId(row: T): unknown | undefined
+  Get the unique ID of a row using the configured idValueMember or
+  idValueCallback.
+
+findRowById(id: unknown): { row: T, index: number } | null
+  Find a row by its unique ID. Returns the row object and its current
+  index, or null if not found.
+
+
+----------------------------------------------------------------------
+ROW UPDATES
+----------------------------------------------------------------------
+For live data updates (WebSocket, polling). Requires row identification.
+
+updateRowById(id: unknown, newData: Partial<T>): boolean
+  Merge partial data into an existing row. Only the provided properties
+  are updated; other properties remain unchanged. Returns true if the
+  row was found and updated.
+
+  grid.updateRowById(42, { status: 'approved', updatedAt: new Date() })
+
+replaceRowById(id: unknown, newRow: T): boolean
+  Replace an entire row object by ID. Returns true if the row was found
+  and replaced.
+
+  grid.replaceRowById(42, newRowData)
+
+
+----------------------------------------------------------------------
+ROW LOCKING
+----------------------------------------------------------------------
+Query methods accept either a row object or a row ID.
+External lock methods require row identification (idValueMember or
+idValueCallback).
+
+isRowLocked(rowOrId: T | unknown): boolean
+  Check if a row is locked (from any source: property, callback, or
+  external).
+
+getRowLockInfo(rowOrId: T | unknown): RowLockInfo | null
+  Get lock information for a row. Returns null if not locked.
+
+lockRowById(id: unknown, lockerInfo?: RowLockInfo): boolean
+  Lock a row externally. Returns true if the row was found. Fires
+  onrowlockchange event.
+
+  grid.lockRowById(42, {
+    isLocked: true,
+    lockedBy: 'Jane',
+    lockedAt: new Date()
+  })
+
+unlockRowById(id: unknown): boolean
+  Unlock an externally locked row. Returns true if the row was found
+  and was locked.
+
+getExternalLocks(): Map<unknown, RowLockInfo>
+  Get all external locks as a Map keyed by row ID.
+
+clearExternalLocks(): void
+  Remove all external locks at once.
+
+
+----------------------------------------------------------------------
+ROW SELECTION
+----------------------------------------------------------------------
+
+selectRow(rowIndex: number, mode?: 'replace' | 'toggle' | 'range'): void
+  Select a row.
+  'replace' (default): Clear existing selection, select this row
+  'toggle': Toggle this row's selection without affecting others
+  'range': Select all rows from last selected to this row
+
+selectRowRange(fromIndex: number, toIndex: number): void
+  Select a contiguous range of rows (inclusive).
+
+clearSelection(): void
+  Clear all row selections.
+
+isRowSelected(rowIndex: number): boolean
+  Check if a specific row is selected.
+
+getSelectedRowsData(): T[]
+  Get the data objects for all selected rows.
+
+copySelectedRowsToClipboard(): Promise<boolean>
+  Copy selected rows as TSV (tab-separated values) to the clipboard.
+  Returns true if successful. TSV format is compatible with Excel paste.
+
+
+----------------------------------------------------------------------
+CELL SELECTION
+----------------------------------------------------------------------
+
+selectCellRange(range: CellRange): void
+  Select a rectangular cell range programmatically.
+  CellRange: { startRowIndex, startColIndex, endRowIndex, endColIndex,
+  startField, endField }
+
+clearCellSelection(): void
+  Clear the current cell range selection.
+
+getSelectedCells(): Array<{ row: T, rowIndex: number, colIndex: number, field: string, value: unknown }>
+  Get data for all cells in the current selection.
+
+copyCellSelectionToClipboard(): Promise<boolean>
+  Copy selected cells as TSV to clipboard. If shouldCopyWithHeaders is
+  true, column headers are included as the first row. Returns true if
+  successful.
+
+
+----------------------------------------------------------------------
+COLUMN WIDTH
+----------------------------------------------------------------------
+
+setColumnWidth(field: string, width: string): void
+  Set the width of a single column.
+
+  grid.setColumnWidth('name', '200px')
+
+setColumnWidths(widths: ColumnWidthState[]): void
+  Set widths for multiple columns at once.
+  ColumnWidthState: { field: string, width: string }
+
+  grid.setColumnWidths([
+    { field: 'name', width: '200px' },
+    { field: 'email', width: '300px' }
+  ])
+
+getColumnWidthsState(): ColumnWidthState[]
+  Get current widths of all columns. Returns array of { field, width }.
+  Same format used by localStorage persistence and setColumnWidths.
+
+
+----------------------------------------------------------------------
+COLUMN ORDER
+----------------------------------------------------------------------
+
+setColumnOrder(order: ColumnOrderState[]): void
+  Set column display order.
+  ColumnOrderState: { field: string, order: number }
+
+  grid.setColumnOrder([
+    { field: 'name', order: 0 },
+    { field: 'email', order: 1 },
+    { field: 'id', order: 2 }
+  ])
+
+getColumnOrderState(): ColumnOrderState[]
+  Get current column order. Returns array of { field, order }.
+  Same format used by localStorage persistence and setColumnOrder.

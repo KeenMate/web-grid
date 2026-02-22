@@ -1,0 +1,128 @@
+FILL HANDLE
+===========
+@keenmate/web-grid - Excel-like drag-to-fill for copying cell values.
+
+
+OVERVIEW
+--------
+The fill handle is a small square that appears at the corner of the focused
+cell. Dragging it fills adjacent cells with the source cell's value, similar
+to Excel's autofill. The user drags vertically (up/down) or horizontally
+(left/right) to select a rectangular region of target cells.
+
+
+REQUIREMENTS
+------------
+The fill handle appears only when ALL of these conditions are met:
+  - editTrigger is 'navigate' (or mode is 'excel', which sets navigate)
+  - isEditable is true on the grid
+  - The focused cell's column has isEditable: true
+  - The cell is not currently in edit mode
+  - No dropdown is open
+
+The fill handle appears at the bottom-right corner of the focused cell, or
+at the top-right corner when the cell is on the last row (so the user can
+drag upward).
+
+
+FILL DRAG CALLBACK
+------------------
+fillDragCallback (property on grid element)
+  Type: (detail: FillDragDetail) => boolean | void
+  Called when the user completes a fill drag. Return false to cancel the
+  entire fill operation. Return anything else (or nothing) to allow it.
+
+  FillDragDetail structure:
+    sourceCell: {
+      rowIndex: number    Row index of the dragged-from cell
+      colIndex: number    Column index of the dragged-from cell
+      field: string       Field name of the source column
+      value: unknown      Current value of the source cell (uses draft if exists)
+    }
+    targetCells: [        Array of cells that will be filled
+      {
+        rowIndex: number
+        colIndex: number
+        field: string
+      }
+      ...
+    ]
+    direction: 'up' | 'down' | 'left' | 'right'
+      Dominant direction of the drag. Determined by which axis has the
+      larger delta. Same-cell defaults to 'down'.
+
+Example:
+  grid.fillDragCallback = (detail) => {
+    console.log('Filling', detail.sourceCell.value, 'into', detail.targetCells.length, 'cells')
+    if (detail.sourceCell.field === 'id') {
+      return false  // Don't allow filling ID column
+    }
+  }
+
+
+PER-COLUMN FILL DIRECTION
+--------------------------
+fillDirection on Column<T>
+  Type: 'vertical' | 'all'
+  Default: inherits from grid-level fillDirection
+
+  'vertical'  Only fills in the same column (constrains to vertical axis)
+  'all'       Allows filling across multiple columns in the drag region
+
+  grid.columns = [
+    { field: 'price', fillDirection: 'vertical' },
+    { field: 'notes', fillDirection: 'all' }
+  ]
+
+
+NON-EDITABLE CELLS ARE SKIPPED
+-------------------------------
+During a fill operation, cells that cannot be edited are automatically
+skipped. This includes:
+  - Cells in columns where isEditable is false or not set
+  - Cells in locked rows (when row locking is configured)
+  - Cells checked by canEditCell(rowIndex, field)
+
+Additionally, value compatibility is checked:
+  - Number columns only accept numeric values
+  - Select/combobox columns only accept values that exist in their options
+  - Date columns only accept valid dates (Date objects, ISO strings, timestamps)
+  - Text, autocomplete, checkbox, and custom editors accept any value
+
+
+ONROWCHANGE EVENT
+-----------------
+After a fill operation completes, onrowchange fires for each filled cell
+individually. Each call receives the standard RowChangeDetail with the
+field, oldValue, newValue, row, draftRow, rowIndex, isValid, and
+validationError.
+
+The fill is applied via commitEdit internally, which means
+beforeCommitCallback validation runs for each target cell. Invalid values
+still appear in the draft row but are flagged with validation errors.
+
+
+DRAG BEHAVIOR
+-------------
+Mouse must move at least 5 pixels before the drag activates (threshold
+prevents accidental fills from clicks). During the drag:
+  - A semi-transparent overlay shows the fill range
+  - The container gets a wg--filling CSS class
+  - Pressing Escape cancels the fill operation
+  - Releasing the mouse applies the fill
+
+CSS variables for the fill handle visual:
+  --wg-fill-handle-size          Default: 8px
+  --wg-fill-handle-bg            Default: var(--wg-surface-1)
+  --wg-fill-handle-border-color  Default: var(--wg-accent-color)
+  --wg-fill-handle-border-width  Default: 2px
+  --wg-fill-range-bg             Default: color-mix(accent 15%, transparent)
+  --wg-fill-range-border-color   Default: var(--wg-accent-color)
+
+
+SOURCE VALUE
+------------
+The source cell value comes from the draft row if one exists (contains
+edited but uncommitted values), otherwise from the display item. This
+means if the user has edited a cell but not committed it, the fill will
+use the edited value.
