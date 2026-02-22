@@ -8,9 +8,11 @@
   background: var(--wg-selection-bg);
 }
 
-/* Selected row number cell - accent colored */
+/* Selected row number cell - accent colored
+   Needs .wg--editable prefix to beat the readonly rule in _cells.css
+   (.wg--editable.wg--navigate-mode .wg__cell:not(.wg__cell--editable)) which has specificity 0,4,0 */
 .wg__row--selected > .wg__cell.wg__row-number,
-.wg--navigate-mode .wg__row--selected > .wg__cell.wg__row-number {
+.wg--editable.wg--navigate-mode .wg__row--selected > .wg__cell.wg__row-number {
   background: var(--wg-selection-row-number-bg);
   color: var(--wg-selection-row-number-color);
 }
@@ -27,7 +29,7 @@
 
 /* When already selected, hover doesn't change background */
 .wg__row--selected > .wg__cell.wg__row-number:hover,
-.wg--navigate-mode .wg__row--selected > .wg__cell.wg__row-number:hover {
+.wg--editable.wg--navigate-mode .wg__row--selected > .wg__cell.wg__row-number:hover {
   background: var(--wg-selection-row-number-bg);
   color: var(--wg-selection-row-number-color);
 }
