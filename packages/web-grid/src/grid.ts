@@ -132,6 +132,11 @@ export class WebGrid<T = unknown> {
 	protected _toolbarHorizontalAlign: 'start' | 'center' | 'end' | 'cursor' = 'center'
 	protected _toolbarTrigger: 'hover' | 'click' | 'button' = 'hover'
 	protected _toolbarPosition: ToolbarPosition = 'auto'
+	protected _toolbarColumn: string | number | undefined = undefined
+	protected _toolbarFollowsCursor: boolean = false
+	protected _cellToolbar: ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined = undefined
+	protected _cellToolbarOffset: number | string = 0.2
+	protected _toolbarBtnMinWidth: string | undefined = undefined
 	protected _inlineActionsTitle: string = ''
 	protected _contextMenu: ContextMenuItem<T>[] | undefined = undefined
 	protected _contextMenuXOffset: number = 8
@@ -241,6 +246,7 @@ export class WebGrid<T = unknown> {
 	protected _focusedCell: FocusedCell = null
 	protected _isCommittingFromKeyboard: boolean = false
 	protected _skipNextDropdownAutoEdit: boolean = false
+	protected _tabTraversalStartColIndex: number | null = null
 
 	// Interaction state (centralized tracking for hover, focus, edit)
 	protected _hoveredRowIndex: number | null = null
@@ -519,12 +525,14 @@ export class WebGrid<T = unknown> {
 	get toolbarVerticalAlign(): 'top' | 'center' | 'bottom' { return this._toolbarVerticalAlign }
 	set toolbarVerticalAlign(value: 'top' | 'center' | 'bottom') {
 		this._toolbarVerticalAlign = value
+		this.checkToolbarConflicts()
 		this.requestUpdate()
 	}
 
 	get toolbarHorizontalAlign(): 'start' | 'center' | 'end' | 'cursor' { return this._toolbarHorizontalAlign }
 	set toolbarHorizontalAlign(value: 'start' | 'center' | 'end' | 'cursor') {
 		this._toolbarHorizontalAlign = value
+		this.checkToolbarConflicts()
 		this.requestUpdate()
 	}
 
@@ -544,7 +552,42 @@ export class WebGrid<T = unknown> {
 	get toolbarPosition(): ToolbarPosition { return this._toolbarPosition }
 	set toolbarPosition(value: ToolbarPosition) {
 		this._toolbarPosition = value
+		this.checkToolbarConflicts()
 		this.requestUpdate()
+	}
+
+	get toolbarColumn(): string | number | undefined { return this._toolbarColumn }
+	set toolbarColumn(value: string | number | undefined) {
+		this._toolbarColumn = value
+		this.checkToolbarConflicts()
+	}
+
+	get toolbarFollowsCursor(): boolean { return this._toolbarFollowsCursor }
+	set toolbarFollowsCursor(value: boolean) {
+		this._toolbarFollowsCursor = value
+		this.checkToolbarConflicts()
+	}
+
+	get cellToolbar(): ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined {
+		return this._cellToolbar
+	}
+	set cellToolbar(value: ((row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined) | undefined) {
+		this._cellToolbar = value
+		this.checkToolbarConflicts()
+	}
+
+	get cellToolbarOffset(): number | string { return this._cellToolbarOffset }
+	set cellToolbarOffset(value: number | string) {
+		if (typeof value === 'number') {
+			this._cellToolbarOffset = Math.max(0, Math.min(1, value))
+		} else {
+			this._cellToolbarOffset = value
+		}
+	}
+
+	get toolbarBtnMinWidth(): string | undefined { return this._toolbarBtnMinWidth }
+	set toolbarBtnMinWidth(value: string | undefined) {
+		this._toolbarBtnMinWidth = value
 	}
 
 	get inlineActionsTitle(): string { return this._inlineActionsTitle }
@@ -1648,6 +1691,70 @@ export class WebGrid<T = unknown> {
 		}
 	}
 
+	/**
+	 * Check for incompatible toolbar configuration and warn user
+	 */
+	protected checkToolbarConflicts(): void {
+		const pos = this._toolbarPosition
+		const isTopOrInline = pos === 'top' || pos === 'inline'
+		const isTop = pos === 'top'
+		const style = 'font-size: 14px; font-weight: bold;'
+
+		// verticalAlign only matters for left/right/auto (side positions)
+		if (this._toolbarVerticalAlign !== 'bottom' && isTopOrInline) {
+			console.warn(
+				`%cWebGrid: toolbarVerticalAlign="${this._toolbarVerticalAlign}" has no effect with toolbarPosition="${pos}".\n` +
+				'verticalAlign only applies to side positions: "left", "right", or "auto".',
+				style
+			)
+		}
+
+		// horizontalAlign only matters for top position
+		if (this._toolbarHorizontalAlign !== 'center' && !isTop) {
+			console.warn(
+				`%cWebGrid: toolbarHorizontalAlign="${this._toolbarHorizontalAlign}" has no effect with toolbarPosition="${pos}".\n` +
+				'horizontalAlign only applies to toolbarPosition="top".',
+				style
+			)
+		}
+
+		// toolbarColumn only matters for top position
+		if (this._toolbarColumn !== undefined && !isTop) {
+			console.warn(
+				`%cWebGrid: toolbarColumn has no effect with toolbarPosition="${pos}".\n` +
+				'toolbarColumn only applies to toolbarPosition="top".',
+				style
+			)
+		}
+
+		// toolbarFollowsCursor only matters for top position
+		if (this._toolbarFollowsCursor && !isTop) {
+			console.warn(
+				`%cWebGrid: toolbarFollowsCursor has no effect with toolbarPosition="${pos}".\n` +
+				'toolbarFollowsCursor only applies to toolbarPosition="top".',
+				style
+			)
+		}
+
+		// cellToolbar only matters for top position
+		if (this._cellToolbar !== undefined && !isTop) {
+			console.warn(
+				`%cWebGrid: cellToolbar has no effect with toolbarPosition="${pos}".\n` +
+				'cellToolbar requires toolbarPosition="top".',
+				style
+			)
+		}
+
+		// toolbarColumn takes priority over followsCursor
+		if (this._toolbarFollowsCursor && this._toolbarColumn !== undefined) {
+			console.warn(
+				'%cWebGrid: toolbarColumn and toolbarFollowsCursor are both set.\n' +
+				'toolbarColumn takes priority — cursor following is disabled.',
+				style
+			)
+		}
+	}
+
 	// ==========================================================================
 	// Update Mechanism (to be overridden by GridElement)
 	// ==========================================================================
@@ -1672,6 +1779,43 @@ export class WebGrid<T = unknown> {
 		this._draftRows.delete(rowIndex)
 		this._invalidCells = this._invalidCells.filter(c => c.rowIndex !== rowIndex)
 		this.requestUpdate()
+	}
+
+	/**
+	 * Discard draft value for a single cell (field)
+	 * Removes the field from the draft row, or deletes the draft row if it becomes empty
+	 */
+	discardCellDraft(rowIndex: number, field: string): void {
+		const draftRow = this._draftRows.get(rowIndex)
+		if (!draftRow) return
+
+		const originalItem = this.displayItems[rowIndex]
+		if (!originalItem) return
+
+		// Restore original value in draft row
+		const originalValue = (originalItem as Record<string, unknown>)[field]
+		;(draftRow as Record<string, unknown>)[field] = originalValue
+
+		// Check if draft row now matches original - if so, delete it
+		const draftKeys = Object.keys(draftRow as Record<string, unknown>)
+		let hasChanges = false
+		for (const key of draftKeys) {
+			const draftValue = (draftRow as Record<string, unknown>)[key]
+			const origValue = (originalItem as Record<string, unknown>)[key]
+			if (draftValue !== origValue) {
+				hasChanges = true
+				break
+			}
+		}
+
+		if (!hasChanges) {
+			this._draftRows.delete(rowIndex)
+		}
+
+		// Clear any invalid cell state for this field
+		this._invalidCells = this._invalidCells.filter(
+			c => !(c.rowIndex === rowIndex && c.field === field)
+		)
 	}
 
 	getDraftRowIndices(): number[] {
@@ -2107,9 +2251,11 @@ export class WebGrid<T = unknown> {
 	 * Check if a column's cells can be edited
 	 */
 	isCellEditable(column: Column<T>): boolean {
-		// Column must have editable !== false AND (global editable OR column has an editor)
+		// Column-level explicit override takes priority
 		if (column.isEditable === false) return false
-		return this._isEditable || column.editor !== undefined
+		if (column.isEditable === true) return true
+		// Otherwise defer to grid-level isEditable
+		return this._isEditable
 	}
 
 	/**
@@ -2163,6 +2309,10 @@ export class WebGrid<T = unknown> {
 		this._onInteractionChange?.('focusedCell', { prev, current: null })
 		// Don't call requestUpdate() - focus updates are handled surgically in GridElement
 	}
+
+	/** Tab traversal start column for Excel-like Enter behavior */
+	get tabTraversalStartColIndex(): number | null { return this._tabTraversalStartColIndex }
+	set tabTraversalStartColIndex(value: number | null) { this._tabTraversalStartColIndex = value }
 
 	/**
 	 * Set the hovered row index (for toolbar/shortcuts)

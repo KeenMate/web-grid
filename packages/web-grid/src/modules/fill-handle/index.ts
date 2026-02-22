@@ -174,8 +174,12 @@ export function updateFillHandle<T>(ctx: GridContext<T>): void {
 	const scrollTop = container.scrollTop
 	const handleSize = 8
 
+	// Check if on last row - if so, show handle at top-right so user can drag upward
+	const isLastRow = rowIndex === ctx.grid.displayItems.length - 1
 	const x = cellRect.right - containerRect.left + scrollLeft - handleSize / 2
-	const y = cellRect.bottom - containerRect.top + scrollTop - handleSize / 2
+	const y = isLastRow
+		? cellRect.top - containerRect.top + scrollTop - handleSize / 2  // Top-right
+		: cellRect.bottom - containerRect.top + scrollTop - handleSize / 2  // Bottom-right
 
 	// Check if existing handle is in a DIFFERENT grid's container
 	// (happens when switching between multiple grids on the same page)

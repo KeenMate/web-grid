@@ -276,6 +276,14 @@ export type ToggleDatePickerAction = {
 }
 
 /**
+ * Open custom editor (calls cellEditCallback)
+ */
+export type OpenCustomEditorAction = {
+	type: 'openCustomEditor'
+	target: CellCoordinates
+}
+
+/**
  * Re-render a single cell's DOM
  */
 export type RenderCellAction = {
@@ -380,6 +388,7 @@ export type GridAction =
 	| OpenDatePickerAction
 	| CloseDatePickerAction
 	| ToggleDatePickerAction
+	| OpenCustomEditorAction
 	| RenderCellAction
 	| OpenContextMenuAction
 	| CloseContextMenuAction

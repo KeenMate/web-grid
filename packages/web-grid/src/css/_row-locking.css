@@ -2,12 +2,6 @@
    ROW LOCKING STYLES
    ============================================================================== */
 
-/* CSS Variables */
-:host {
-	--wg-row-locked-bg: var(--base-disabled-bg, #f5f5f5);
-	--wg-row-locked-opacity: 0.7;
-}
-
 /* Locked row base styling */
 .wg__row--locked {
 	background: var(--wg-row-locked-bg) !important;

@@ -111,9 +111,9 @@ td.wg__filler {
    ============================================================================== */
 .wg__row-number-header,
 .wg__row-number {
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
+  width: var(--wg-row-number-width);
+  min-width: var(--wg-row-number-width);
+  max-width: var(--wg-row-number-width);
   box-sizing: border-box;  /* Include padding in width calculation */
   text-align: center;
   color: var(--wg-text-color-2);
@@ -140,9 +140,9 @@ td.wg__filler {
    ACTIONS COLUMN (for button trigger mode)
    ============================================================================== */
 .wg__actions-column {
-  width: 32px;
-  min-width: 32px;
-  max-width: 32px;
+  width: var(--wg-actions-column-width);
+  min-width: var(--wg-actions-column-width);
+  max-width: var(--wg-actions-column-width);
   padding: 0 !important;
   text-align: center;
 }

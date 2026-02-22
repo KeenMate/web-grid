@@ -21,13 +21,20 @@ export const checkboxExecutor: ActionExecutor = {
 
 /**
  * Toggle checkbox value
- * Updates the draft row directly WITHOUT exiting edit mode.
+ * Updates the draft row and marks the cell as being edited.
  * This allows users to toggle the checkbox multiple times before committing.
+ *
+ * The cell is marked as editing so that:
+ * - Enter/Tab will commit the draft value
+ * - Escape will cancel and discard changes
+ * - Arrow keys are blocked while "editing"
  */
 function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxAction): void {
 	const { rowIndex, colIndex } = action.target
 	const column = ctx.grid.columns[colIndex]
 	if (!column) return
+
+	if (!ctx.grid.isCellEditable(column)) return
 
 	const field = String(column.field)
 	const item = ctx.grid.displayItems[rowIndex]
@@ -40,10 +47,15 @@ function executeToggleCheckbox(ctx: ExecutorContext, action: ToggleCheckboxActio
 	const currentValue = ctx.grid.getCellRawValue(item, rowIndex, field)
 	const newValue = currentValue === trueValue ? falseValue : trueValue
 
-	// Update draft row directly WITHOUT exiting edit mode
-	// This allows checkbox to be toggled multiple times while staying in edit mode
+	// Mark the cell as being edited so navigation keys (Tab, Enter) will commit
+	// This integrates checkbox toggle with the standard editing flow
+	ctx.grid.startEdit(rowIndex, field)
+
+	// Update draft row with the new value
 	ctx.grid.updateDraftValue(rowIndex, field, newValue)
 
-	// Re-render the cell to show new checkbox state
-	renderCell(ctx, rowIndex, colIndex)
+	// Re-render the cell to show new checkbox state AND focus the checkbox
+	// Without focusEditor: true, the checkbox HTML is replaced but focus is lost,
+	// which prevents subsequent keyboard events (Enter, Tab) from being received
+	renderCell(ctx, rowIndex, colIndex, { focusEditor: true })
 }

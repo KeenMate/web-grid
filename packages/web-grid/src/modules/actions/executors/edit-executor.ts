@@ -97,9 +97,13 @@ async function executeCommitEdit(
 
 	// Get the value based on editor type
 	let value: unknown
+	const column = ctx.grid.columns[colIndex]
 	if (editor instanceof HTMLInputElement) {
 		if (editor.type === 'checkbox') {
-			value = editor.checked
+			// For checkbox, read from draft row to preserve custom trueValue/falseValue
+			// The draft row is already updated by toggleCheckbox action
+			const item = ctx.grid.displayItems[rowIndex]
+			value = ctx.grid.getCellRawValue(item, rowIndex, field)
 		} else if (editor.classList.contains('wg__date-input')) {
 			// Date editor - use the stored date value
 			value = editor.dataset.dateValue || editor.value
@@ -146,6 +150,7 @@ function executeCancelEdit(ctx: ExecutorContext): void {
 
 	const { rowIndex, field } = editingCell
 	const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
+	const column = ctx.grid.columns[colIndex]
 
 	// Close dropdown if open
 	if (ctx.dropdownOpen) {
@@ -154,6 +159,12 @@ function executeCancelEdit(ctx: ExecutorContext): void {
 
 	// Clear visual state
 	clearEditingVisual(ctx)
+
+	// For checkbox editor, discard the cell draft since toggle updates it during edit
+	// This restores the original value when user presses Escape
+	if (column?.editor === 'checkbox') {
+		ctx.grid.discardCellDraft(rowIndex, field)
+	}
 
 	// Cancel the edit
 	ctx.grid.cancelEdit()
@@ -226,6 +237,10 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 		removeDropdown(ctx)
 		if (editingCell) {
 			clearEditingVisual(ctx)
+			// For checkbox editor, discard the cell draft
+			if (editorType === 'checkbox') {
+				ctx.grid.discardCellDraft(cellInfo.rowIndex, editingCell.field)
+			}
 			ctx.grid.cancelEdit()
 			renderCell(ctx, cellInfo.rowIndex, colIndex)
 			focusCellElement(ctx, cellInfo.rowIndex, colIndex)
@@ -237,6 +252,7 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 	if (editingCell) {
 		const { rowIndex, field } = editingCell
 		const colIndex = ctx.grid.columns.findIndex(c => String(c.field) === field)
+		const column = ctx.grid.columns[colIndex]
 
 		// Close dropdown/datepicker if open
 		if (ctx.dropdownOpen) {
@@ -247,8 +263,16 @@ function executeEscapeEdit(ctx: ExecutorContext, action: EscapeEditAction): Grid
 			ctx.datepicker = null
 		}
 
-		// Clear visual state and cancel edit
+		// Clear visual state
 		clearEditingVisual(ctx)
+
+		// For checkbox editor, discard the cell draft since toggle updates it during edit
+		// This restores the original value when user presses Escape
+		if (column?.editor === 'checkbox') {
+			ctx.grid.discardCellDraft(rowIndex, field)
+		}
+
+		// Cancel the edit
 		ctx.grid.cancelEdit()
 
 		// Re-render the cell and focus it

@@ -5,7 +5,7 @@
 
 .wg__toolbar-container {
 	position: fixed;
-	z-index: var(--wg-z-toolbar, 1000);
+	z-index: var(--wg-z-toolbar);
 }
 
 .wg__toolbar {
@@ -34,9 +34,9 @@
 
 .wg__toolbar-divider {
 	width: 1px;
-	height: 16px;
+	height: var(--wg-toolbar-divider-height);
 	background: var(--wg-toolbar-divider-color);
-	margin: 0 4px;
+	margin: 0 var(--wg-spacing-xs);
 	flex-shrink: 0;
 }
 
@@ -54,7 +54,7 @@
 	gap: var(--wg-toolbar-btn-gap);
 	font-family: inherit; /* Form elements don't inherit font by default */
 	font-size: var(--wg-font-size-base);
-	font-weight: 500;
+	font-weight: var(--wg-font-weight-normal);
 	padding: var(--wg-toolbar-btn-padding);
 	transition: background 0.1s ease;
 }
@@ -76,6 +76,13 @@
 	background: transparent;
 }
 
+/* SVG icon styling */
+.wg__toolbar-btn svg {
+	width: var(--wg-toolbar-icon-size);
+	height: var(--wg-toolbar-icon-size);
+	flex-shrink: 0;
+}
+
 .wg__toolbar-btn--danger:hover {
 	background: var(--wg-danger-bg-light);
 	color: var(--wg-danger-color);
@@ -91,9 +98,9 @@
    ========================================================================== */
 
 .wg__actions-column {
-	width: 24px;
-	min-width: 24px;
-	max-width: 24px;
+	width: var(--wg-toolbar-btn-min-width);
+	min-width: var(--wg-toolbar-btn-min-width);
+	max-width: var(--wg-toolbar-btn-min-width);
 	padding: 0 !important;
 	text-align: center;
 }
@@ -130,7 +137,7 @@
 	left: 50%;
 	transform: translate(-50%, -50%);
 	width: var(--wg-dropdown-toggle-hitbox);
-	height: 48px;
+	height: var(--wg-editor-hitbox-height);
 }
 
 .wg__toolbar-trigger:hover,
@@ -146,10 +153,10 @@
 
 .wg__inline-actions-header,
 .wg__inline-actions-cell {
-	width: 1%;  /* Shrink to content */
 	white-space: nowrap;
-	text-align: center;
+	text-align: start;
 	padding: var(--wg-inline-actions-padding);
+	overflow: visible;  /* Override .wg__cell overflow:hidden — buttons must not be clipped */
 }
 
 .wg__inline-actions-header {
@@ -160,19 +167,20 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--wg-inline-actions-gap);
-	align-items: center;
+	align-items: flex-start;
 }
 
 .wg__inline-actions-row {
 	display: flex;
 	gap: var(--wg-inline-actions-gap);
 	align-items: center;
-	justify-content: center;
+	justify-content: flex-start;
 }
 
 /* Inline Action Button */
 .wg__inline-action-btn {
-	min-width: var(--wg-toolbar-btn-min-width);
+	width: var(--wg-toolbar-btn-min-width);
+	max-width: var(--wg-toolbar-btn-min-width);
 	height: calc(2.4 * var(--wg-rem));
 	border: none;
 	border-radius: var(--wg-toolbar-btn-border-radius);
@@ -182,7 +190,8 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 0 var(--wg-spacing-xs);
+	padding: 0;
+	box-sizing: border-box;
 	font-family: inherit;
 	font-size: var(--wg-font-size-base);
 	transition: background var(--wg-transition-fast);
@@ -210,4 +219,11 @@
 .wg__inline-action-btn--danger:hover {
 	background: var(--wg-danger-bg-light);
 	color: var(--wg-danger-color);
+}
+
+/* SVG icon styling for inline actions */
+.wg__inline-action-btn svg {
+	width: var(--wg-toolbar-icon-size);
+	height: var(--wg-toolbar-icon-size);
+	flex-shrink: 0;
 }

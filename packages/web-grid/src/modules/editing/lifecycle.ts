@@ -167,12 +167,21 @@ export function moveFocusAfterCommit<T>(
 	let targetCol = colIndex
 
 	if (direction === 'down') {
-		// Move to same column, next row
+		// Excel-like: Enter after Tab returns to the column where Tab started
+		const tabStartCol = ctx.grid.tabTraversalStartColIndex
+		if (tabStartCol !== null) {
+			targetCol = tabStartCol
+			ctx.grid.tabTraversalStartColIndex = null
+		}
 		targetRow = Math.min(rowIndex + 1, displayItems.length - 1)
 	} else if (direction === 'up') {
 		// Move to same column, previous row
 		targetRow = Math.max(rowIndex - 1, 0)
 	} else {
+		// Track tab traversal start for Excel-like Enter behavior
+		if (ctx.grid.tabTraversalStartColIndex === null) {
+			ctx.grid.tabTraversalStartColIndex = colIndex
+		}
 		// Use existing Tab navigation logic
 		const editableCols = ctx.grid.getEditableColumns()
 		const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)

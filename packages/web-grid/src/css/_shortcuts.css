@@ -20,8 +20,8 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 24px;
-	height: 24px;
+	width: var(--wg-spacing-xl);
+	height: var(--wg-spacing-xl);
 	padding: 0;
 	border: none;
 	border-radius: 50%;
@@ -37,8 +37,8 @@
 }
 
 .wg__shortcuts-help-icon svg {
-	width: 16px;
-	height: 16px;
+	width: var(--wg-toolbar-icon-size);
+	height: var(--wg-toolbar-icon-size);
 }
 
 /* Overlay - hidden by default, shown on hover/focus */
@@ -52,9 +52,9 @@
 	background: var(--wg-surface-1);
 	border: 1px solid var(--wg-border-color);
 	border-radius: var(--wg-border-radius-md);
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+	box-shadow: var(--wg-dialog-shadow);
 	min-width: 200px;
-	max-width: 300px;
+	max-width: var(--wg-tooltip-max-width);
 	z-index: 100;
 }
 
@@ -108,7 +108,7 @@
 	align-items: center;
 	justify-content: center;
 	min-width: 28px;
-	padding: 2px 6px;
+	padding: 2px calc(0.6 * var(--wg-rem));
 	font-family: var(--wg-font-family-mono);
 	font-size: var(--wg-font-size-xs);
 	font-weight: var(--wg-font-weight-semibold);

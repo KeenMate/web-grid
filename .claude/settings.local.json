@@ -29,7 +29,11 @@
       "Bash(tree:*)",
       "Bash(find:*)",
       "Bash(git checkout:*)",
-      "Bash(make build:*)"
+      "Bash(make build:*)",
+      "Bash(npx:*)",
+      "Bash(git status:*)",
+      "Bash(npm run:*)",
+      "Bash(python3:*)"
     ]
   }
 }

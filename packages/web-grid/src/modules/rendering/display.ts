@@ -26,7 +26,11 @@ export function renderCellDisplay<T>(
 	const field = String(column.field)
 
 	if (isCheckbox) {
-		// Always render checkbox as a checkbox, not text
+		// If formatCallback is provided, use its output instead of default checkbox
+		if (column.formatCallback) {
+			return `<span class="wg__cell-text">${ctx.escapeHtml(value)}</span>`
+		}
+		// Default: render checkbox
 		const item = ctx.grid.displayItems[rowIndex]
 		const rawValue = item ? ctx.grid.getCellRawValue(item, rowIndex, field) : false
 		const opts = column.editorOptions || {}

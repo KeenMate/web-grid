@@ -38,6 +38,25 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 
 	// Update grid state
 	const oldFocus = ctx.grid.focusedCell
+
+	// Clear stale filterText when focusing a different cell.
+	// renderComboboxEditor sets ctx.filterText to the input value as a side effect,
+	// which would incorrectly filter a different cell's dropdown options.
+	const isNewCell = !oldFocus || oldFocus.rowIndex !== rowIndex || oldFocus.colIndex !== colIndex
+	if (isNewCell) {
+		ctx.filterText = ''
+
+		// Cancel pending autocomplete search from previous cell
+		if (ctx.searchDebounceTimer) {
+			clearTimeout(ctx.searchDebounceTimer)
+			ctx.searchDebounceTimer = null
+		}
+		if (ctx.searchAbortController) {
+			ctx.searchAbortController.abort()
+			ctx.searchAbortController = null
+		}
+	}
+
 	ctx.grid.setFocusedCell(rowIndex, colIndex)
 
 	// Update visual state (adds/removes focus classes)
@@ -83,11 +102,23 @@ function executeFocusCell(ctx: ExecutorContext, action: FocusCellAction): GridAc
 	// Update fill handle position for the newly focused cell
 	updateFillHandle(ctx)
 
-	// In 'always' mode, auto-open dropdown if shouldShowDropdownOnFocus is true
+	// Auto-open dropdown if shouldShowDropdownOnFocus is true
+	const editorType = column.editor
+	const isDropdownEditor = editorType === 'select' || editorType === 'combobox' || editorType === 'autocomplete'
+	const isNavigateMode = effectiveTrigger === 'navigate'
 	if (isAlwaysEditMode && ctx.grid.shouldShowDropdownOnFocus && !ctx.justSelected) {
-		const editorType = column.editor
-		if (editorType === 'select' || editorType === 'combobox' || editorType === 'autocomplete') {
+		if (isDropdownEditor) {
 			return [{ type: 'openDropdown' }]
+		}
+	}
+	// Navigate mode: don't check justSelected - we're moving to a different cell,
+	// so the dropdown should open even after a Tab-select from the previous cell
+	if (isNavigateMode && ctx.grid.shouldShowDropdownOnFocus) {
+		if (isDropdownEditor) {
+			return [
+				{ type: 'startEdit', target: { rowIndex, colIndex } },
+				{ type: 'openDropdown' }
+			]
 		}
 	}
 }

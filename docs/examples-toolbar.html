@@ -94,9 +94,34 @@
                         <option value="cursor">Cursor</option>
                     </select>
                 </label>
+                <label>
+                    Toolbar Column:
+                    <select id="toolbarColumnSelect">
+                        <option value="">None (use align)</option>
+                        <option value="title">Over "Task" column</option>
+                        <option value="priority">Over "Priority" column</option>
+                        <option value="status">Over "Status" column</option>
+                    </select>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="followCursorCheck">
+                    Follow Cursor
+                </label>
+                <label>
+                    Cell Toolbar Offset:
+                    <input type="text" id="cellToolbarOffsetInput" value="0.2" placeholder="0.2 or 2rem" style="width: 80px;">
+                </label>
+                <label>
+                    Btn Min Width:
+                    <input type="text" id="btnMinWidthInput" value="" placeholder="e.g. 40px" style="width: 80px;">
+                </label>
             </div>
             <p class="note" style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;">
-                <strong>Horizontal Align</strong> only applies when toolbar appears above the row (top position).
+                <strong>Horizontal Align</strong> only applies when toolbar appears above the row (top position).<br>
+                <strong>Toolbar Column</strong> positions the toolbar over a specific column (overrides horizontal align).<br>
+                <strong>Follow Cursor</strong> makes the toolbar follow your mouse horizontally.<br>
+                <strong>Cell Toolbar Offset</strong> controls horizontal position within the cell. Number 0-1 as fraction (0.2 = 20% from left), or CSS length (e.g. "2rem", "24px").<br>
+                <strong>Btn Min Width</strong> sets minimum width for toolbar buttons (e.g. "40px"). Leave empty for default.
             </p>
         </div>
 
@@ -121,11 +146,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td><code>add</code></td><td>+</td><td>Add new row below</td></tr>
-                        <tr><td><code>delete</code></td><td>−</td><td>Delete current row (danger style)</td></tr>
-                        <tr><td><code>duplicate</code></td><td>⧉</td><td>Duplicate current row</td></tr>
-                        <tr><td><code>moveUp</code></td><td>↑</td><td>Move row up</td></tr>
-                        <tr><td><code>moveDown</code></td><td>↓</td><td>Move row down</td></tr>
+                        <tr><td><code>add</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></td><td>Add new row below</td></tr>
+                        <tr><td><code>delete</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg></td><td>Delete current row (danger style)</td></tr>
+                        <tr><td><code>duplicate</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 011-1h7"/></svg></td><td>Duplicate current row</td></tr>
+                        <tr><td><code>moveUp</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></td><td>Move row up</td></tr>
+                        <tr><td><code>moveDown</code></td><td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg></td><td>Move row down</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -275,6 +300,38 @@ grid.rowToolbar = [
         </div>
 
         <div class="card">
+            <h2>Cell-Aware Toolbar</h2>
+            <p>Use <code>cellToolbar</code> callback to show different toolbar options based on which cell the user is hovering over.
+               Combined with <code>toolbarFollowsCursor</code>, the toolbar follows your mouse and updates its buttons per column.</p>
+            <web-grid id="grid4" isStriped isHoverable style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
+            <div class="code-block" style="margin-top: 1rem;">
+                <pre>grid.toolbarPosition = 'top'
+grid.toolbarFollowsCursor = true  // Toolbar follows mouse
+grid.cellToolbarOffset = 0.2     // Position at 20% from cell left edge (0-1)
+
+// Different actions per column
+grid.cellToolbar = (row, rowIndex, field, colIndex) => {
+    switch (field) {
+        case 'priority':
+            return [
+                { id: 'setHigh', icon: '🔴', title: 'Set High' },
+                { id: 'setMedium', icon: '🟡', title: 'Set Medium' },
+                { id: 'setLow', icon: '🟢', title: 'Set Low' }
+            ]
+        case 'status':
+            return [
+                { id: 'setTodo', icon: '📋', title: 'Set Todo' },
+                { id: 'setProgress', icon: '🔄', title: 'Set In Progress' },
+                { id: 'setDone', icon: '✅', title: 'Set Done' }
+            ]
+        default:
+            return undefined  // Use default toolbar
+    }
+}</pre>
+            </div>
+        </div>
+
+        <div class="card">
             <h2>Inline Actions Column</h2>
             <p>Use <code>toolbarPosition="inline"</code> to render toolbar buttons as a fixed column instead of a floating popup.
                Buttons are always visible, with support for <code>disabled</code> and <code>hidden</code> callbacks per row.
@@ -317,18 +374,31 @@ grid.rowToolbar = [
         const STORAGE_POSITION = 'wg-toolbar-position'
         const STORAGE_VERTICAL_ALIGN = 'wg-toolbar-vertical-align'
         const STORAGE_HORIZONTAL_ALIGN = 'wg-toolbar-horizontal-align'
+        const STORAGE_TOOLBAR_COLUMN = 'wg-toolbar-column'
+        const STORAGE_FOLLOW_CURSOR = 'wg-toolbar-follow-cursor'
+        const STORAGE_CELL_TOOLBAR_OFFSET = 'wg-cell-toolbar-offset'
+        const STORAGE_BTN_MIN_WIDTH = 'wg-toolbar-btn-min-width'
 
         // Load saved settings
         const savedTrigger = localStorage.getItem(STORAGE_TRIGGER) || 'hover'
         const savedPosition = localStorage.getItem(STORAGE_POSITION) || 'auto'
         const savedVerticalAlign = localStorage.getItem(STORAGE_VERTICAL_ALIGN) || 'bottom'
         const savedHorizontalAlign = localStorage.getItem(STORAGE_HORIZONTAL_ALIGN) || 'center'
+        const savedToolbarColumn = localStorage.getItem(STORAGE_TOOLBAR_COLUMN) || ''
+        const savedFollowCursor = localStorage.getItem(STORAGE_FOLLOW_CURSOR) === 'true'
+        const savedCellToolbarOffsetRaw = localStorage.getItem(STORAGE_CELL_TOOLBAR_OFFSET) || '0.2'
+        const savedCellToolbarOffset = /^[\d.]+$/.test(savedCellToolbarOffsetRaw) ? parseFloat(savedCellToolbarOffsetRaw) : savedCellToolbarOffsetRaw
+        const savedBtnMinWidth = localStorage.getItem(STORAGE_BTN_MIN_WIDTH) || ''
 
         // Set select values from storage
         document.getElementById('triggerSelect').value = savedTrigger
         document.getElementById('positionSelect').value = savedPosition
         document.getElementById('verticalAlignSelect').value = savedVerticalAlign
         document.getElementById('horizontalAlignSelect').value = savedHorizontalAlign
+        document.getElementById('toolbarColumnSelect').value = savedToolbarColumn
+        document.getElementById('followCursorCheck').checked = savedFollowCursor
+        document.getElementById('cellToolbarOffsetInput').value = savedCellToolbarOffset
+        document.getElementById('btnMinWidthInput').value = savedBtnMinWidth
 
         // Sample data
         let tasks = [
@@ -400,6 +470,10 @@ grid.rowToolbar = [
         grid.toolbarPosition = savedPosition
         grid.toolbarVerticalAlign = savedVerticalAlign
         grid.toolbarHorizontalAlign = savedHorizontalAlign
+        grid.toolbarColumn = savedToolbarColumn || undefined
+        grid.toolbarFollowsCursor = savedFollowCursor
+        grid.cellToolbarOffset = savedCellToolbarOffset
+        if (savedBtnMinWidth) grid.toolbarBtnMinWidth = savedBtnMinWidth
 
         // Keyboard shortcuts - work on hovered row when toolbar is visible
         grid.rowShortcuts = [
@@ -543,6 +617,39 @@ grid.rowToolbar = [
             grid2.toolbarHorizontalAlign = value
         })
 
+        // Toolbar column control
+        document.getElementById('toolbarColumnSelect').addEventListener('change', (e) => {
+            const value = e.target.value
+            localStorage.setItem(STORAGE_TOOLBAR_COLUMN, value)
+            grid.toolbarColumn = value || undefined
+            grid2.toolbarColumn = value || undefined
+        })
+
+        // Follow cursor control
+        document.getElementById('followCursorCheck').addEventListener('change', (e) => {
+            const value = e.target.checked
+            localStorage.setItem(STORAGE_FOLLOW_CURSOR, value)
+            grid.toolbarFollowsCursor = value
+            grid2.toolbarFollowsCursor = value
+        })
+
+        // Cell toolbar offset control
+        document.getElementById('cellToolbarOffsetInput').addEventListener('change', (e) => {
+            const raw = e.target.value.trim()
+            const value = /^[\d.]+$/.test(raw) ? parseFloat(raw) : raw
+            localStorage.setItem(STORAGE_CELL_TOOLBAR_OFFSET, raw)
+            grid.cellToolbarOffset = value
+            grid4.cellToolbarOffset = value
+        })
+
+        // Button min-width control
+        document.getElementById('btnMinWidthInput').addEventListener('change', (e) => {
+            const value = e.target.value.trim()
+            localStorage.setItem(STORAGE_BTN_MIN_WIDTH, value)
+            grid.toolbarBtnMinWidth = value || undefined
+            grid4.toolbarBtnMinWidth = value || undefined
+        })
+
         // ============================================================
         // Multi-row toolbar example
         // ============================================================
@@ -622,6 +729,102 @@ grid.rowToolbar = [
                 }
                 default:
                     showToast(`${item.title}: ${row.title}`)
+            }
+        }
+
+        // ============================================================
+        // Cell-aware toolbar example
+        // ============================================================
+        const grid4 = document.getElementById('grid4')
+        let tasks4 = tasks.map(t => ({...t}))  // Clone for independent data
+        grid4.items = tasks4
+        grid4.columns = columns
+
+        grid4.isRowToolbarVisible = true
+        grid4.toolbarPosition = 'top'
+        grid4.toolbarFollowsCursor = true  // Toolbar follows mouse horizontally
+        grid4.cellToolbarOffset = savedCellToolbarOffset
+        if (savedBtnMinWidth) grid4.toolbarBtnMinWidth = savedBtnMinWidth
+
+        // Default toolbar items
+        grid4.rowToolbar = ['add', 'delete', 'duplicate']
+
+        // Cell-specific toolbar - different actions per column
+        grid4.cellToolbar = (row, rowIndex, field, colIndex) => {
+            switch (field) {
+                case 'priority':
+                    return [
+                        { id: 'setHigh', icon: '🔴', title: 'Set High Priority' },
+                        { id: 'setMedium', icon: '🟡', title: 'Set Medium Priority' },
+                        { id: 'setLow', icon: '🟢', title: 'Set Low Priority' }
+                    ]
+                case 'status':
+                    return [
+                        { id: 'setTodo', icon: '📋', title: 'Set Todo' },
+                        { id: 'setProgress', icon: '🔄', title: 'Set In Progress' },
+                        { id: 'setDone', icon: '✅', title: 'Set Done' }
+                    ]
+                default:
+                    return undefined  // Use default toolbar
+            }
+        }
+
+        grid4.ontoolbarclick = (detail) => {
+            const { item, rowIndex, row } = detail
+
+            switch (item.id) {
+                case 'setHigh':
+                    tasks4[rowIndex].priority = 'High'
+                    grid4.items = [...tasks4]
+                    showToast(`Set "${row.title}" to High priority`, 'error')
+                    break
+                case 'setMedium':
+                    tasks4[rowIndex].priority = 'Medium'
+                    grid4.items = [...tasks4]
+                    showToast(`Set "${row.title}" to Medium priority`)
+                    break
+                case 'setLow':
+                    tasks4[rowIndex].priority = 'Low'
+                    grid4.items = [...tasks4]
+                    showToast(`Set "${row.title}" to Low priority`, 'success')
+                    break
+                case 'setTodo':
+                    tasks4[rowIndex].status = 'Todo'
+                    grid4.items = [...tasks4]
+                    showToast(`Set "${row.title}" to Todo`)
+                    break
+                case 'setProgress':
+                    tasks4[rowIndex].status = 'In Progress'
+                    grid4.items = [...tasks4]
+                    showToast(`Set "${row.title}" to In Progress`)
+                    break
+                case 'setDone':
+                    tasks4[rowIndex].status = 'Done'
+                    grid4.items = [...tasks4]
+                    showToast(`Set "${row.title}" to Done`, 'success')
+                    break
+                case 'add': {
+                    const newId = Math.max(...tasks4.map(t => t.id)) + 1
+                    const newTask = { id: newId, title: 'New Task', priority: 'Medium', status: 'Todo', assignee: '' }
+                    tasks4.splice(rowIndex + 1, 0, newTask)
+                    grid4.items = [...tasks4]
+                    showToast(`Added new task`, 'success')
+                    break
+                }
+                case 'delete': {
+                    const deleted = tasks4.splice(rowIndex, 1)[0]
+                    grid4.items = [...tasks4]
+                    showToast(`Deleted: ${deleted.title}`, 'error')
+                    break
+                }
+                case 'duplicate': {
+                    const dupId = Math.max(...tasks4.map(t => t.id)) + 1
+                    const duplicate = { ...row, id: dupId, title: row.title + ' (copy)' }
+                    tasks4.splice(rowIndex + 1, 0, duplicate)
+                    grid4.items = [...tasks4]
+                    showToast(`Duplicated: ${row.title}`, 'success')
+                    break
+                }
             }
         }
 

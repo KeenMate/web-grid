@@ -283,6 +283,9 @@ export type RowToolbarItem<T> = {
 	row?: number    // Row number (1 = closest to grid row, default: 1)
 	group?: number  // Group number for divider placement
 
+	// Styling
+	minWidth?: string  // Override min-width for this button (e.g. '40px')
+
 	// Behavior
 	type?: PredefinedToolbarItemType  // If predefined, use built-in handler
 	danger?: boolean                   // Red styling (like delete)
@@ -505,6 +508,11 @@ export type QuickGridProps<T> = {
 	toolbarHorizontalAlign?: 'start' | 'center' | 'end' | 'cursor'  // Horizontal alignment for top position (default: 'center')
 	toolbarTrigger?: 'hover' | 'click' | 'button'  // How to show toolbar
 	toolbarPosition?: ToolbarPosition  // Preferred position: auto (default), left, right, top, or inline
+	toolbarColumn?: string | number  // Column to position toolbar over (field name or index) for 'top' position
+	toolbarFollowsCursor?: boolean  // Toolbar follows mouse cursor horizontally (default: false)
+	cellToolbar?: (row: T, rowIndex: number, field: string, colIndex: number) => RowToolbarConfig<T>[] | undefined  // Cell-specific toolbar items
+	cellToolbarOffset?: number | string  // Horizontal offset: number 0-1 as fraction of cell width, or CSS length string (e.g. '2rem'). Default: 0.2
+	toolbarBtnMinWidth?: string  // Min-width for toolbar buttons (CSS value, e.g. '32px'). Overrides --wg-toolbar-btn-min-width
 	inlineActionsTitle?: string  // Header title for inline actions column (when toolbarPosition="inline")
 	// Context menu (row/cell)
 	contextMenu?: ContextMenuItem<T>[]

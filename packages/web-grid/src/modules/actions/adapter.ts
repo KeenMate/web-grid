@@ -321,12 +321,7 @@ export class ActionPipelineAdapter<T = unknown> {
 				this.pipeline.dispatch({ type: 'openDatePicker' })
 				return true
 			}
-			if (isCheckbox) {
-				e.preventDefault()
-				e.stopPropagation()
-				this.pipeline.dispatch({ type: 'toggleCheckbox', target: cell })
-				return true
-			}
+			// Checkbox: Enter navigates down (Space toggles), so fall through
 			if (isDropdown) {
 				const column = this.ctx.grid.columns[cell.colIndex]
 				if (column && this.ctx.grid.getEffectiveShouldOpenDropdownOnEnter(column)) {
@@ -496,6 +491,9 @@ export class ActionPipelineAdapter<T = unknown> {
 		}
 
 		if (!cell) return false
+
+		// Clear tab traversal tracking on mouse click
+		this.ctx.grid.tabTraversalStartColIndex = null
 
 		const isAlways = this.isAlwaysMode(cell.colIndex)
 		const isEditing = this.isEditingCell(cell.rowIndex, cell.colIndex)

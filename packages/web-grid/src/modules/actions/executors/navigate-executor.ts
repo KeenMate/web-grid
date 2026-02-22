@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { ActionExecutor, ExecutorContext } from '../pipeline.js'
-import type { GridAction, NavigateAction, TransitionCellAction, CellCoordinates } from '../types.js'
+import type { GridAction, NavigateAction, TransitionCellAction, RenderCellAction, CellCoordinates } from '../types.js'
 
 /**
  * Navigate executor - handles keyboard navigation
@@ -26,7 +26,26 @@ function executeNavigate(ctx: ExecutorContext, action: NavigateAction): GridActi
 	if (!from) return
 
 	const target = calculateTarget(ctx, from, action)
-	if (!target) return
+
+	// Check if we're currently editing this cell
+	const fromColumn = ctx.grid.columns[from.colIndex]
+	const fromField = fromColumn ? String(fromColumn.field) : ''
+	const isEditing = ctx.grid.editingCell &&
+		ctx.grid.editingCell.rowIndex === from.rowIndex &&
+		ctx.grid.editingCell.field === fromField
+
+	// If no target (e.g., Enter on last row, Tab on last cell), still commit if editing
+	if (!target) {
+		if (isEditing) {
+			// Commit, re-render, and keep focus on current cell
+			return [
+				{ type: 'commitEdit' },
+				{ type: 'renderCell', target: from },
+				{ type: 'focusCell', target: from, selectText: false }
+			]
+		}
+		return
+	}
 
 	// If target is same as source, no transition needed
 	if (target.rowIndex === from.rowIndex && target.colIndex === from.colIndex) {
@@ -62,6 +81,11 @@ function calculateTarget(
 	// For Tab navigation, use editable columns only
 	const editableCols = ctx.grid.getEditableColumns()
 
+	// Clear tab traversal tracking on non-tab/non-enter navigation (arrow keys, etc.)
+	if (direction !== 'tab' && direction !== 'tab-back' && direction !== 'enter') {
+		ctx.grid.tabTraversalStartColIndex = null
+	}
+
 	switch (direction) {
 		case 'up':
 			if (rowIndex > 0) {
@@ -88,6 +112,10 @@ function calculateTarget(
 			break
 
 		case 'tab': {
+			// Track tab traversal start for Excel-like Enter behavior
+			if (ctx.grid.tabTraversalStartColIndex === null) {
+				ctx.grid.tabTraversalStartColIndex = colIndex
+			}
 			// Find current position in editable columns
 			const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
 
@@ -108,6 +136,10 @@ function calculateTarget(
 		}
 
 		case 'tab-back': {
+			// Track tab traversal start for Excel-like Enter behavior
+			if (ctx.grid.tabTraversalStartColIndex === null) {
+				ctx.grid.tabTraversalStartColIndex = colIndex
+			}
 			// Find current position in editable columns
 			const currentEditableIndex = editableCols.findIndex(ec => ec.index === colIndex)
 
@@ -121,12 +153,15 @@ function calculateTarget(
 			break
 		}
 
-		case 'enter':
-			// Enter moves down to next row (same column)
+		case 'enter': {
+			// Excel-like: Enter after Tab returns to the column where Tab started
+			const targetCol = ctx.grid.tabTraversalStartColIndex ?? colIndex
+			ctx.grid.tabTraversalStartColIndex = null
 			if (rowIndex < maxRow) {
-				return { rowIndex: rowIndex + 1, colIndex }
+				return { rowIndex: rowIndex + 1, colIndex: targetCol }
 			}
 			break
+		}
 
 		case 'home':
 			if (ctrlKey) {

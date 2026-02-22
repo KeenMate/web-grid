@@ -76,7 +76,7 @@
 }
 
 .wg__date-trigger {
-  width: var(--wg-date-trigger-size, 28px);
+  width: var(--wg-date-trigger-size);
   height: 100%;
   display: flex;
   align-items: center;
@@ -90,8 +90,8 @@
 }
 
 .wg__date-trigger:hover {
-  color: var(--wg-accent-color, #0078d4);
-  background: var(--wg-hover-bg, rgba(0, 0, 0, 0.05));
+  color: var(--wg-accent-color);
+  background: var(--wg-hover-bg);
 }
 
 /* Checkbox Editor (edit mode) */
@@ -99,7 +99,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(var(--wg-checkbox-scale, 1.2));
+  transform: translate(-50%, -50%) scale(var(--wg-checkbox-scale));
   width: auto;
   height: auto;
   margin: 0;
@@ -112,7 +112,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(var(--wg-checkbox-scale, 1.2));
+  transform: translate(-50%, -50%) scale(var(--wg-checkbox-scale));
   width: auto;
   height: auto;
   margin: 0;
@@ -172,7 +172,7 @@
   width: 100%;
   height: 100%;
   padding: 0;
-  padding-right: 24px;  /* Space for arrow */
+  padding-right: var(--wg-dropdown-toggle-hitbox);  /* Space for arrow */
   border: none;
   background: transparent;
   color: var(--wg-text-color-1);
@@ -210,7 +210,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: var(--wg-dropdown-toggle-hitbox);
-  height: 48px;
+  height: var(--wg-editor-hitbox-height);
 }
 
 .wg__loading-indicator {
@@ -218,7 +218,7 @@
   right: var(--wg-dropdown-toggle-right);
   top: 50%;
   transform: translateY(-50%);
-  font-size: 12px;
+  font-size: var(--wg-font-size-sm);
   animation: wg-pulse 1s infinite;
 }
 

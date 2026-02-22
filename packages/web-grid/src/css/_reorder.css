@@ -23,7 +23,7 @@
   font-size: var(--wg-font-size-sm);
   font-weight: var(--wg-header-font-weight);
   color: var(--wg-header-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--wg-dialog-shadow);
   opacity: 0.95;
   pointer-events: none;
   white-space: nowrap;

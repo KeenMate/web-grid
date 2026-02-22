@@ -48,17 +48,17 @@
 .wg__pagination-count {
   font-size: var(--wg-font-size-sm);
   color: var(--wg-text-color-3);
-  margin-left: 4px;
+  margin-left: var(--wg-spacing-xs);
 }
 
 .wg__pagination-pagesize {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: calc(0.6 * var(--wg-rem));
 }
 
 .wg__pagination-select {
-  padding: 4px 8px;
+  padding: var(--wg-spacing-xs) var(--wg-spacing-sm);
   background: var(--wg-pagination-btn-bg);
   border: var(--wg-pagination-btn-border);
   border-radius: var(--wg-pagination-btn-border-radius);

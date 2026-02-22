@@ -54,7 +54,7 @@
 .wg__header-container {
   display: flex;
   align-items: stretch;  /* Children take full height */
-  gap: 4px;
+  gap: var(--wg-spacing-xs);
   height: 100%;
 }
 
@@ -119,7 +119,7 @@
 
 .wg__sort-priority {
   font-size: var(--wg-sort-priority-size);
-  font-weight: 600;
+  font-weight: var(--wg-font-weight-semibold);
   margin-left: 2px;
   vertical-align: super;
   line-height: 1;
@@ -132,7 +132,7 @@
   color: var(--wg-accent-color);
   cursor: help;
   opacity: 0.7;
-  margin-left: 4px;
+  margin-left: var(--wg-spacing-xs);
   vertical-align: middle;
 }
 

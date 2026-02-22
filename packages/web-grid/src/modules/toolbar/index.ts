@@ -13,6 +13,28 @@ import type { GridContext } from '../types.js'
 import { computePosition, flip, shift, type Placement } from '@floating-ui/dom'
 
 // =============================================================================
+// Offset Helpers
+// =============================================================================
+
+/**
+ * Resolve cellToolbarOffset to a pixel X position relative to a cell.
+ * - number (0-1): fraction of cell width (e.g. 0.2 = 20% from left)
+ * - string: CSS length (e.g. '2rem', '24px') resolved against the cell
+ */
+export function resolveToolbarOffset(cellRect: DOMRect, offset: number | string): number {
+	if (typeof offset === 'number') {
+		return cellRect.left + cellRect.width * offset
+	}
+	// CSS length string — measure with a temp element
+	const measurer = document.createElement('div')
+	measurer.style.cssText = `position:fixed;left:0;top:0;width:${offset};height:0;visibility:hidden;pointer-events:none`
+	document.body.appendChild(measurer)
+	const px = measurer.getBoundingClientRect().width
+	measurer.remove()
+	return cellRect.left + px
+}
+
+// =============================================================================
 // Connector Arrow Types and State
 // =============================================================================
 
@@ -33,16 +55,25 @@ let connectorState: ConnectorState = {
 // Predefined Action Definitions
 // =============================================================================
 
+// SVG icons for toolbar buttons (16x16 viewBox, stroke-based)
+const TOOLBAR_ICONS = {
+	add: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>',
+	delete: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg>',
+	duplicate: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 011-1h7"/></svg>',
+	moveUp: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg>',
+	moveDown: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg>'
+} as const
+
 const PREDEFINED_ACTIONS: Record<PredefinedToolbarItemType, {
 	icon: string
 	title: string
 	danger?: boolean
 }> = {
-	add: { icon: '+', title: 'Add row' },
-	delete: { icon: '−', title: 'Delete row', danger: true },
-	duplicate: { icon: '⧉', title: 'Duplicate row' },
-	moveUp: { icon: '↑', title: 'Move up' },
-	moveDown: { icon: '↓', title: 'Move down' }
+	add: { icon: TOOLBAR_ICONS.add, title: 'Add row' },
+	delete: { icon: TOOLBAR_ICONS.delete, title: 'Delete row', danger: true },
+	duplicate: { icon: TOOLBAR_ICONS.duplicate, title: 'Duplicate row' },
+	moveUp: { icon: TOOLBAR_ICONS.moveUp, title: 'Move up' },
+	moveDown: { icon: TOOLBAR_ICONS.moveDown, title: 'Move down' }
 }
 
 // =============================================================================
@@ -221,11 +252,13 @@ export function renderToolbarHTML<T>(
 					? `<span class="wg__toolbar-label">${item.label}</span>`
 					: ''
 
+				const styleAttr = item.minWidth ? ` style="min-width: ${item.minWidth}"` : ''
+
 				return `<button
 					class="${classes}"
 					data-toolbar-item="${item.id}"
 					title="${item.title}"
-					${isDisabled ? 'disabled' : ''}
+					${isDisabled ? 'disabled' : ''}${styleAttr}
 				>${item.icon}${labelHtml}</button>`
 			}).join('')
 
@@ -277,11 +310,18 @@ export function openToolbar<T>(
 	// Create container - append to shadow root to stay in same DOM context as rowElement
 	const container = document.createElement('div')
 	container.className = 'wg__toolbar-container'
+	if (ctx.grid.toolbarBtnMinWidth) {
+		container.style.setProperty('--wg-toolbar-btn-min-width', ctx.grid.toolbarBtnMinWidth)
+	}
 	container.innerHTML = html
 	ctx.shadow.appendChild(container)
 
 	const toolbar = container.querySelector('.wg__toolbar') as HTMLElement
-	let toolbarPosition: 'left' | 'right' | 'top' = 'left'
+	// Initialize position based on preferred position (will be updated by computePosition if it flips)
+	const preferredPos = ctx.grid.toolbarPosition
+	let toolbarPosition: 'left' | 'right' | 'top' =
+		preferredPos === 'top' ? 'top' :
+		preferredPos === 'right' ? 'right' : 'left'
 
 	// Set initial fixed positioning (will be updated by computePosition)
 	toolbar.style.position = 'fixed'
@@ -342,23 +382,64 @@ export function openToolbar<T>(
 			fallbacks = [`right${alignSuffix}` as Placement, getTopPlacement()]
 		}
 
-		// Handle 'cursor' positioning for top - use virtual element
-		// Only apply cursor anchor when toolbarPosition is explicitly 'top'
+		// Handle column-based or cursor-based positioning for top position
+		// Only apply these anchor modes when toolbarPosition is explicitly 'top'
 		let anchor: Element | { getBoundingClientRect: () => DOMRect } = freshRow
-		if (horizontalAlign === 'cursor' && cursorX !== undefined && preferredPosition === 'top') {
-			const rowRect = freshRow.getBoundingClientRect()
-			anchor = {
-				getBoundingClientRect: () => ({
-					x: cursorX,
-					y: rowRect.top,
-					top: rowRect.top,
-					left: cursorX,
-					bottom: rowRect.bottom,
-					right: cursorX,
-					width: 0,
-					height: rowRect.height,
-					toJSON: () => ({})
-				}) as DOMRect
+		const toolbarColumn = ctx.grid.toolbarColumn
+
+		if (preferredPosition === 'top') {
+			// Priority 1: toolbarColumn - position over a specific column
+			if (toolbarColumn !== undefined) {
+				const cells = freshRow.querySelectorAll('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)')
+				let targetCell: HTMLElement | null = null
+
+				if (typeof toolbarColumn === 'number') {
+					// Column index
+					targetCell = cells[toolbarColumn] as HTMLElement || null
+				} else {
+					// Column field name - find matching cell
+					for (let i = 0; i < cells.length; i++) {
+						const cell = cells[i] as HTMLElement
+						if (cell.dataset.field === toolbarColumn) {
+							targetCell = cell
+							break
+						}
+					}
+				}
+
+				if (targetCell) {
+					const cellRect = targetCell.getBoundingClientRect()
+					anchor = {
+						getBoundingClientRect: () => ({
+							x: cellRect.left + cellRect.width / 2,
+							y: cellRect.top,
+							top: cellRect.top,
+							left: cellRect.left + cellRect.width / 2,
+							bottom: cellRect.bottom,
+							right: cellRect.left + cellRect.width / 2,
+							width: 0,
+							height: cellRect.height,
+							toJSON: () => ({})
+						}) as DOMRect
+					}
+				}
+			}
+			// Priority 2: cursor mode - position at cursor X
+			else if (horizontalAlign === 'cursor' && cursorX !== undefined) {
+				const rowRect = freshRow.getBoundingClientRect()
+				anchor = {
+					getBoundingClientRect: () => ({
+						x: cursorX,
+						y: rowRect.top,
+						top: rowRect.top,
+						left: cursorX,
+						bottom: rowRect.bottom,
+						right: cursorX,
+						width: 0,
+						height: rowRect.height,
+						toJSON: () => ({})
+					}) as DOMRect
+				}
 			}
 		}
 
@@ -370,10 +451,26 @@ export function openToolbar<T>(
 				shift({ padding: 8 })  // Keep within viewport
 			]
 		}).then(({ x, y, placement: finalPlacement }) => {
+			let initialX = x
+
+			// When followsCursor or cellToolbar is active with top placement,
+			// compute cell-based X position to avoid flash on row boundaries.
+			// Skip when toolbarColumn is set — floating-ui already computed correct X from the column anchor.
+			if ((ctx.grid.toolbarFollowsCursor || ctx.grid.cellToolbar) && finalPlacement.startsWith('top') && cursorX !== undefined && ctx.grid.toolbarColumn === undefined) {
+				const cells = freshRow.querySelectorAll('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)')
+				for (const cell of cells) {
+					const cellRect = cell.getBoundingClientRect()
+					if (cursorX >= cellRect.left && cursorX <= cellRect.right) {
+						initialX = resolveToolbarOffset(cellRect, ctx.grid.cellToolbarOffset)
+						break
+					}
+				}
+			}
+
 			Object.assign(toolbar.style, {
-				left: `${x}px`,
+				left: `${initialX}px`,
 				top: `${y}px`,
-				visibility: 'visible'  // Show now that it's positioned
+				visibility: 'visible'
 			})
 
 			// Extract position from placement (e.g., 'left-start' -> 'left')
@@ -467,6 +564,117 @@ export function getActiveToolbarRowItem<T>(): T | null {
  */
 export function getConnectorState(): ConnectorState {
 	return connectorState
+}
+
+/**
+ * Get the active toolbar element (for position updates)
+ */
+export function getActiveToolbar(): { toolbar: HTMLElement; container: HTMLElement } | null {
+	if (!activeToolbar) return null
+	return { toolbar: activeToolbar.toolbar, container: activeToolbar.container }
+}
+
+/**
+ * Update toolbar position (for mouse-following mode)
+ * @param targetX - Target X position
+ * @param rowElement - The row element for Y position reference
+ * @param align - How to align toolbar: 'center' (default) or 'start' (left edge at targetX)
+ */
+export function updateToolbarPosition(targetX: number, rowElement: HTMLElement, align: 'center' | 'start' = 'center'): void {
+	if (!activeToolbar || activeToolbar.position !== 'top') {
+		return
+	}
+
+	const toolbar = activeToolbar.toolbar
+	const toolbarRect = toolbar.getBoundingClientRect()
+
+	// Position toolbar based on alignment
+	let newX: number
+	if (align === 'start') {
+		// Toolbar left edge at targetX
+		newX = targetX
+	} else {
+		// Center toolbar on targetX
+		newX = targetX - toolbarRect.width / 2
+	}
+
+	// Keep within viewport
+	const minX = 8  // Padding from viewport edge
+	const maxX = window.innerWidth - toolbarRect.width - 8
+	newX = Math.max(minX, Math.min(maxX, newX))
+
+	toolbar.style.left = `${newX}px`
+
+	// Update cursorX for connector
+	activeToolbar.cursorX = targetX
+}
+
+/**
+ * Update toolbar items without closing/reopening
+ * @returns true if items changed and were updated
+ */
+export function updateToolbarItems<T>(
+	items: NormalizedToolbarItem<T>[],
+	row: T,
+	rowIndex: number,
+	reverseRows: boolean,
+	onItemClick: (item: NormalizedToolbarItem<T>) => void
+): boolean {
+	if (!activeToolbar) return false
+
+	const container = activeToolbar.container
+	const oldToolbar = activeToolbar.toolbar
+
+	// Generate new HTML
+	const html = renderToolbarHTML(items, row, rowIndex, reverseRows)
+
+	// Create temporary element to parse new content
+	const temp = document.createElement('div')
+	temp.innerHTML = html
+	const newToolbar = temp.querySelector('.wg__toolbar') as HTMLElement
+
+	if (!newToolbar) return false
+
+	// Copy position styles from old toolbar
+	newToolbar.style.position = oldToolbar.style.position
+	newToolbar.style.left = oldToolbar.style.left
+	newToolbar.style.top = oldToolbar.style.top
+	newToolbar.style.visibility = oldToolbar.style.visibility
+
+	// Replace old toolbar with new one
+	oldToolbar.replaceWith(newToolbar)
+
+	// Update click handler
+	const handleClick = (e: MouseEvent) => {
+		const btn = (e.target as HTMLElement).closest('.wg__toolbar-btn') as HTMLButtonElement
+		if (btn && !btn.disabled) {
+			const itemId = btn.dataset.toolbarItem || ''
+			const item = items.find(i => i.id === itemId)
+			if (item) {
+				onItemClick(item)
+			}
+		}
+	}
+
+	// Remove old click listener and add new one
+	container.replaceWith(container.cloneNode(true) as HTMLElement)
+	const newContainer = activeToolbar.container.getRootNode() === document
+		? document.querySelector('.wg__toolbar-container') as HTMLElement
+		: (activeToolbar.container.getRootNode() as ShadowRoot).querySelector('.wg__toolbar-container') as HTMLElement
+
+	if (newContainer) {
+		newContainer.addEventListener('click', handleClick)
+
+		// Update activeToolbar reference
+		activeToolbar.toolbar = newContainer.querySelector('.wg__toolbar') as HTMLElement
+		activeToolbar.container = newContainer
+		activeToolbar.cleanup = () => {
+			newContainer.removeEventListener('click', handleClick)
+			newContainer.remove()
+		}
+	}
+
+	return true
 }
 
 /**

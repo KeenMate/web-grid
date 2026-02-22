@@ -32,7 +32,7 @@
   position: relative;
   font-size: var(--wg-dropdown-toggle-size);
   opacity: 0.6;
-  margin-left: 4px;
+  margin-left: var(--wg-spacing-xs);
   flex-shrink: 0;
   pointer-events: auto;
   cursor: pointer;
@@ -46,7 +46,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: var(--wg-dropdown-toggle-hitbox);
-  height: 48px;
+  height: var(--wg-editor-hitbox-height);
 }
 
 /* Dropdown cell in display mode (read-only, same layout as editor) */
@@ -105,7 +105,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: var(--wg-dropdown-toggle-hitbox);
-  height: 48px;
+  height: var(--wg-editor-hitbox-height);
 }
 
 /* Toggle visibility: on-focus mode - hide by default, show on hover/focus */
@@ -125,11 +125,11 @@
    DROPDOWN MENU
    ============================================================================== */
 .wg__dropdown {
-  background: var(--wg-surface-floating, #fff);
-  border: 1px solid var(--wg-border-color, #d1d1d1);
-  border-radius: 4px;
+  background: var(--wg-surface-floating);
+  border: 1px solid var(--wg-border-color);
+  border-radius: var(--wg-border-radius-sm);
   box-shadow: var(--wg-toolbar-shadow);
-  max-height: 200px;
+  max-height: var(--wg-dropdown-max-height);
   overflow-y: auto;
   font-size: var(--wg-font-size-base);
   font-family: inherit;
@@ -147,12 +147,12 @@
 
 .wg__dropdown-option:hover,
 .wg__dropdown-option--highlighted {
-  background: var(--wg-hover-bg, #f0f0f0);
-  box-shadow: inset 0 0 0 2px var(--wg-accent-color, #0078d4);
+  background: var(--wg-hover-bg);
+  box-shadow: inset 0 0 0 2px var(--wg-accent-color);
 }
 
 .wg__dropdown-option--selected {
-  background: var(--wg-accent-color-light, #e6f2ff);
+  background: var(--wg-accent-color-light);
 }
 
 .wg__dropdown-option--disabled {
