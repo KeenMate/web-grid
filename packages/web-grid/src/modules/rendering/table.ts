@@ -73,9 +73,22 @@ export function renderHeaderRow<T>(ctx: GridContext<T>): string {
 
 	// Inline actions column (toolbarPosition="inline")
 	const showInlineActions = ctx.grid.isRowToolbarVisible && ctx.grid.toolbarPosition === 'inline'
-	const inlineActionsHeaderHtml = showInlineActions
-		? `<th class="wg__header wg__inline-actions-header">${ctx.escapeHtml(ctx.grid.inlineActionsTitle || ctx.grid.labels.inlineActionsHeader)}</th>`
-		: ''
+	let inlineActionsHeaderHtml = ''
+	if (showInlineActions) {
+		// Compute column width from max button count per toolbar row
+		// Each button is --wg-toolbar-btn-min-width (2.4rem), gap is 0.2rem, cell padding is ~spacing-sm each side
+		const items = normalizeToolbarItems(ctx.grid.rowToolbar)
+		const byRow = new Map<number, number>()
+		for (const item of items) {
+			const r = item.row ?? 1
+			byRow.set(r, (byRow.get(r) || 0) + 1)
+		}
+		const maxBtns = Math.max(1, ...byRow.values())
+		// Width = buttons * btnWidth + (buttons-1) * gap + 2 * paddingSm
+		// Using calc with CSS vars so it respects theming
+		const colWidth = `calc(${maxBtns} * var(--wg-toolbar-btn-min-width) + ${Math.max(0, maxBtns - 1)} * var(--wg-inline-actions-gap) + 2 * var(--wg-spacing-sm))`
+		inlineActionsHeaderHtml = `<th class="wg__header wg__inline-actions-header" style="width: ${colWidth}">${ctx.escapeHtml(ctx.grid.inlineActionsTitle ?? ctx.grid.labels.inlineActionsHeader)}</th>`
+	}
 
 	// Actions column for button trigger mode (floating toolbar trigger)
 	const showActionsColumn = ctx.grid.isRowToolbarVisible && ctx.grid.toolbarTrigger === 'button' && ctx.grid.toolbarPosition !== 'inline'

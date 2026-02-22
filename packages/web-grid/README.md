@@ -2,6 +2,8 @@
 
 A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
+> **RC15 Note:** This release includes a complete rewrite of how the component handles user input and renders content, based on an action pipeline architecture. All DOM events are now translated into typed actions and dispatched through a centralized pipeline with specialized executors, replacing the previous scattered event handler approach. See [Architecture](#architecture) for details.
+
 ## Installation
 
 ```bash
@@ -152,7 +154,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 | `cellToolbar` | `(row, rowIndex, field, colIndex) => RowToolbarConfig[] \| undefined` | — | Cell-specific toolbar items |
 | `cellToolbarOffset` | `number \| string` | `0.2` | Horizontal offset: `0`–`1` as fraction of cell width, or CSS length (e.g., `'2rem'`) |
 | `toolbarBtnMinWidth` | `string` | — | Min-width for toolbar buttons (CSS value). Overrides `--wg-toolbar-btn-min-width` |
-| `inlineActionsTitle` | `string` | — | Header title for inline actions column (when `toolbarPosition='inline'`) |
+| `inlineActionsTitle` | `string` | `'Actions'` | Header title for inline actions column (when `toolbarPosition='inline'`). Set to `''` for no title |
 
 > **Deprecated aliases:** `toolbarAlign` → use `toolbarVerticalAlign`; `toolbarTopPosition` → use `toolbarHorizontalAlign`.
 
@@ -766,8 +768,8 @@ A machine-readable manifest documenting all CSS variables is included in the pac
 import manifest from '@keenmate/web-grid/manifest'
 
 console.log(manifest.prefix)              // "wg"
-console.log(manifest.baseVariables)       // 34 --base-* variables consumed
-console.log(manifest.componentVariables)  // 121 --wg-* variables exposed
+console.log(manifest.baseVariables)       // 37 --base-* variables consumed
+console.log(manifest.componentVariables)  // 178 --wg-* variables exposed
 ```
 
 The manifest follows the [component-variables schema](https://raw.githubusercontent.com/keenmate/schemas/main/component-variables.schema.json) and contains:
