@@ -80,20 +80,7 @@ export function handleHeaderMouseDown<T>(ctx: GridContext<T>, colIndex: number, 
 		return
 	}
 
-	if (event.shiftKey) {
-		// Shift+Click: Range selection from last selected
-		ctx.grid.selectColumn(colIndex, 'range')
-		// Use double RAF for reliable focus after all callbacks
-		requestAnimationFrame(() => {
-			requestAnimationFrame(() => {
-				const container = ctx.shadow.querySelector('.wg') as HTMLElement | null
-				container?.focus({ preventScroll: true })
-			})
-		})
-		return
-	}
-
-	// Normal click: Start potential drag selection
+	// Normal or Shift click: Start potential drag selection
 	selectionState = {
 		isPending: true,
 		isDragging: false,
@@ -105,8 +92,13 @@ export function handleHeaderMouseDown<T>(ctx: GridContext<T>, colIndex: number, 
 
 	activeContext = ctx as GridContext
 
-	// Select the column immediately (replace mode)
-	ctx.grid.selectColumn(colIndex, 'replace')
+	if (event.shiftKey) {
+		// Shift+Click: Range selection from last selected, but also allow drag to extend
+		ctx.grid.selectColumn(colIndex, 'range')
+	} else {
+		// Plain click: Select single column (replace mode)
+		ctx.grid.selectColumn(colIndex, 'replace')
+	}
 
 	// Focus the container so keyboard shortcuts work
 	// Use double RAF to ensure focus happens after all other callbacks

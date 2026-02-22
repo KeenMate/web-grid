@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0-rc15] - 2026-02-21
+## [1.0.0-rc15] - 2026-02-22
+
+### Added
+
+- **Shift+drag column selection when reorder is enabled**: When `isColumnReorderAllowed` is true, plain drag on headers starts column reorder, making drag-to-select columns impossible. Now holding Shift bypasses reorder and starts column selection drag instead. Shift+click also sets up drag listeners so the selection can be extended by dragging further.
 
 ### Fixed
 

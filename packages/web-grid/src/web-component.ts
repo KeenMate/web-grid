@@ -2057,9 +2057,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				}
 			}
 
-			// Column selection drag: when reorder is disabled, drag to select columns
+			// Column selection drag: when reorder is disabled, OR when Shift is held (even with reorder enabled)
 			// Only on left-click (button 0), not right-click (button 2) which opens context menu
-			if (!this.grid.isColumnReorderAllowed && (e as MouseEvent).button === 0) {
+			if ((!this.grid.isColumnReorderAllowed || (e as MouseEvent).shiftKey) && (e as MouseEvent).button === 0) {
 				const header = target.closest('.wg__header:not(.wg__row-number-header):not(.wg__inline-actions-header):not(.wg__actions-column):not(.wg__filler)') as HTMLElement
 				if (header && !target.closest('.wg__resize-handle') && !target.closest('.wg__sort-indicator')) {
 					const field = header.dataset.field
