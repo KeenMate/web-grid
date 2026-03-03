@@ -108,7 +108,7 @@ export function createTooltip<T>(
 
 	// Position with Floating UI
 	computePosition(anchor, tooltip, {
-		strategy: 'fixed',
+		strategy: 'absolute',
 		placement: 'top',
 		middleware: [
 			offset(8),

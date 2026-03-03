@@ -1,11 +1,19 @@
 /* ==============================================================================
-   DARK MODE SUPPORT
+   DARK MODE / LIGHT MODE SUPPORT
    ==============================================================================
    Dark mode is controlled by:
    1. OS preference: @media (prefers-color-scheme: dark)
-   2. data-theme="dark" on ancestor or host
-   3. data-bs-theme="dark" (Bootstrap 5.3+) on ancestor
-   4. .dark class on ancestor (Tailwind CSS convention)
+   2. data-theme="dark" on host or ancestor (via :host-context)
+   3. data-bs-theme="dark" (Bootstrap 5.3+) on host or ancestor
+   4. .dark class on host or ancestor (Tailwind CSS convention)
+
+   Light mode override (overrides OS dark preference):
+   1. data-theme="light" on host or ancestor (via :host-context)
+   2. data-bs-theme="light" (Bootstrap 5.3+) on host or ancestor
+   3. .light class on host or ancestor (Tailwind CSS convention)
+
+   NOTE: Ancestor matching uses :host-context() because shadow DOM stylesheets
+   cannot see elements outside the shadow boundary with regular selectors.
 */
 @media (prefers-color-scheme: dark) {
   :host {
@@ -29,10 +37,10 @@
 
 /* Explicit dark mode via data-theme, data-bs-theme attribute, or .dark class */
 :host([data-theme="dark"]),
-[data-theme="dark"] :host,
+:host-context([data-theme="dark"]),
 :host([data-bs-theme="dark"]),
-[data-bs-theme="dark"] :host,
-.dark :host {
+:host-context([data-bs-theme="dark"]),
+:host-context(.dark) {
   --wg-surface-1: #1f1f1f;
   --wg-surface-2: #2b2b2b;
   --wg-surface-3: #333333;
@@ -48,4 +56,33 @@
   --wg-active-bg: #4a4a4a;
   --wg-danger-bg-light: #442726;
   --wg-danger-color: #f87c86;
+}
+
+/* ==============================================================================
+   EXPLICIT LIGHT MODE OVERRIDE
+   ==============================================================================
+   When the app forces light mode (e.g. via data-theme="light" on <html> or <body>),
+   these selectors override the OS dark mode media query above by restoring the
+   --base-* fallback chain from _variables.css.
+*/
+:host([data-theme="light"]),
+:host-context([data-theme="light"]),
+:host([data-bs-theme="light"]),
+:host-context([data-bs-theme="light"]),
+:host-context(.light) {
+  --wg-surface-1: var(--base-main-bg, #ffffff);
+  --wg-surface-2: var(--base-elevated-bg, #f5f5f5);
+  --wg-surface-3: var(--base-hover-bg, #ebebeb);
+  --wg-surface-floating: var(--base-dropdown-bg, var(--base-main-bg, #ffffff));
+  --wg-text-color-1: var(--base-text-color-1, #242424);
+  --wg-text-color-2: var(--base-text-color-2, #424242);
+  --wg-text-color-3: var(--base-text-color-3, #707070);
+  --wg-border-color: var(--base-border-color, #e0e0e0);
+  --wg-border-color-hover: var(--base-border-color, #d1d1d1);
+  --wg-input-bg: var(--base-input-bg, #ffffff);
+  --wg-input-border: var(--base-input-border, 1px solid #d1d1d1);
+  --wg-hover-bg: var(--base-hover-bg, #f0f0f0);
+  --wg-active-bg: var(--base-hover-bg, #e0e0e0);
+  --wg-danger-bg-light: var(--base-danger-bg-light, #fde7e9);
+  --wg-danger-color: var(--base-danger-color, #d13438);
 }

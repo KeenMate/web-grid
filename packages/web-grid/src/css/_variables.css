@@ -32,6 +32,7 @@
      HOST ELEMENT SIZING
      ========================================================================== */
   display: block;
+  position: relative;  /* offsetParent for absolute-positioned tooltip */
 
   /* ==========================================================================
      COLORS & THEME

@@ -112,6 +112,16 @@ function calculateTarget(
 			break
 
 		case 'tab': {
+			// Read-only grid: traverse all columns, wrapping to next row
+			if (editableCols.length === 0) {
+				if (colIndex < maxCol) {
+					return { rowIndex, colIndex: colIndex + 1 }
+				} else if (rowIndex < maxRow) {
+					return { rowIndex: rowIndex + 1, colIndex: 0 }
+				}
+				break
+			}
+
 			// Track tab traversal start for Excel-like Enter behavior
 			if (ctx.grid.tabTraversalStartColIndex === null) {
 				ctx.grid.tabTraversalStartColIndex = colIndex
@@ -136,6 +146,16 @@ function calculateTarget(
 		}
 
 		case 'tab-back': {
+			// Read-only grid: traverse all columns backwards, wrapping to previous row
+			if (editableCols.length === 0) {
+				if (colIndex > 0) {
+					return { rowIndex, colIndex: colIndex - 1 }
+				} else if (rowIndex > 0) {
+					return { rowIndex: rowIndex - 1, colIndex: maxCol }
+				}
+				break
+			}
+
 			// Track tab traversal start for Excel-like Enter behavior
 			if (ctx.grid.tabTraversalStartColIndex === null) {
 				ctx.grid.tabTraversalStartColIndex = colIndex

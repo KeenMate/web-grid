@@ -295,7 +295,7 @@ export function openToolbar<T>(
 	rowIndex: number,
 	items: NormalizedToolbarItem<T>[],
 	row: T,
-	onItemClick: (item: NormalizedToolbarItem<T>) => void,
+	onItemClick: (item: NormalizedToolbarItem<T>, event: MouseEvent, triggerElement: HTMLElement) => void,
 	cursorX?: number  // For 'cursor' mode positioning
 ): void {
 	// Close any existing toolbar
@@ -493,7 +493,7 @@ export function openToolbar<T>(
 			const itemId = btn.dataset.toolbarItem || ''
 			const item = items.find(i => i.id === itemId)
 			if (item) {
-				onItemClick(item)
+				onItemClick(item, e, btn)
 			}
 		}
 	}

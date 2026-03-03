@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-02-26
+
+### Fixed
+
+- **Tooltip positioning in transformed containers**: Tooltips appeared at the grid's top-left corner instead of near the hovered cell when an ancestor element had a CSS `transform` (e.g., sidebar transitions in Pure Admin). Switched tooltip from `position: fixed` to `position: absolute` with `:host` as the positioning context, making it immune to ancestor transforms.
+
+### Added
+
+- **HTML tooltips for cells**: New `isTooltipHtml` column option renders `tooltipCallback`/`tooltipMember` content as HTML instead of plain text. Useful for rich formatting like bold text, line breaks, or lists in cell tooltips.
+- **Toolbar click detail: `event` and `triggerElement`**: `ontoolbarclick` detail now includes the original `MouseEvent` and the clicked button `HTMLElement`. This enables anchoring popovers, popconfirms, or context menus directly to toolbar buttons — even though they live inside shadow DOM. Works for both floating and inline toolbar modes.
+
+### Changed
+
+- **Tooltip show delay**: Reduced default `tooltipShowDelay` from 400ms to 200ms for snappier feedback.
+
+## [1.0.1] - 2026-02-25
+
+### Fixed
+
+- **Tab/Shift+Tab crash in read-only grids**: Pressing Tab when no columns are editable threw `TypeError: Cannot read properties of undefined (reading 'index')` because the navigate executor assumed at least one editable column existed. Tab now traverses all columns left-to-right (wrapping to next/previous row) when no editable columns are present.
+- **Browser dark mode overriding app theme**: When the OS was in dark mode, web-grid always rendered dark — even if the app forced light theme (e.g. via `data-theme="light"`). The `@media (prefers-color-scheme: dark)` query set hardcoded dark values that couldn't be overridden. Added explicit light mode selectors (`data-theme="light"`, `data-bs-theme="light"`, `.light` class) that restore the `--base-*` fallback chain, allowing apps to force light mode regardless of OS preference.
+- **Dark mode ancestor selectors not working through shadow DOM**: The `[data-theme="dark"] :host` and `.dark :host` selectors were dead code — regular CSS selectors inside shadow DOM cannot match elements outside the shadow boundary. Replaced with `:host-context()` selectors which correctly traverse up through the shadow DOM boundary to match ancestor attributes/classes.
+
 ## [1.0.0] - 2026-02-22
 
 ### Added

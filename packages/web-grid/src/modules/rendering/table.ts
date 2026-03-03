@@ -338,12 +338,14 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 				const rawValue = ctx.grid.getCellRawValue(item, rowIndex, field)
 				const tooltipText = column.tooltipCallback(rawValue, item)
 				if (tooltipText) {
-					tooltipAttr = `data-tooltip="${ctx.escapeHtml(tooltipText)}"`
+					const attr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
+					tooltipAttr = `${attr}="${ctx.escapeHtml(tooltipText)}"`
 				}
 			} else if (column.tooltipMember) {
 				const tooltipText = (item as Record<string, unknown>)[column.tooltipMember]
 				if (tooltipText && typeof tooltipText === 'string') {
-					tooltipAttr = `data-tooltip="${ctx.escapeHtml(tooltipText)}"`
+					const attr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
+					tooltipAttr = `${attr}="${ctx.escapeHtml(tooltipText)}"`
 				}
 			}
 			// Show validation error as tooltip for invalid cells (if no other tooltip)
@@ -640,12 +642,14 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 				const rawValue = ctx.grid.getCellRawValue(item, rowIndex, field)
 				const tooltipText = column.tooltipCallback(rawValue, item)
 				if (tooltipText) {
-					tooltipAttr = `data-tooltip="${ctx.escapeHtml(tooltipText)}"`
+					const attr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
+					tooltipAttr = `${attr}="${ctx.escapeHtml(tooltipText)}"`
 				}
 			} else if (column.tooltipMember) {
 				const tooltipText = (item as Record<string, unknown>)[column.tooltipMember]
 				if (tooltipText && typeof tooltipText === 'string') {
-					tooltipAttr = `data-tooltip="${ctx.escapeHtml(tooltipText)}"`
+					const attr = column.isTooltipHtml ? 'data-tooltip-html' : 'data-tooltip'
+					tooltipAttr = `${attr}="${ctx.escapeHtml(tooltipText)}"`
 				}
 			}
 			// Show validation error as tooltip for invalid cells (if no other tooltip)

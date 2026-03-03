@@ -779,9 +779,18 @@ The manifest follows the [component-variables schema](https://raw.githubusercont
 
 Dark mode is triggered automatically by:
 - OS preference: `@media (prefers-color-scheme: dark)`
-- Attribute: `data-theme="dark"` on ancestor
-- Bootstrap: `data-bs-theme="dark"` on ancestor
-- Class: `.dark` on ancestor (Tailwind CSS)
+- Attribute: `data-theme="dark"` on any ancestor or host element
+- Bootstrap: `data-bs-theme="dark"` on any ancestor or host element
+- Class: `.dark` on any ancestor (Tailwind CSS)
+
+To **force light mode** when the OS is in dark mode, set one of:
+- Attribute: `data-theme="light"` on any ancestor or host element
+- Bootstrap: `data-bs-theme="light"` on any ancestor or host element
+- Class: `.light` on any ancestor (Tailwind CSS)
+
+This is useful when your app manages its own theme (e.g. via a toggle) and needs to override the OS preference. The light mode selectors restore the `--base-*` fallback chain so theme-designer values are respected.
+
+Ancestor detection uses `:host-context()` to cross shadow DOM boundaries (Chrome 88+, Firefox 128+, Safari 15.4+).
 
 ### Dynamic Cell & Row Styling
 

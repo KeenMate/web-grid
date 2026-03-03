@@ -198,6 +198,7 @@ export type Column<T> = {
 	// Tooltip - displayed on cell hover
 	tooltipMember?: string  // Property name in row data containing tooltip text
 	tooltipCallback?: (value: unknown, row: T) => string | null  // Dynamic tooltip (takes priority over tooltipMember)
+	isTooltipHtml?: boolean  // Render tooltip content as HTML instead of plain text
 	// Clipboard callbacks
 	beforeCopyCallback?: (value: unknown, row: T) => string  // Transform value before copying to clipboard
 	beforePasteCallback?: (value: string, row: T) => unknown  // Process pasted value before applying
@@ -314,6 +315,8 @@ export type ToolbarClickDetail<T> = {
 	item: NormalizedToolbarItem<T>
 	rowIndex: number
 	row: T
+	event: MouseEvent              // Original click event
+	triggerElement: HTMLElement     // The clicked button element (can be used as Floating UI anchor)
 }
 
 // Legacy type aliases for backwards compatibility

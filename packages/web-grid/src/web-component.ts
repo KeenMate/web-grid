@@ -285,7 +285,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	tooltipHideTimer: ReturnType<typeof setTimeout> | null = null
 
 	// Tooltip configuration (grid-level)
-	private _tooltipShowDelay: number = 400
+	private _tooltipShowDelay: number = 200
 	private _tooltipHideDelay: number = 100
 
 	get tooltipShowDelay(): number { return this._tooltipShowDelay }
@@ -2545,7 +2545,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				e.stopPropagation()
 				const actionId = btn.dataset.actionId
 				const rowIndex = parseInt(btn.dataset.row || '0', 10)
-				this.handleInlineActionClick(actionId, rowIndex)
+				this.handleInlineActionClick(actionId, rowIndex, e as MouseEvent, btn)
 			}
 		})
 
@@ -4085,8 +4085,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			rowIndex,
 			items,
 			row,
-			(item: NormalizedToolbarItem<T>) => {
-				this.handleToolbarItemClick(item, rowIndex, row)
+			(item: NormalizedToolbarItem<T>, event: MouseEvent, triggerElement: HTMLElement) => {
+				this.handleToolbarItemClick(item, rowIndex, row, event, triggerElement)
 			},
 			cursorX
 		)
@@ -4299,7 +4299,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	/**
 	 * Handle toolbar item click
 	 */
-	private handleToolbarItemClick(item: NormalizedToolbarItem<T>, _originalRowIndex: number, row: T): void {
+	private handleToolbarItemClick(item: NormalizedToolbarItem<T>, _originalRowIndex: number, row: T, event: MouseEvent, triggerElement: HTMLElement): void {
 		// Find CURRENT index of the row item (it may have moved) - like QuickGrid
 		const currentIndex = this.grid.displayItems.findIndex(i => i === row)
 		if (currentIndex === -1) {
@@ -4327,7 +4327,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.grid.ontoolbarclick({
 				item,
 				rowIndex: currentIndex,
-				row
+				row,
+				event,
+				triggerElement
 			})
 		}
 
@@ -4353,7 +4355,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	/**
 	 * Handle inline action button click (toolbarPosition="inline")
 	 */
-	private handleInlineActionClick(actionId: string | undefined, rowIndex: number): void {
+	private handleInlineActionClick(actionId: string | undefined, rowIndex: number, event: MouseEvent, triggerElement: HTMLElement): void {
 		if (!actionId) return
 
 		const items = normalizeToolbarItems(this.grid.rowToolbar)
@@ -4372,7 +4374,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.grid.ontoolbarclick({
 				item,
 				rowIndex,
-				row
+				row,
+				event,
+				triggerElement
 			})
 		}
 
