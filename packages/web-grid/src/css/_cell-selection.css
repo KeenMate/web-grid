@@ -7,7 +7,7 @@
 .wg__cell--in-range {
   background: var(--wg-cell-selection-bg) !important;
   position: relative;
-  z-index: 1;
+  z-index: var(--wg-z-cell-highlight);
 }
 
 /* Don't highlight when cell is editing */
@@ -27,13 +27,13 @@
 
 /* Range border - thick blue border around entire range
    Shown during drag AND after selection completes.
-   z-index must be below frozen cells (sticky, z-index: 1-2) so the border
+   z-index must be below frozen cells so the border
    scrolls behind frozen columns instead of bleeding over them. */
 .wg__cell-range-border {
   position: absolute;
   border: var(--wg-cell-selection-border-width) solid var(--wg-cell-selection-border);
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--wg-z-selection-border);
   box-sizing: border-box;
   border-radius: 1px;
 }
@@ -69,7 +69,7 @@
   position: absolute;
   border: var(--wg-selection-border-width) solid var(--wg-selection-border-color);
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--wg-z-selection-border);
   box-sizing: border-box;
   border-radius: 1px;
 }

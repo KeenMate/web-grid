@@ -15,7 +15,7 @@
 /* Ghost element that follows cursor - fixed to viewport for simplicity */
 .wg__reorder-ghost {
   position: fixed;
-  z-index: 10000;
+  z-index: var(--wg-z-reorder-ghost);
   background: var(--wg-header-bg);
   border: 2px solid var(--wg-accent-color);
   border-radius: var(--wg-border-radius-sm);
@@ -34,7 +34,7 @@
   position: absolute;
   width: 3px;
   background: var(--wg-accent-color);
-  z-index: 999;
+  z-index: var(--wg-z-reorder-indicator);
   pointer-events: none;
   display: none;
 }

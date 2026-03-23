@@ -10,6 +10,7 @@
 
 .wg__header--frozen {
   background: var(--wg-frozen-header-bg, var(--wg-header-bg));
+  z-index: var(--wg-z-frozen-header) !important;
 }
 
 /* Selected frozen header (column selection) */
@@ -19,9 +20,9 @@
   color: var(--wg-selection-row-number-color);
 }
 
-/* Corner cell (row number header when sticky) - highest z-index */
+/* Corner cell (row number header when sticky) - highest table z-index */
 .wg__row-number-header.wg__header--frozen {
-  z-index: 4 !important;
+  z-index: var(--wg-z-frozen-header) !important;
 }
 
 /* ==========================================================================
@@ -40,7 +41,7 @@
 /* Row number cells when sticky */
 .wg__row-number.wg__cell--frozen {
   background: var(--wg-header-bg);
-  z-index: 2 !important;
+  z-index: var(--wg-z-frozen) !important;
 }
 
 /* ==========================================================================

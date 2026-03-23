@@ -16,7 +16,7 @@
   bottom: 0;
   width: var(--wg-resize-handle-width);
   cursor: col-resize;
-  z-index: 2;  /* Above header content but below frozen column headers */
+  z-index: var(--wg-z-resize-handle);
   opacity: 0;
   transition: opacity 0.1s ease;
 }

@@ -16,8 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Selections persisting after toolbar action**: Row, cell range, and column selections were not cleared when clicking a toolbar action button. Now selections are cleared through the action pipeline before processing toolbar clicks.
 - **Synchronous render after inline toolbar action detaching triggerElement**: `handleInlineActionClick` called `this.render()` synchronously after firing `ontoolbarclick`, which destroyed the `triggerElement` passed in the event detail. Consumers positioning UI relative to it (e.g., popconfirm) got a detached element. Removed the synchronous render — `requestUpdate` microtask handles it.
 
+- **Cell selection bleeding through sticky header**: Selected cells (`.wg__cell--in-range`) had `z-index: 1`, same as the sticky header, causing their blue background to show through the header when scrolling. Introduced a proper z-index layer system with CSS variables (`--wg-z-cell-highlight`, `--wg-z-frozen`, `--wg-z-header`, `--wg-z-frozen-header`, etc.) replacing all hardcoded values. Header is now above cell highlights, frozen headers above regular headers.
+
 ### Added
 
+- **Z-index layer system**: All z-index values within the grid now use CSS custom properties defined in `_variables.css`, making the stacking order explicit and overridable. See `docs/z-index-layers.md` for the full layer map.
 - **Logging system**: Added loglevel-based logging with color-coded categories (`GRID:INIT`, `GRID:DATA`, `GRID:UI`, `GRID:INTERACTION`). Silent by default; enable at runtime via `window.components['web-grid'].logging.enableLogging()`.
 - **`window.components['web-grid']` registration**: Runtime introspection API with `version()`, `config`, and `logging` — matching the pattern used by web-multiselect and web-daterangepicker.
 

@@ -273,7 +273,7 @@
   /* ==========================================================================
      CONTEXT MENU
      ========================================================================== */
-  --wg-context-menu-z-index: 1001;
+  --wg-context-menu-z-index: var(--wg-z-context-menu);
   --wg-context-menu-min-width: calc(16 * var(--wg-rem));
 
   /* ==========================================================================
@@ -293,10 +293,24 @@
 
   /* ==========================================================================
      Z-INDEX LAYERS
+     Table-internal stacking (within scroll container):
      ========================================================================== */
-  --wg-z-dropdown: 9999;
+  --wg-z-cell-highlight: 1;          /* Cell in-range / selection highlight */
+  --wg-z-selection-border: 1;        /* Range, row, column selection borders */
+  --wg-z-frozen: 2;                  /* Frozen columns (sticky) */
+  --wg-z-header: 3;                  /* Sticky header row */
+  --wg-z-frozen-header: 4;           /* Frozen header corner cell (sticky both ways) */
+  --wg-z-fill-handle: 5;             /* Fill handle dot */
+  --wg-z-fill-handle-area: 4;        /* Fill handle drag area */
+  --wg-z-resize-handle: 6;           /* Column resize handle */
+  --wg-z-shortcuts-help: 10;         /* Keyboard shortcuts overlay */
+
+  /* Popover layers (above grid content): */
+  --wg-z-reorder-indicator: 100;     /* Column reorder drop indicator */
   --wg-z-toolbar: 1000;
   --wg-z-context-menu: 1001;
+  --wg-z-dropdown: 9999;
+  --wg-z-reorder-ghost: 10000;       /* Column reorder drag ghost */
   --wg-z-tooltip: 10000;
 
   /* ==========================================================================

@@ -12,7 +12,7 @@
   background: var(--wg-fill-handle-bg);
   border: var(--wg-fill-handle-border-width) solid var(--wg-fill-handle-border-color);
   cursor: crosshair;
-  z-index: 10;
+  z-index: var(--wg-z-fill-handle);
   pointer-events: auto;
   box-sizing: border-box;
 }
@@ -28,7 +28,7 @@
   background: var(--wg-fill-range-bg);
   border: 1px dashed var(--wg-fill-range-border-color);
   pointer-events: none;
-  z-index: 5;
+  z-index: var(--wg-z-fill-handle-area);
   box-sizing: border-box;
 }
 

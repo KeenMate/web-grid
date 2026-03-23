@@ -7,7 +7,7 @@
 	position: absolute;
 	top: var(--wg-spacing-xs);
 	right: var(--wg-spacing-sm);
-	z-index: 5;
+	z-index: var(--wg-z-shortcuts-help);
 }
 
 .wg__shortcuts-help--left {
