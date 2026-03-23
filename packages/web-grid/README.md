@@ -251,7 +251,7 @@ This architecture separates mode detection (the adapter decides *what* action a 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `tooltipShowDelay` | `number` | `400` | Delay in ms before showing tooltip |
+| `tooltipShowDelay` | `number` | `200` | Delay in ms before showing tooltip |
 | `tooltipHideDelay` | `number` | `100` | Delay in ms before hiding tooltip |
 
 ### Summary
@@ -613,7 +613,7 @@ These are **callback properties** set on the grid element, not DOM events. Use t
 | `onroweditstart` | `(detail: { row, rowIndex, field }) => void` | Editing started on a cell |
 | `onroweditcancel` | `(detail: { row, rowIndex, field }) => void` | Edit was cancelled (Escape) |
 | `onvalidationerror` | `(detail: { row, rowIndex, field, error }) => void` | Validation failed on commit |
-| `ontoolbarclick` | `(detail: ToolbarClickDetail<T>) => void` | Toolbar button clicked. Detail: `{ item, rowIndex, row }` |
+| `ontoolbarclick` | `(detail: ToolbarClickDetail<T>) => void` | Toolbar button clicked. Detail: `{ item, rowIndex, row, event, triggerElement }` |
 | `onrowaction` | `(detail: { action, rowIndex, row }) => void` | *Legacy* — use `ontoolbarclick` |
 | `oncontextmenuopen` | `(context: ContextMenuContext<T>) => void` | Cell context menu opened |
 | `onheadercontextmenuopen` | `(context: HeaderMenuContext<T>) => void` | Header context menu opened |
@@ -840,6 +840,25 @@ grid.labels = {
     showAll: 'Show all'
   }
 }
+```
+
+## Runtime API
+
+The component registers itself at `window.components['web-grid']` for runtime introspection:
+
+```javascript
+// Check version
+window.components['web-grid'].version()  // "1.0.3"
+
+// Package info
+window.components['web-grid'].config  // { name, version, author, license, repository, homepage }
+
+// Logging (silent by default)
+window.components['web-grid'].logging.enableLogging()         // Enable all at debug level
+window.components['web-grid'].logging.setLogLevel('info')     // Set level: trace|debug|info|warn|error|silent
+window.components['web-grid'].logging.disableLogging()        // Back to silent
+window.components['web-grid'].logging.setCategoryLevel('GRID:UI', 'debug')  // Per-category
+window.components['web-grid'].logging.getCategories()         // ['GRID:INIT', 'GRID:DATA', 'GRID:UI', 'GRID:INTERACTION']
 ```
 
 ## Browser Support

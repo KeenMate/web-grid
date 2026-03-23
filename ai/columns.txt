@@ -301,7 +301,7 @@ tooltipCallback ((value: unknown, row: T) => string | null)
         row.description ? row.description : null
 
     Tooltip show/hide delays are controlled by grid-level properties:
-      tooltipShowDelay (default: 400ms)
+      tooltipShowDelay (default: 200ms)
       tooltipHideDelay (default: 100ms)
 
 

@@ -39,7 +39,8 @@ onvalidationerror
 ontoolbarclick
   Signature: (detail: ToolbarClickDetail<T>) => void
   Fires when a toolbar button is clicked.
-  Detail: { item: NormalizedToolbarItem<T>, rowIndex: number, row: T }
+  Detail: { item: NormalizedToolbarItem<T>, rowIndex: number, row: T, event: MouseEvent, triggerElement: HTMLElement }
+  The triggerElement is the clicked button inside the shadow DOM — usable as a Floating UI anchor for popovers.
 
 onrowaction
   Signature: (detail: { action: string, rowIndex: number, row: T }) => void

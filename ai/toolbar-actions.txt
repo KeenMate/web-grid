@@ -383,6 +383,8 @@ ontoolbarclick:
           item: NormalizedToolbarItem<T>
           rowIndex: number
           row: T
+          event: MouseEvent              // Original click event
+          triggerElement: HTMLElement     // The clicked button element (usable as Floating UI anchor)
         }
 
     This fires AFTER the item's own onclick handler. For predefined

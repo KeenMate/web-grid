@@ -477,7 +477,7 @@ ADDITIONAL EXPORTED TYPES
   type ColumnOrderState = { field: string, order: number }
   type ColumnResizeDetail = { field: string, oldWidth: string, newWidth: string, allWidths: ColumnWidthState[] }
   type ColumnReorderDetail = { field: string, fromIndex: number, toIndex: number, allOrder: ColumnOrderState[] }
-  type ToolbarClickDetail<T> = { item: NormalizedToolbarItem<T>, rowIndex: number, row: T }
+  type ToolbarClickDetail<T> = { item: NormalizedToolbarItem<T>, rowIndex: number, row: T, event: MouseEvent, triggerElement: HTMLElement }
   type ToolbarTooltip = { description?: string, shortcut?: string }
   type SummaryContext<T> = { items: T[], allItems: T[], totalItems: number, currentPage: number, pageSize: number, metadata: unknown }
   type SummaryContentCallback<T> = (context: SummaryContext<T>) => string
