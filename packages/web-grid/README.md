@@ -2,6 +2,22 @@
 
 A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
+## What's New in v1.0.3
+
+- **`onrowfocus` fixes**: No longer fires during cell range selection (drag/shift+click). Mouse-triggered row focus now defers to click (mouseup) instead of mousedown; keyboard navigation still fires immediately.
+- **Cell selection visual fix**: Focused cell outline no longer persists during cell range drag.
+- **Toolbar fixes**: Tooltip hides when toolbar moves/closes. Selections cleared on toolbar action click. `triggerElement` in `ontoolbarclick` detail stays alive (no longer detached by synchronous re-render).
+- **Z-index layer system**: All z-index values now use CSS custom properties (`--wg-z-header`, `--wg-z-frozen`, etc.). Fixes cell selection bleeding through sticky header and frozen header stacking.
+- **Logging system**: loglevel-based logging with 4 categories (`GRID:INIT`, `GRID:DATA`, `GRID:UI`, `GRID:INTERACTION`). Enable via `window.components['web-grid'].logging.enableLogging()`.
+- **Runtime API**: `window.components['web-grid']` with `version()`, `config`, and `logging` — matching web-multiselect and web-daterangepicker.
+
+### v1.0.2
+
+- **Tooltip positioning in transformed containers**: Fixed tooltips appearing at grid's top-left when ancestor has CSS `transform`. Switched to `position: absolute` with `:host` as positioning context.
+- **HTML tooltips**: New `isTooltipHtml` column option for rich tooltip content.
+- **`ontoolbarclick` detail**: Now includes `event` (MouseEvent) and `triggerElement` (HTMLElement) for anchoring popovers to toolbar buttons inside shadow DOM.
+- **Tooltip show delay**: Reduced default from 400ms to 200ms.
+
 ## Installation
 
 ```bash
