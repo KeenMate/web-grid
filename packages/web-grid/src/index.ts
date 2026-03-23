@@ -104,3 +104,43 @@ export type {
 
 // Default export
 export { GridElement as default } from './web-component.js'
+
+// Import logging functions for global API
+import {
+	setLogLevel,
+	enableLogging,
+	disableLogging,
+	setCategoryLevel,
+	LOGGING_CATEGORIES
+} from './logger.js'
+
+// Build-time constants (injected by Vite define)
+declare const __VERSION__: string
+declare const __PACKAGE_NAME__: string
+declare const __AUTHOR__: string
+declare const __LICENSE__: string
+declare const __REPOSITORY__: string
+declare const __HOMEPAGE__: string
+
+// Register to window.components for runtime introspection
+if (typeof window !== 'undefined') {
+	(window as any).components = (window as any).components || {}
+	;(window as any).components['web-grid'] = {
+		version: () => __VERSION__,
+		config: {
+			name: __PACKAGE_NAME__,
+			version: __VERSION__,
+			author: __AUTHOR__,
+			license: __LICENSE__,
+			repository: __REPOSITORY__,
+			homepage: __HOMEPAGE__
+		},
+		logging: {
+			enableLogging,
+			disableLogging,
+			setLogLevel,
+			setCategoryLevel,
+			getCategories: () => [...LOGGING_CATEGORIES]
+		}
+	}
+}

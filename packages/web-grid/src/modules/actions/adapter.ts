@@ -845,6 +845,13 @@ export class ActionPipelineAdapter<T = unknown> {
 	isDatepickerOpen(): boolean {
 		return !!this.ctx.datepicker
 	}
+
+	/**
+	 * Clear all selections (row, cell range, column) through the pipeline
+	 */
+	clearSelection(): void {
+		this.pipeline.dispatch({ type: 'clearSelection' })
+	}
 }
 
 /**

@@ -58,6 +58,9 @@ import type {
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
 
+// Logging
+import { initLogger, dataLogger, interactionLogger } from './logger.js'
+
 // Default labels (English)
 const DEFAULT_LABELS: GridLabels = {
 	// Toolbar
@@ -290,12 +293,14 @@ export class WebGrid<T = unknown> {
 
 	get items(): T[] { return this._items }
 	set items(value: T[]) {
+		dataLogger.debug('items set:', value.length, 'rows')
 		this._items = value
 		this.requestUpdate()
 	}
 
 	get columns(): Column<T>[] { return this._columns }
 	set columns(value: Column<T>[]) {
+		initLogger.debug('columns set:', value.length, 'columns', value.map(c => String(c.field)))
 		this._columns = value
 		this.requestUpdate()
 	}
@@ -646,6 +651,7 @@ export class WebGrid<T = unknown> {
 	// Sorting (multi-column)
 	get sort(): SortState[] { return this._sort }
 	set sort(value: SortState[]) {
+		dataLogger.debug('sort changed:', value.map(s => `${s.column} ${s.direction}`).join(', ') || 'none')
 		this._sort = value
 		this.requestUpdate()
 	}
@@ -653,6 +659,7 @@ export class WebGrid<T = unknown> {
 	// Pagination
 	get currentPage(): number { return this._currentPage }
 	set currentPage(value: number) {
+		dataLogger.debug('page changed:', value)
 		this._currentPage = value
 		this.requestUpdate()
 	}
@@ -941,6 +948,7 @@ export class WebGrid<T = unknown> {
 	}
 
 	selectRow(rowIndex: number, mode: 'replace' | 'toggle' | 'range' = 'replace'): void {
+		interactionLogger.debug('selectRow:', { rowIndex, mode })
 		// Clear cell and column selection when selecting rows
 		if (this._selectedCellRange) {
 			this._selectedCellRange = null
@@ -1176,6 +1184,7 @@ export class WebGrid<T = unknown> {
 	}
 
 	selectCellRange(range: CellRange): void {
+		interactionLogger.debug('selectCellRange:', { startRow: range.startRowIndex, startCol: range.startColIndex, endRow: range.endRowIndex, endCol: range.endColIndex })
 		// Clear row and column selection when selecting cells
 		if (this._selectedRows.size > 0) {
 			this._selectedRows.clear()
@@ -1613,6 +1622,7 @@ export class WebGrid<T = unknown> {
 				mode: trigger === 'loadMore' ? 'append' : 'replace',
 				skip
 			}
+			dataLogger.debug('fireDataRequest:', trigger, detail)
 			this._ondatarequest(detail)
 		}
 	}
@@ -1937,8 +1947,10 @@ export class WebGrid<T = unknown> {
 	startEdit(rowIndex: number, field: string, options?: { initialSearchQuery?: string; cursorPosition?: number }): void {
 		// Check if edit is allowed (respects locking)
 		if (!this.canEditCell(rowIndex, field)) {
+			interactionLogger.debug('startEdit blocked (locked):', { rowIndex, field })
 			return  // Silently block edit
 		}
+		interactionLogger.debug('startEdit:', { rowIndex, field, options })
 
 		const item = this.displayItems[rowIndex]
 		if (!item) return
@@ -2020,6 +2032,7 @@ export class WebGrid<T = unknown> {
 	 * @param commitEmptyRow - If true and editing empty row, add it to items. If false, just update the draft.
 	 */
 	async commitEdit(rowIndex: number, field: string, newValue: unknown, commitEmptyRow: boolean = false): Promise<void> {
+		dataLogger.debug('commitEdit:', { rowIndex, field, newValue })
 		const column = this._columns.find(c => String(c.field) === field)
 		if (!column) return
 
@@ -2371,6 +2384,7 @@ export class WebGrid<T = unknown> {
 	 */
 	setFocusedRow(rowIndex: number): void {
 		if (this._focusedRowIndex === rowIndex) return
+		interactionLogger.debug('setFocusedRow:', rowIndex, '(prev:', this._focusedRowIndex, ')')
 		const previousRowIndex = this._focusedRowIndex
 		this._focusedRowIndex = rowIndex
 		this._onInteractionChange?.('focusedRow', { prev: previousRowIndex, current: rowIndex })

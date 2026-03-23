@@ -49,6 +49,9 @@ import type {
 // Import CSS (Vite inlines this as a string)
 import styles from './css/main.css?inline'
 
+// Logging
+import { initLogger, uiLogger } from './logger.js'
+
 // Import module functions
 import {
 	getOptionDisplayValue,
@@ -356,6 +359,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// ==========================================================================
 
 	connectedCallback(): void {
+		initLogger.debug('connectedCallback — grid attached to DOM')
 		// Load persisted column widths before initial render
 		if (this.grid.gridName && this.grid.shouldPersistColumnWidths) {
 			this.grid.loadPersistedWidths()
@@ -368,6 +372,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	disconnectedCallback(): void {
+		initLogger.debug('disconnectedCallback — grid removed from DOM')
 		// Cleanup event managers
 		this.scrollEvents.destroy()
 		this.focusEvents.destroy()
@@ -915,6 +920,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 	private requestUpdate(): void {
 		if (this.updatePending) return
+		uiLogger.debug('requestUpdate: scheduling render')
 		this.updatePending = true
 
 		// Batch updates using microtask
@@ -1616,9 +1622,16 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	// Event Listener Attachment
 	// ==========================================================================
 
+	/** Tracks whether a mouse button is currently pressed on the table (mousedown→mouseup) */
+	private _isMouseDown = false
+
 	private attachEventListeners(): void {
 		const table = this.shadow.querySelector('.wg__table')
 		if (!table) return
+
+		// Track mouse button state so focus handler can distinguish mouse vs keyboard focus
+		table.addEventListener('mousedown', () => { this._isMouseDown = true }, true)
+		document.addEventListener('mouseup', () => { this._isMouseDown = false }, true)
 
 		// Focus events
 		table.addEventListener('focus', (e: Event) => {
@@ -1628,9 +1641,13 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 				const colIndex = parseInt(target.dataset.col || '0', 10)
 				handleCellFocus(this, rowIndex, colIndex)
 				updateFillHandle(this)
-				const prevFocusedRow = this.grid.focusedRowIndex
-				this.grid.setFocusedRow(rowIndex)
-				this.updateRowFocusVisual(prevFocusedRow, rowIndex)
+				// Only fire onrowfocus for keyboard-triggered focus (Tab, arrows).
+				// For mouse interactions, defer to click handler so onrowfocus fires on mouseup, not mousedown.
+				if (!this._isMouseDown && !isCellSelectionPending() && !isCellSelecting()) {
+					const prevFocusedRow = this.grid.focusedRowIndex
+					this.grid.setFocusedRow(rowIndex)
+					this.updateRowFocusVisual(prevFocusedRow, rowIndex)
+				}
 
 				// Auto-scroll if cell is behind frozen columns
 				ensureCellNotBehindFrozen(this, target, rowIndex)
@@ -1661,10 +1678,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 							}
 							// Add focus class to new cell (don't re-render - just update class)
 							cell.classList.add('wg__cell--always-edit-focused')
-							// Update row focus
-							const prevFocusedRow = this.grid.focusedRowIndex
-							this.grid.setFocusedRow(rowIndex)
-							this.updateRowFocusVisual(prevFocusedRow, rowIndex)
+							// Update row focus (only for keyboard — mouse defers to click handler)
+							if (!this._isMouseDown) {
+								const prevFocusedRow = this.grid.focusedRowIndex
+								this.grid.setFocusedRow(rowIndex)
+								this.updateRowFocusVisual(prevFocusedRow, rowIndex)
+							}
 						}
 					}
 				}
@@ -2101,8 +2120,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 
 			// Set row focus when clicking on data cells (not row numbers or headers)
+			// Skip during cell range selection to avoid spurious onrowfocus events
 			const clickedCell = target.closest('.wg__cell:not(.wg__row-number):not(.wg__inline-actions-cell)') as HTMLElement
-			if (clickedCell && !target.closest('.wg__header')) {
+			if (clickedCell && !target.closest('.wg__header') && !isCellSelectionPending() && !isCellSelecting()) {
 				const cellRowIndex = parseInt(clickedCell.dataset.row || '-1', 10)
 				if (cellRowIndex >= 0) {
 					const prevFocusedRow = this.grid.focusedRowIndex
@@ -2928,6 +2948,7 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	}
 
 	private render(): void {
+		uiLogger.debug('render:', this.grid.displayItems.length, 'rows,', this.grid.visualColumns.length, 'columns')
 		// Preserve scroll position before re-render
 		// When tableBorderOnly is enabled, scroll container is .wg__table-container
 		const oldContainer = this.shadow.querySelector('.wg') as HTMLElement
@@ -4075,6 +4096,10 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			this.toolbarHideTimeout = null
 		}
 
+		// Hide any toolbar tooltip left over from the previous toolbar
+		// (mouseleave won't fire when the toolbar DOM is removed)
+		hideTooltip(this, 0)
+
 		// Reset cell toolbar state so next cell change will always update the HTML
 		// (openToolbar rebuilds with base rowToolbar items, not cell-specific items)
 		this.currentCellToolbarItems = null
@@ -4162,6 +4187,8 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			document.removeEventListener('keydown', this.toolbarShortcutHandler)
 			this.toolbarShortcutHandler = null
 		}
+		// Hide any toolbar tooltip (mouseleave won't fire when DOM is removed)
+		hideTooltip(this, 0)
 		closeToolbar()
 	}
 
@@ -4300,6 +4327,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	 * Handle toolbar item click
 	 */
 	private handleToolbarItemClick(item: NormalizedToolbarItem<T>, _originalRowIndex: number, row: T, event: MouseEvent, triggerElement: HTMLElement): void {
+		// Clear any active selections through the pipeline
+		this.pipelineAdapter?.clearSelection()
+
 		// Find CURRENT index of the row item (it may have moved) - like QuickGrid
 		const currentIndex = this.grid.displayItems.findIndex(i => i === row)
 		if (currentIndex === -1) {
@@ -4358,6 +4388,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	private handleInlineActionClick(actionId: string | undefined, rowIndex: number, event: MouseEvent, triggerElement: HTMLElement): void {
 		if (!actionId) return
 
+		// Clear any active selections through the pipeline
+		this.pipelineAdapter?.clearSelection()
+
 		const items = normalizeToolbarItems(this.grid.rowToolbar)
 		const item = items.find(i => i.id === actionId)
 		const row = this.grid.displayItems[rowIndex]
@@ -4380,8 +4413,9 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			})
 		}
 
-		// Re-render to update button states
-		this.render()
+		// No explicit render() — if the consumer modifies items, requestUpdate() handles it.
+		// Calling render() synchronously here would detach the triggerElement from the DOM,
+		// breaking consumers that need to position UI relative to it (e.g., popconfirm).
 	}
 
 	/**

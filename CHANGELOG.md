@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-03-22
+
+### Fixed
+
+- **`onrowfocus` firing during cell range selection**: `onrowfocus` was triggered when starting a cell range selection (click+drag or shift+click) because the browser's focus event fires on mousedown. Now cell selection operations skip row focus entirely.
+- **`onrowfocus` firing on mousedown instead of click**: `onrowfocus` fired immediately when pressing the mouse button down on a cell, before the click completed. Now mouse-triggered row focus is deferred to the click event (mouseup), while keyboard-triggered focus (Tab, arrows) still fires immediately.
+
+### Docs
+
+- **Cell range selection event log**: Added an event log panel to the Cell Range Selection demo showing all fired events (`onrowfocus`, `onrowchange`, `oncellselectionchange`, etc.) for easier debugging.
+
 ## [1.0.2] - 2026-02-26
 
 ### Fixed

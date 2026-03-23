@@ -97,8 +97,17 @@
 
             <web-grid id="grid-cell-range-click" style="max-width: 100%; max-height: 400px;"></web-grid>
 
-            <div id="cellRangeClickLog" style="margin-top: 1rem; font-family: monospace; font-size: 0.85rem; color: #666;">
-                Click and drag on cells to select a range...
+            <div style="margin-top: 1rem; display: flex; gap: 1rem; align-items: flex-start;">
+                <div id="cellRangeClickLog" style="font-family: monospace; font-size: 0.85rem; color: #666; flex: 0 0 auto;">
+                    Click and drag on cells to select a range...
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                        <strong style="font-size: 0.8rem; color: #374151;">Event Log</strong>
+                        <button id="clearEventLog" style="font-size: 0.75rem; padding: 2px 8px; cursor: pointer;">Clear</button>
+                    </div>
+                    <div id="cellRangeClickEventLog" style="font-family: monospace; font-size: 0.8rem; max-height: 120px; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem;"></div>
+                </div>
             </div>
 
             <div class="note" style="margin-top: 1rem;">
@@ -576,6 +585,47 @@ grid.focusedRowIndex = null // Clear focus</code></pre>
             console.log('isHoverable changed to:', e.target.checked)
         })
 
+        // Event log helper
+        const eventLog = document.getElementById('cellRangeClickEventLog')
+        let eventCounter = 0
+        const logEvent = (name, detail) => {
+            eventCounter++
+            const entry = document.createElement('div')
+            entry.style.borderBottom = '1px solid #e2e8f0'
+            entry.style.padding = '2px 0'
+            const detailStr = detail ? ` — ${detail}` : ''
+            entry.innerHTML = `<span style="color: #9ca3af;">${eventCounter}.</span> <span style="color: #2563eb; font-weight: 600;">${name}</span>${detailStr}`
+            eventLog.prepend(entry)
+            // Keep max 50 entries
+            while (eventLog.children.length > 50) eventLog.lastChild.remove()
+        }
+        document.getElementById('clearEventLog').addEventListener('click', () => {
+            eventLog.innerHTML = ''
+            eventCounter = 0
+        })
+
+        // Wire up all events for logging
+        gridCellRangeClick.onrowfocus = (detail) => {
+            logEvent('onrowfocus', `row ${detail.rowIndex}` + (detail.previousRowIndex != null ? ` (prev: ${detail.previousRowIndex})` : ''))
+        }
+        gridCellRangeClick.onrowchange = (detail) => {
+            logEvent('onrowchange', `row ${detail.rowIndex}, field: ${detail.field}, ${JSON.stringify(detail.oldValue)} → ${JSON.stringify(detail.newValue)}`)
+        }
+        gridCellRangeClick.oncellselectionchange = (detail) => {
+            if (detail.range) {
+                logEvent('oncellselectionchange', `${detail.cellCount} cell(s)`)
+            } else {
+                logEvent('oncellselectionchange', 'cleared')
+            }
+        }
+        gridCellRangeClick.onroweditstart = (detail) => {
+            logEvent('onroweditstart', `row ${detail.rowIndex}, field: ${detail.field}`)
+        }
+        gridCellRangeClick.onroweditcancel = (detail) => {
+            logEvent('onroweditcancel', `row ${detail.rowIndex}, field: ${detail.field}`)
+        }
+
+        // Selection status (polled)
         setInterval(() => {
             const log = document.getElementById('cellRangeClickLog')
             const range = gridCellRangeClick.selectedCellRange
