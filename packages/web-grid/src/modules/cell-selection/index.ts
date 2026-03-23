@@ -65,7 +65,7 @@ export function isCellSelectionPending(): boolean {
 export function handleCellMouseDown<T>(ctx: GridContext<T>, rowIndex: number, colIndex: number, event: MouseEvent): void {
 	// DON'T preventDefault() immediately - let the cell get focus first
 	// We'll preventDefault() later if/when drag threshold is exceeded
-	
+
 	// Clear any existing selection before starting new one (unless extending with Shift)
 	const isExtendingSelection = event.shiftKey && ctx.grid.cellSelectionMode === 'shift'
 	if (ctx.grid.selectedCellRange && !isExtendingSelection) {
@@ -210,6 +210,10 @@ function startActualDrag<T>(ctx: GridContext<T>): void {
 	const oldFocus = ctx.grid.focusedCell
 	ctx.grid.clearFocusedCell()
 	updateFocusVisual(ctx, oldFocus, null)
+
+	// Blur the DOM element — mousedown gave it :focus, whose box-shadow persists until blur
+	const focused = ctx.shadow.querySelector('.wg__cell:focus') as HTMLElement
+	focused?.blur()
 
 	// Clear focused row visual (tracked separately from cell focus)
 	const focusedRowIndex = ctx.grid.focusedRowIndex

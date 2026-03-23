@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`onrowfocus` firing during cell range selection**: `onrowfocus` was triggered when starting a cell range selection (click+drag or shift+click) because the browser's focus event fires on mousedown. Now cell selection operations skip row focus entirely.
 - **`onrowfocus` firing on mousedown instead of click**: `onrowfocus` fired immediately when pressing the mouse button down on a cell, before the click completed. Now mouse-triggered row focus is deferred to the click event (mouseup), while keyboard-triggered focus (Tab, arrows) still fires immediately.
+- **Focused cell outline persisting during cell range drag**: When starting a cell range selection by click+drag, the initially clicked cell kept its `:focus` box-shadow outline throughout the entire drag. The browser's native `:focus` pseudo-class was applied on mousedown but never removed. Now the focused cell is blurred when the drag threshold is exceeded.
+- **Toolbar tooltip staying visible**: The rich tooltip on toolbar buttons remained visible when the toolbar moved to a different row or closed entirely (e.g., after delete). The `mouseleave` event never fires when DOM elements are removed. Now tooltip is explicitly hidden when the toolbar closes or switches rows.
+- **Selections persisting after toolbar action**: Row, cell range, and column selections were not cleared when clicking a toolbar action button. Now selections are cleared through the action pipeline before processing toolbar clicks.
+- **Synchronous render after inline toolbar action detaching triggerElement**: `handleInlineActionClick` called `this.render()` synchronously after firing `ontoolbarclick`, which destroyed the `triggerElement` passed in the event detail. Consumers positioning UI relative to it (e.g., popconfirm) got a detached element. Removed the synchronous render — `requestUpdate` microtask handles it.
+
+### Added
+
+- **Logging system**: Added loglevel-based logging with color-coded categories (`GRID:INIT`, `GRID:DATA`, `GRID:UI`, `GRID:INTERACTION`). Silent by default; enable at runtime via `window.components['web-grid'].logging.enableLogging()`.
+- **`window.components['web-grid']` registration**: Runtime introspection API with `version()`, `config`, and `logging` — matching the pattern used by web-multiselect and web-daterangepicker.
 
 ### Docs
 
