@@ -210,6 +210,14 @@
   --wg-error-indicator-color: var(--wg-danger-color);
 
   /* ==========================================================================
+     DIRTY INDICATOR (unsaved changes)
+     ========================================================================== */
+  --wg-dirty-indicator-color: #ed8b00;
+  --wg-dirty-indicator-size: 6px;
+  --wg-dirty-cell-bg: rgba(237, 139, 0, 0.08);
+  --wg-dirty-row-number-border-color: #ed8b00;
+
+  /* ==========================================================================
      EDITOR
      ========================================================================== */
   --wg-editor-bg: var(--wg-surface-1);

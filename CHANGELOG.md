@@ -5,10 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.3] - 2026-03-23
+## [1.0.4] - 2026-03-31
+
+### Added
+
+- **Dirty cell/row indicator**: New `isDirtyIndicatorVisible` property (default: `true`) shows which cells have been edited but not saved. Dirty cells get a subtle orange background tint and a small corner triangle (Excel-style). Row numbers show an orange left border when any cell in the row is modified. Fully themable via `--wg-dirty-indicator-color`, `--wg-dirty-cell-bg`, `--wg-dirty-indicator-size`. New public methods: `isCellDirty(rowIndex, field)`, `isRowDirty(rowIndex)`.
 
 ### Fixed
 
+- **Dropdown positioning offset in shadow DOM**: Dropdown editors (select, combobox, autocomplete) appeared offset from their anchor cell because `position: fixed` with Floating UI computed viewport-relative coordinates that didn't account for the shadow DOM host offset. Switched to `position: absolute` with `strategy: 'absolute'`, matching the tooltip fix from v1.0.2.
+
+## [1.0.3] - 2026-03-23
+
+### Fixed
 - **`onrowfocus` firing during cell range selection**: `onrowfocus` was triggered when starting a cell range selection (click+drag or shift+click) because the browser's focus event fires on mousedown. Now cell selection operations skip row focus entirely.
 - **`onrowfocus` firing on mousedown instead of click**: `onrowfocus` fired immediately when pressing the mouse button down on a cell, before the click completed. Now mouse-triggered row focus is deferred to the click event (mouseup), while keyboard-triggered focus (Tab, arrows) still fires immediately.
 - **Focused cell outline persisting during cell range drag**: When starting a cell range selection by click+drag, the initially clicked cell kept its `:focus` box-shadow outline throughout the entire drag. The browser's native `:focus` pseudo-class was applied on mousedown but never removed. Now the focused cell is blurred when the drag threshold is exceeded.

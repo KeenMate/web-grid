@@ -53,6 +53,12 @@ discardAllDrafts(): void
   Discard all draft changes across all rows. Reverts every edited cell
   to its original value.
 
+isCellDirty(rowIndex: number, field: string): boolean
+  Check if a specific cell has been modified (draft value differs from original).
+
+isRowDirty(rowIndex: number): boolean
+  Check if any cell in a row has been modified (draft exists for that row).
+
 
 ----------------------------------------------------------------------
 VALIDATION

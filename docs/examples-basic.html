@@ -37,6 +37,9 @@
                 <label>
                     <input type="checkbox" id="navigate" checked> Navigate Mode
                 </label>
+                <label>
+                    <input type="checkbox" id="isDirtyIndicatorVisible" checked> Dirty Indicator
+                </label>
             </div>
 
             <web-grid id="grid" style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0;"></web-grid>
@@ -353,6 +356,10 @@
 
         document.getElementById('navigate').addEventListener('change', (e) => {
             grid.editTrigger = e.target.checked ? 'navigate' : 'dblclick'
+        })
+
+        document.getElementById('isDirtyIndicatorVisible').addEventListener('change', (e) => {
+            grid.isDirtyIndicatorVisible = e.target.checked
         })
     </script>
 </body>

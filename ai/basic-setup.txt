@@ -89,6 +89,7 @@ page-size               pageSize                number     10        Rows per pa
 is-editable             isEditable              boolean    false     Enable cell editing
 edit-trigger            editTrigger             string     'dblclick' How editing starts (see below)
 is-row-numbers-visible  isRowNumbersVisible     boolean    false     Show row number column
+                        isDirtyIndicatorVisible boolean    true      Show dirty indicator on edited cells
 mode                    mode                    string     (none)    Grid mode (see below)
 is-scrollable           isScrollable            boolean    false     Enable scroll container
 freeze-columns          freezeColumns           number     0         Freeze first N columns

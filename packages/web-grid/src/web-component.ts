@@ -464,6 +464,12 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get isRowNumbersVisible(): boolean { return this.grid.isRowNumbersVisible }
 	set isRowNumbersVisible(value: boolean) { this.grid.isRowNumbersVisible = value }
 
+	get isDirtyIndicatorVisible(): boolean { return this.grid.isDirtyIndicatorVisible }
+	set isDirtyIndicatorVisible(value: boolean) { this.grid.isDirtyIndicatorVisible = value }
+
+	isCellDirty(rowIndex: number, field: string): boolean { return this.grid.isCellDirty(rowIndex, field) }
+	isRowDirty(rowIndex: number): boolean { return this.grid.isRowDirty(rowIndex) }
+
 	get isStickyRowNumbers(): boolean { return this.grid.isStickyRowNumbers }
 	set isStickyRowNumbers(value: boolean) { this.grid.isStickyRowNumbers = value }
 

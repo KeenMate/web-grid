@@ -129,6 +129,7 @@ export class WebGrid<T = unknown> {
 	protected _isStickyRowNumbers: boolean = false
 	protected _freezeColumns: number = 0
 	protected _invalidCells: CellValidationState[] = []
+	protected _isDirtyIndicatorVisible: boolean = true
 	protected _isRowToolbarVisible: boolean = false
 	protected _rowToolbar: RowToolbarConfig<T>[] = ['add', 'delete', 'duplicate']
 	protected _toolbarVerticalAlign: 'top' | 'center' | 'bottom' = 'bottom'
@@ -420,6 +421,12 @@ export class WebGrid<T = unknown> {
 	get isRowNumbersVisible(): boolean { return this._isRowNumbersVisible }
 	set isRowNumbersVisible(value: boolean) {
 		this._isRowNumbersVisible = value
+		this.requestUpdate()
+	}
+
+	get isDirtyIndicatorVisible(): boolean { return this._isDirtyIndicatorVisible }
+	set isDirtyIndicatorVisible(value: boolean) {
+		this._isDirtyIndicatorVisible = value
 		this.requestUpdate()
 	}
 
@@ -1782,6 +1789,26 @@ export class WebGrid<T = unknown> {
 	}
 
 	hasRowDraft(rowIndex: number): boolean {
+		return this._draftRows.has(rowIndex)
+	}
+
+	/**
+	 * Check if a specific cell has been modified (draft value differs from original)
+	 */
+	isCellDirty(rowIndex: number, field: string): boolean {
+		const draftRow = this._draftRows.get(rowIndex)
+		if (!draftRow) return false
+		const originalItem = this.displayItems[rowIndex]
+		if (!originalItem) return false
+		const draftVal = (draftRow as Record<string, unknown>)[field]
+		const origVal = (originalItem as Record<string, unknown>)[field]
+		return draftVal !== origVal
+	}
+
+	/**
+	 * Check if any cell in a row has been modified
+	 */
+	isRowDirty(rowIndex: number): boolean {
 		return this._draftRows.has(rowIndex)
 	}
 

@@ -38,6 +38,7 @@
 @import '_freeze.css';
 @import '_cells.css';
 @import '_row-locking.css';
+@import '_dirty-indicator.css';
 @import '_editors.css';
 @import '_dropdown.css';
 @import '_navigation.css';

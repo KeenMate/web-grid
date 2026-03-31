@@ -1,0 +1,37 @@
+/* ==============================================================================
+   DIRTY INDICATOR (Unsaved Changes)
+   ==============================================================================
+   Shows a small triangle in the top-left corner of cells that have been edited
+   but not yet saved/committed to the original data.
+*/
+
+/* Dirty cell - subtle background tint */
+.wg__cell--dirty {
+  background: var(--wg-dirty-cell-bg) !important;
+}
+
+/* Dirty cell - small corner triangle via ::before */
+.wg__cell--dirty::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: var(--wg-dirty-indicator-size) var(--wg-dirty-indicator-size) 0 0;
+  border-color: var(--wg-dirty-indicator-color) transparent transparent transparent;
+  pointer-events: none;
+}
+
+/* Don't show dirty indicator when cell is being actively edited */
+.wg__cell--dirty.wg__cell--editing::before {
+  display: none;
+}
+
+/* Row number dirty indicator - left border accent */
+.wg__row-number--dirty {
+  box-shadow:
+    inset 3px 0 0 var(--wg-dirty-row-number-border-color),
+    inset calc(-1 * var(--wg-cell-splitter-width)) 0 0 var(--wg-cell-splitter-color);
+}

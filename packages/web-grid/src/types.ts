@@ -471,6 +471,7 @@ export type QuickGridProps<T> = {
 	isStriped?: boolean
 	isHoverable?: boolean
 	isRowNumbersVisible?: boolean  // Show row number column on the left (default: false)
+	isDirtyIndicatorVisible?: boolean  // Show visual indicator on cells with unsaved changes (default: true)
 	isStickyRowNumbers?: boolean  // Make row number column sticky (freeze panes)
 	freezeColumns?: number  // Freeze first N columns (after visual reorder from isFrozen: true)
 	class?: string

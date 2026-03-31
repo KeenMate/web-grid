@@ -32,6 +32,9 @@
     --wg-active-bg: #4a4a4a;
     --wg-danger-bg-light: #442726;
     --wg-danger-color: #f87c86;
+    --wg-dirty-indicator-color: #ffa940;
+    --wg-dirty-cell-bg: rgba(255, 169, 64, 0.12);
+    --wg-dirty-row-number-border-color: #ffa940;
   }
 }
 
@@ -56,6 +59,8 @@
   --wg-active-bg: #4a4a4a;
   --wg-danger-bg-light: #442726;
   --wg-danger-color: #f87c86;
+  --wg-dirty-indicator-color: #ffa940;
+  --wg-dirty-row-number-border-color: #ffa940;
 }
 
 /* ==============================================================================

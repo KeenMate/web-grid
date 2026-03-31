@@ -27,12 +27,12 @@ export function renderDropdown<T>(
 
 	// Set base styles (position will be set by Floating UI)
 	dropdown.style.cssText = `
-		position: fixed;
+		position: absolute;
 		top: 0;
 		left: 0;
 		max-height: 200px;
 		overflow-y: auto;
-		z-index: 1000;
+		z-index: var(--wg-z-dropdown);
 	`
 
 	// Render options
@@ -93,7 +93,7 @@ export function renderDropdown<T>(
 
 	// Use Floating UI to position the dropdown
 	computePosition(anchor, dropdown, {
-		strategy: 'fixed',
+		strategy: 'absolute',
 		placement: 'bottom-start',
 		middleware: [
 			// Add 1px gap to prevent sub-pixel overlap with cell border

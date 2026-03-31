@@ -115,6 +115,9 @@ All four methods apply the same dark palette overrides:
   --wg-hover-bg: #3a3a3a
   --wg-danger-color: #f87c86
   --wg-danger-bg-light: #442726
+  --wg-dirty-indicator-color: #ffa940
+  --wg-dirty-cell-bg: rgba(255, 169, 64, 0.12)
+  --wg-dirty-row-number-border-color: #ffa940
 
 The attribute can be on the <web-grid> element itself or any ancestor:
 

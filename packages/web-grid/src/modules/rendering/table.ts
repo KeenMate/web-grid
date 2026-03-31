@@ -246,7 +246,8 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			} else if (isEmptyRow) {
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.grid.newRowIndicator}</td>`
 			} else {
-				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
+				const dirtyClass = ctx.grid.isDirtyIndicatorVisible && ctx.grid.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
+				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
 			// Always include row number offset when visible (prevents frozen columns from overlapping)
@@ -295,6 +296,9 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 			if (column.maxLines) classes.push('wg__cell--line-clamp')
 			if (isActivelyEditing) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
+			if (ctx.grid.isDirtyIndicatorVisible && ctx.grid.isCellDirty(rowIndex, field)) {
+				classes.push('wg__cell--dirty')
+			}
 			if (ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
 			if (ctx.grid.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
 			if (isFrozen) classes.push('wg__cell--frozen')
@@ -551,7 +555,8 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			} else if (isEmptyRow) {
 				rowNumberCell = `<td class="wg__cell wg__row-number wg__empty-row-indicator${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${ctx.grid.newRowIndicator}</td>`
 			} else {
-				rowNumberCell = `<td class="wg__cell wg__row-number${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
+				const dirtyClass = ctx.grid.isDirtyIndicatorVisible && ctx.grid.isRowDirty(rowIndex) ? ' wg__row-number--dirty' : ''
+				rowNumberCell = `<td class="wg__cell wg__row-number${dirtyClass}${frozenClass}" style="${stickyStyle}" data-row-number="${rowIndex}">${rowIndex + 1}</td>`
 			}
 
 			// Always include row number offset when visible (prevents frozen columns from overlapping)
@@ -600,6 +605,9 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 			if (column.maxLines) classes.push('wg__cell--line-clamp')
 			if (isActivelyEditing) classes.push('wg__cell--editing')
 			if (ctx.grid.isCellInvalid(rowIndex, field)) classes.push('wg__cell--invalid')
+			if (ctx.grid.isDirtyIndicatorVisible && ctx.grid.isCellDirty(rowIndex, field)) {
+				classes.push('wg__cell--dirty')
+			}
 			if (ctx.grid.isCellInSelectedRange(rowIndex, visualIndex)) classes.push('wg__cell--in-range')
 			if (ctx.grid.isColumnSelected(visualIndex)) classes.push('wg__cell--column-selected')
 			if (isFrozen) classes.push('wg__cell--frozen')

@@ -427,6 +427,27 @@ Draft behavior:
   - The onrowchange callback includes both row (original) and draftRow (with
     changes) so the consumer can compare.
 
+Dirty indicator:
+  grid.isDirtyIndicatorVisible (boolean, default: true)
+    When enabled, edited cells show a subtle orange background tint and a small
+    corner triangle. Row numbers show an orange left border when any cell in
+    the row has been modified.
+
+  grid.isCellDirty(rowIndex, field)  -- Returns true if the cell's draft value
+                                        differs from the original.
+  grid.isRowDirty(rowIndex)          -- Returns true if any cell in the row
+                                        has been modified (draft exists).
+
+  CSS variables for theming:
+    --wg-dirty-indicator-color       (default: #ed8b00)
+    --wg-dirty-indicator-size        (default: 6px)
+    --wg-dirty-cell-bg               (default: rgba(237, 139, 0, 0.08))
+    --wg-dirty-row-number-border-color (default: #ed8b00)
+
+  CSS classes applied:
+    .wg__cell--dirty                 -- on dirty data cells
+    .wg__row-number--dirty           -- on row number cells of dirty rows
+
 
 EVENTS (CALLBACKS)
 ------------------
