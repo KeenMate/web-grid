@@ -2,14 +2,17 @@
 
 A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
-## What's New in v1.0.3
+## What's New in v1.0.4
+
+- **Dirty cell/row indicator**: New `isDirtyIndicatorVisible` property (default: `true`). Edited cells show a subtle orange tint + corner triangle; row numbers get an orange left border. Themable via `--wg-dirty-*` variables. Public methods: `isCellDirty()`, `isRowDirty()`.
+- **Dropdown positioning fix**: Fixed dropdown editors appearing offset in shadow DOM by switching from `position: fixed` to `position: absolute`.
+
+### v1.0.3
 
 - **`onrowfocus` fixes**: No longer fires during cell range selection (drag/shift+click). Mouse-triggered row focus now defers to click (mouseup) instead of mousedown; keyboard navigation still fires immediately.
 - **Cell selection visual fix**: Focused cell outline no longer persists during cell range drag.
 - **Toolbar fixes**: Tooltip hides when toolbar moves/closes. Selections cleared on toolbar action click. `triggerElement` in `ontoolbarclick` detail stays alive (no longer detached by synchronous re-render).
 - **Z-index layer system**: All z-index values now use CSS custom properties (`--wg-z-header`, `--wg-z-frozen`, etc.). Fixes cell selection bleeding through sticky header and frozen header stacking.
-- **Logging system**: loglevel-based logging with 4 categories (`GRID:INIT`, `GRID:DATA`, `GRID:UI`, `GRID:INTERACTION`). Enable via `window.components['web-grid'].logging.enableLogging()`.
-- **Runtime API**: `window.components['web-grid']` with `version()`, `config`, and `logging` — matching web-multiselect and web-daterangepicker.
 
 ### v1.0.2
 
