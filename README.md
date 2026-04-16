@@ -27,37 +27,220 @@ A feature-rich, framework-agnostic data grid web component built with TypeScript
 npm install @keenmate/web-grid
 ```
 
-## Quick Start
-
-### ES Module (recommended)
+Or via CDN (no bundler):
 
 ```html
-<script type="module">
-  import '@keenmate/web-grid'
-</script>
-
-<web-grid id="grid"></web-grid>
-
-<script type="module">
-  const grid = document.getElementById('grid')
-  grid.items = [
-    { id: 1, name: 'Alice', age: 28 },
-    { id: 2, name: 'Bob', age: 34 }
-  ]
-  grid.columns = [
-    { field: 'id', title: 'ID', width: '60px' },
-    { field: 'name', title: 'Name' },
-    { field: 'age', title: 'Age' }
-  ]
-  grid.sortMode = 'multi'  // Enable multi-column sorting
-</script>
+<script type="module" src="https://unpkg.com/@keenmate/web-grid"></script>
 ```
 
-### UMD (Script Tag)
+## Getting Started
+
+### Step 1 — Import the component
+
+Importing the package registers the `<web-grid>` custom element globally. You only need to import it once anywhere in your app.
+
+```javascript
+import '@keenmate/web-grid'
+```
+
+For vanilla HTML without a bundler:
 
 ```html
-<script src="https://unpkg.com/@keenmate/web-grid"></script>
-<web-grid id="grid"></web-grid>
+<script type="module" src="https://unpkg.com/@keenmate/web-grid"></script>
+```
+
+### Step 2 — Drop the element into your markup
+
+```html
+<web-grid id="grid" style="max-height: 400px"></web-grid>
+```
+
+`max-height` (or `height`) on the host is how you control sizing — see [Height Modes](#height-modes).
+
+### Step 3 — Assign data and columns
+
+The grid reads its configuration from properties on the element, not attributes. Grab a reference and set what you need:
+
+```javascript
+const grid = document.getElementById('grid')
+
+grid.items = [
+  { id: 1, name: 'Alice', age: 28, department: 'Engineering' },
+  { id: 2, name: 'Bob',   age: 34, department: 'Marketing' }
+]
+
+grid.columns = [
+  { field: 'id',         title: 'ID',         width: '60px' },
+  { field: 'name',       title: 'Name',       width: '160px' },
+  { field: 'age',        title: 'Age',        width: '80px', horizontalAlign: 'right' },
+  { field: 'department', title: 'Department', width: '160px' }
+]
+```
+
+That's the minimum — a read-only grid with the headers, rows, and columns you defined.
+
+### Step 4 — Enable the features you need
+
+Turn on whatever the page calls for. Everything is off by default:
+
+```javascript
+grid.isStriped = true            // alternating row backgrounds
+grid.isHoverable = true          // hover highlight
+grid.isRowNumbersVisible = true  // leftmost # column
+grid.sortMode = 'multi'          // click headers to sort, Ctrl+click to add
+grid.isPageable = true
+grid.pageSize = 25
+grid.isEditable = true
+grid.editTrigger = 'navigate'    // Excel-like: type to edit the focused cell
+```
+
+### Essential Properties
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| `items` | `T[]` | Row data — the only required "content" property |
+| `columns` | `Column<T>[]` | Column definitions with at least a `field` each |
+| `isStriped` / `isHoverable` / `isRowNumbersVisible` | `boolean` | Cosmetic toggles |
+| `sortMode` | `'none' \| 'single' \| 'multi'` | Column sort behavior |
+| `isPageable` + `pageSize` | `boolean` + `number` | Pagination |
+| `isEditable` + `editTrigger` | `boolean` + `EditTrigger` | Enable inline editing and how it starts |
+| `isFilterable` | `boolean` | Per-column filter row under the headers |
+| `mode` | `'read-only' \| 'excel' \| 'input-matrix'` | Presets that set several of the above together |
+
+## Common Configurations
+
+Short recipes for common setups. Each sets only what's necessary on top of the Step 3 minimum.
+
+### Sortable grid
+
+```javascript
+grid.sortMode = 'multi'   // or 'single'
+```
+
+### Paginated grid with top + bottom pager
+
+```javascript
+grid.isPageable = true
+grid.pageSize = 25
+grid.paginationPosition = 'top-center|bottom-center'
+```
+
+### Editable grid (Excel-like navigation)
+
+```javascript
+grid.mode = 'excel'   // isEditable + editTrigger='navigate' + cellSelectionMode='click'
+```
+
+Or opt in manually for finer control:
+
+```javascript
+grid.isEditable = true
+grid.editTrigger = 'navigate'
+```
+
+### Per-column editors
+
+```javascript
+grid.columns = [
+  { field: 'name',       title: 'Name',  editor: 'text' },
+  { field: 'salary',     title: 'Salary', editor: 'number', editorOptions: { min: 0, step: 1000 } },
+  { field: 'department', title: 'Dept',  editor: 'select',
+    editorOptions: {
+      options: [
+        { value: 'eng', label: 'Engineering' },
+        { value: 'sal', label: 'Sales' }
+      ]
+    }
+  }
+]
+```
+
+### Height modes
+
+The grid's shadow DOM uses `max-height: inherit`, so setting `max-height` on the host controls its internal scroll container:
+
+```html
+<!-- Container: grid caps at 400px, scrolls internally -->
+<web-grid style="max-height: 400px"></web-grid>
+
+<!-- Full height: grid expands with content, page handles scrolling -->
+<web-grid style="height: 100%"></web-grid>
+```
+
+For full-height mode, also set `tableBorderOnly = true` so the grid doesn't capture wheel events:
+
+```javascript
+grid.tableBorderOnly = true
+```
+
+### Header context menu with column hide + visibility submenu
+
+```javascript
+grid.headerContextMenu = [
+  'sortAsc', 'sortDesc', 'clearSort',
+  { dividerBefore: true },
+  'hideColumn',         // hide the right-clicked column
+  'columnVisibility'    // submenu with a toggle per column
+]
+```
+
+### Hide a column programmatically
+
+```javascript
+grid.columns.find(c => c.field === 'email').isHidden = true
+grid.columns = [...grid.columns]   // reassign to trigger re-render
+```
+
+### Row toolbar
+
+```javascript
+grid.isRowToolbarVisible = true
+grid.rowToolbar = ['add', 'delete', 'duplicate', 'moveUp', 'moveDown']
+```
+
+### Master/detail — react to row focus
+
+```javascript
+grid.onrowfocus = ({ row, rowIndex }) => {
+  showDetailsFor(row)
+}
+```
+
+### Validate a cell before commit
+
+```javascript
+grid.columns = [{
+  field: 'email',
+  title: 'Email',
+  editor: 'text',
+  beforeCommitCallback: ({ value }) => {
+    if (!/^[^@]+@[^@]+$/.test(String(value))) {
+      return { valid: false, message: 'Invalid email address' }
+    }
+    return { valid: true }
+  }
+}]
+```
+
+### TypeScript
+
+Full type definitions ship with the package. Import types from the root:
+
+```typescript
+import '@keenmate/web-grid'
+import type { Column, RowChangeDetail } from '@keenmate/web-grid'
+
+interface Employee {
+  id: number
+  name: string
+  salary: number
+}
+
+const columns: Column<Employee>[] = [
+  { field: 'id',     title: 'ID',     width: '60px' },
+  { field: 'name',   title: 'Name',   width: '200px' },
+  { field: 'salary', title: 'Salary', editor: 'number' }
+]
 ```
 
 ## Features
