@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-04-21
+
+### Fixed
+
+- **Context menu not flipping at screen edges**: Both the cell context menu and header context menu clipped instead of flipping to the opposite side when opened near a viewport edge. The root menu used `strategy: 'absolute'` inside a `position: fixed` container, which gave Floating UI the wrong bounds for `flip`/`shift`. Switched to `strategy: 'fixed'` with `position: fixed` on the menu itself so placement math runs in viewport coords.
+- **Submenus clipping at screen edges**: Header menu submenus (e.g. Column Visibility) were positioned with plain CSS (`left: 100%`) and shown via `:hover`, so they overflowed the viewport with no flip behavior. Replaced with Floating UI `computePosition` (`placement: 'right-start'` + `flip` fallbacks + `shift`) and JS-based hover handlers with a short hide delay so the cursor can cross into the submenu.
+- **Context menu not closing on grid-internal scroll**: The menu subscribed only to the `'window'` scroll source, but scroll events from the grid's `.wg` container live inside shadow DOM and are non-composed, so they never reach the window capture listener. Now subscribes to both `'window'` and `'container'` sources, matching the dropdown close-on-scroll pipeline.
+- **Context menu offset not flipping with placement**: The configured `contextMenuXOffset`/`contextMenuYOffset` were pre-added to the click coordinates, so when the menu flipped to `*-end` or `top-*` the offset pushed the menu the wrong way (toward the cursor instead of away). Now applied via Floating UI's `offset` middleware as `{ mainAxis: yOffset, alignmentAxis: xOffset }`, which flips sign automatically with the resolved placement.
+- **Dropdown selected option unreadable in dark mode**: The `--wg-accent-color-light` fallback was a hardcoded opaque pale blue (`#e6f2ff`) and was not overridden in the dark-mode block, so the selected option in select/combobox/autocomplete dropdowns rendered bright-blue text/background against the dark surface. Replaced the fallback with `color-mix(in srgb, var(--wg-accent-color) 15%, transparent)` — the same transparent-tint pattern already used for selection/row-focus/fill-range — so it blends with whichever surface sits behind it in either theme.
+
 ## [1.0.4] - 2026-03-31
 
 ### Added

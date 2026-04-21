@@ -2,24 +2,18 @@
 
 A feature-rich, framework-agnostic data grid web component built with TypeScript. Sorting, filtering, pagination, inline editing (8 editor types), cell range selection, clipboard support, row toolbar, context menus, frozen columns, column reorder/resize, fill handle, virtual scroll, dark mode, and full CSS variable theming — all in a Shadow DOM encapsulated `<web-grid>` element.
 
+## What's New in v1.0.5
+
+- **Context menus flip at screen edges**: Both cell and header context menus now correctly flip to the opposite side when opened near a viewport edge (they were clipping before). Switched the root menu to `strategy: 'fixed'` + `position: fixed` so Floating UI's `flip`/`shift` run in viewport coordinates.
+- **Header submenus are viewport-aware**: Header menu submenus (e.g. Column Visibility) now use Floating UI with `placement: 'right-start'` and `flip` fallbacks, replacing the old CSS-only `left: 100%` positioning. A short hide delay lets the cursor cross the gap between parent item and submenu.
+- **Context menu closes on grid-internal scroll**: The menu now subscribes to both the `'window'` and `'container'` scroll sources. Previously, scrolling within the grid didn't close the menu because scroll events aren't composed across shadow DOM.
+- **Context menu offset flips with placement**: `contextMenuXOffset`/`contextMenuYOffset` are now applied via Floating UI's `offset` middleware (`mainAxis` / `alignmentAxis`), so the gap between cursor and menu stays correct even when the menu flips to `*-end` or `top-*`.
+- **Dropdown selected option readable in dark mode**: The selected option in select/combobox/autocomplete dropdowns no longer renders as pale blue against the dark surface. `--wg-accent-color-light` now falls back to a transparent `color-mix` that blends with the underlying surface in either theme.
+
 ## What's New in v1.0.4
 
 - **Dirty cell/row indicator**: New `isDirtyIndicatorVisible` property (default: `true`). Edited cells show a subtle orange tint + corner triangle; row numbers get an orange left border. Themable via `--wg-dirty-*` variables. Public methods: `isCellDirty()`, `isRowDirty()`.
 - **Dropdown positioning fix**: Fixed dropdown editors appearing offset in shadow DOM by switching from `position: fixed` to `position: absolute`.
-
-### v1.0.3
-
-- **`onrowfocus` fixes**: No longer fires during cell range selection (drag/shift+click). Mouse-triggered row focus now defers to click (mouseup) instead of mousedown; keyboard navigation still fires immediately.
-- **Cell selection visual fix**: Focused cell outline no longer persists during cell range drag.
-- **Toolbar fixes**: Tooltip hides when toolbar moves/closes. Selections cleared on toolbar action click. `triggerElement` in `ontoolbarclick` detail stays alive (no longer detached by synchronous re-render).
-- **Z-index layer system**: All z-index values now use CSS custom properties (`--wg-z-header`, `--wg-z-frozen`, etc.). Fixes cell selection bleeding through sticky header and frozen header stacking.
-
-### v1.0.2
-
-- **Tooltip positioning in transformed containers**: Fixed tooltips appearing at grid's top-left when ancestor has CSS `transform`. Switched to `position: absolute` with `:host` as positioning context.
-- **HTML tooltips**: New `isTooltipHtml` column option for rich tooltip content.
-- **`ontoolbarclick` detail**: Now includes `event` (MouseEvent) and `triggerElement` (HTMLElement) for anchoring popovers to toolbar buttons inside shadow DOM.
-- **Tooltip show delay**: Reduced default from 400ms to 200ms.
 
 ## Installation
 

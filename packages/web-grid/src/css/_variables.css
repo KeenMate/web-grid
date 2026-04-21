@@ -46,7 +46,7 @@
   --wg-accent-color: var(--base-accent-color, #0078d4);
   --wg-accent-color-hover: var(--base-accent-color-hover, #106ebe);
   --wg-accent-color-active: var(--base-accent-color-active, #005a9e);
-  --wg-accent-color-light: var(--base-accent-color-light, #e6f2ff);
+  --wg-accent-color-light: var(--base-accent-color-light, color-mix(in srgb, var(--wg-accent-color) 15%, transparent));
 
   /* Text Color Levels (FluentUI-style hierarchy) */
   --wg-text-color-1: var(--base-text-color-1, #242424);

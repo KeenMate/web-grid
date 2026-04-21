@@ -2,7 +2,7 @@
 // Context Menu Module
 // =============================================================================
 
-import { computePosition, flip, shift } from '@floating-ui/dom'
+import { computePosition, flip, offset, shift } from '@floating-ui/dom'
 import type {
 	ContextMenuItem,
 	ContextMenuContext,
@@ -46,7 +46,7 @@ const CONTEXT_MENU_STYLES = `
 }
 
 .wg-context-menu {
-	position: absolute;
+	position: fixed;
 	background: var(--wg-cm-background, #fff);
 	border: 1px solid var(--wg-cm-border-color);
 	border-radius: var(--wg-cm-border-radius);
@@ -125,15 +125,8 @@ const CONTEXT_MENU_STYLES = `
 }
 
 .wg-context-menu--submenu {
-	position: absolute;
-	left: 100%;
-	top: -5px;
-	/* No margin - box-shadow provides visual separation, no hover gap */
+	position: fixed;
 	display: none;
-}
-
-.wg-context-menu__item--has-submenu:hover > .wg-context-menu--submenu {
-	display: block;
 }
 
 /* Submenu item with checkbox-like toggle */
@@ -228,27 +221,26 @@ export function openContextMenu<T>(
 
 	const menu = container.querySelector('.wg-context-menu') as HTMLElement
 
-	// Apply offsets to click coordinates
-	const menuX = x + xOffset
-	const menuY = y + yOffset
-
-	// Position using a virtual element at the adjusted coordinates
+	// Position using a virtual element at the click coordinates; offsets are applied
+	// via the offset middleware so they flip sign along with the placement near edges
 	const virtualEl = {
 		getBoundingClientRect: () => ({
 			width: 0,
 			height: 0,
-			x: menuX,
-			y: menuY,
-			top: menuY,
-			left: menuX,
-			right: menuX,
-			bottom: menuY
+			x: x,
+			y: y,
+			top: y,
+			left: x,
+			right: x,
+			bottom: y
 		})
 	}
 
 	computePosition(virtualEl, menu, {
 		placement: 'bottom-start',
+		strategy: 'fixed',
 		middleware: [
+			offset({ mainAxis: yOffset, alignmentAxis: xOffset }),
 			flip({ fallbackPlacements: ['top-start', 'bottom-end', 'top-end'] }),
 			shift({ padding: 8 })
 		]
@@ -268,15 +260,21 @@ export function openContextMenu<T>(
 		}
 	})
 
-	// Subscribe to scroll events via the scroll event manager
-	const scrollSubscription = ctx.scrollEvents.subscribe('window', () => {
+	// Close on scroll from either the grid's internal scroll container or the page
+	// (scroll events aren't composed, so a window capture listener can't see shadow-DOM scrolls)
+	const windowScrollSub = ctx.scrollEvents.subscribe('window', () => {
+		cleanup()
+		onClose()
+	})
+	const containerScrollSub = ctx.scrollEvents.subscribe('container', () => {
 		cleanup()
 		onClose()
 	})
 
 	// Cleanup function to remove all listeners and close menu
 	const cleanup = () => {
-		scrollSubscription.unsubscribe()
+		windowScrollSub.unsubscribe()
+		containerScrollSub.unsubscribe()
 		document.removeEventListener('mousedown', handleOutsideClick)
 		document.removeEventListener('keydown', handleKeyDown)
 		container.remove()
@@ -615,6 +613,55 @@ export function executeHeaderMenuAction<T>(
 	}
 }
 
+function showSubmenu(parentItem: HTMLElement, submenu: HTMLElement): void {
+	submenu.style.display = 'block'
+	computePosition(parentItem, submenu, {
+		placement: 'right-start',
+		strategy: 'fixed',
+		middleware: [
+			flip({ fallbackPlacements: ['left-start', 'right-end', 'left-end'] }),
+			shift({ padding: 8 })
+		]
+	}).then(({ x, y }) => {
+		submenu.style.left = `${x}px`
+		submenu.style.top = `${y}px`
+	})
+}
+
+function attachSubmenuHandlers(menu: HTMLElement): void {
+	const parentItems = menu.querySelectorAll('.wg-context-menu__item--has-submenu')
+	parentItems.forEach(node => {
+		const parentItem = node as HTMLElement
+		const submenu = parentItem.querySelector(':scope > .wg-context-menu--submenu') as HTMLElement | null
+		if (!submenu) return
+
+		let hideTimer: number | null = null
+
+		const cancelHide = () => {
+			if (hideTimer !== null) {
+				clearTimeout(hideTimer)
+				hideTimer = null
+			}
+		}
+
+		// Delay hide so the cursor has time to cross the gap from parent item to submenu
+		const scheduleHide = () => {
+			hideTimer = window.setTimeout(() => {
+				submenu.style.display = 'none'
+				hideTimer = null
+			}, 150)
+		}
+
+		parentItem.addEventListener('mouseenter', () => {
+			cancelHide()
+			showSubmenu(parentItem, submenu)
+		})
+		parentItem.addEventListener('mouseleave', scheduleHide)
+		submenu.addEventListener('mouseenter', cancelHide)
+		submenu.addEventListener('mouseleave', scheduleHide)
+	})
+}
+
 /**
  * Open header context menu at position
  */
@@ -639,6 +686,7 @@ export function openHeaderContextMenu<T>(
 	document.body.appendChild(container)
 
 	let currentMenu = container.querySelector('.wg-context-menu') as HTMLElement
+	attachSubmenuHandlers(currentMenu)
 
 	// Position using a virtual element at the click coordinates
 	const virtualEl = {
@@ -656,6 +704,7 @@ export function openHeaderContextMenu<T>(
 
 	computePosition(virtualEl, currentMenu, {
 		placement: 'bottom-start',
+		strategy: 'fixed',
 		middleware: [
 			flip({ fallbackPlacements: ['top-start', 'bottom-end', 'top-end'] }),
 			shift({ padding: 8 })
@@ -695,10 +744,11 @@ export function openHeaderContextMenu<T>(
 				currentMenu.parentNode.replaceChild(newMenuEl, currentMenu)
 				currentMenu = newMenuEl
 
-				// Force submenu to stay visible (CSS :hover is lost on DOM replace)
-				const submenu = newMenuEl.querySelector('.wg-context-menu--submenu') as HTMLElement
-				if (submenu) {
-					submenu.style.display = 'block'
+				attachSubmenuHandlers(newMenuEl)
+				const parentWithSubmenu = newMenuEl.querySelector('.wg-context-menu__item--has-submenu') as HTMLElement | null
+				const submenu = parentWithSubmenu?.querySelector(':scope > .wg-context-menu--submenu') as HTMLElement | null
+				if (parentWithSubmenu && submenu) {
+					showSubmenu(parentWithSubmenu, submenu)
 				}
 			}
 			return
@@ -708,15 +758,21 @@ export function openHeaderContextMenu<T>(
 		onItemClick(itemId, false, ctrlKey)
 	})
 
-	// Subscribe to scroll events via the scroll event manager
-	const scrollSubscription = ctx.scrollEvents.subscribe('window', () => {
+	// Close on scroll from either the grid's internal scroll container or the page
+	// (scroll events aren't composed, so a window capture listener can't see shadow-DOM scrolls)
+	const windowScrollSub = ctx.scrollEvents.subscribe('window', () => {
+		cleanup()
+		onClose()
+	})
+	const containerScrollSub = ctx.scrollEvents.subscribe('container', () => {
 		cleanup()
 		onClose()
 	})
 
 	// Cleanup function to remove all listeners and close menu
 	const cleanup = () => {
-		scrollSubscription.unsubscribe()
+		windowScrollSub.unsubscribe()
+		containerScrollSub.unsubscribe()
 		document.removeEventListener('mousedown', handleOutsideClick)
 		document.removeEventListener('keydown', handleKeyDown)
 		container.remove()
