@@ -589,6 +589,54 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 	get createEmptyRowCallback() { return this.grid.createEmptyRowCallback }
 	set createEmptyRowCallback(value) { this.grid.createEmptyRowCallback = value }
 
+	// Tree / hierarchy
+	get treePathMember(): string | null { return this.grid.treePathMember }
+	set treePathMember(value: string | null) { this.grid.treePathMember = value }
+
+	get treeLevelMember(): string | null { return this.grid.treeLevelMember }
+	set treeLevelMember(value: string | null) { this.grid.treeLevelMember = value }
+
+	get treeParentMember(): string | null { return this.grid.treeParentMember }
+	set treeParentMember(value: string | null) { this.grid.treeParentMember = value }
+
+	get treeSeparator(): string | null { return this.grid.treeSeparator }
+	set treeSeparator(value: string | null) { this.grid.treeSeparator = value }
+
+	get treeDataSorted(): boolean { return this.grid.treeDataSorted }
+	set treeDataSorted(value: boolean) { this.grid.treeDataSorted = value }
+
+	get expandedPaths(): Set<string> { return this.grid.expandedPaths }
+	set expandedPaths(value: Set<string> | null | undefined) { this.grid.expandedPaths = value as Set<string> }
+
+	get defaultExpandDepth(): number | null { return this.grid.defaultExpandDepth }
+	set defaultExpandDepth(value: number | null) { this.grid.defaultExpandDepth = value }
+
+	set onexpandedpathschange(value: ((detail: import('./types.js').TreeExpandedChangeDetail) => void) | undefined) {
+		this.grid.onexpandedpathschange = value
+	}
+	get onexpandedpathschange() { return this.grid.onexpandedpathschange }
+
+	isPathExpanded(path: string): boolean { return this.grid.isPathExpanded(path) }
+	toggleExpandedPath(path: string): void { this.grid.toggleExpandedPath(path) }
+	expandAll(): void { this.grid.expandAll() }
+	collapseAll(): void { this.grid.collapseAll() }
+
+	get treeDoubleClickBehavior(): import('./types.js').TreeDoubleClickBehavior { return this.grid.treeDoubleClickBehavior }
+	set treeDoubleClickBehavior(value: import('./types.js').TreeDoubleClickBehavior) { this.grid.treeDoubleClickBehavior = value }
+
+	get treeExpandedGlyph(): string { return this.grid.treeExpandedGlyph }
+	set treeExpandedGlyph(value: string) { this.grid.treeExpandedGlyph = value }
+
+	get treeCollapsedGlyph(): string { return this.grid.treeCollapsedGlyph }
+	set treeCollapsedGlyph(value: string) { this.grid.treeCollapsedGlyph = value }
+
+	get treeChevronCallback(): import('./types.js').TreeChevronCallback<T> | undefined {
+		return this.grid.treeChevronCallback
+	}
+	set treeChevronCallback(value: import('./types.js').TreeChevronCallback<T> | undefined) {
+		this.grid.treeChevronCallback = value
+	}
+
 	get isShortcutsHelpVisible(): boolean { return this.grid.isShortcutsHelpVisible }
 	set isShortcutsHelpVisible(value: boolean) { this.grid.isShortcutsHelpVisible = value }
 
@@ -1739,13 +1787,14 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 
 		// Double-click to edit
 		table.addEventListener('dblclick', (e: Event) => {
+			const target = e.target as HTMLElement
+
 			// Try pipeline first
 			if (this.pipelineAdapter?.tryHandleDblClick(e as MouseEvent)) {
 				return
 			}
 
 			e.preventDefault()
-			const target = e.target as HTMLElement
 			const cell = target.closest('.wg__cell') as HTMLElement
 			if (cell) {
 				const rowIndex = parseInt(cell.dataset.row || '0', 10)
@@ -1773,14 +1822,32 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 			}
 		})
 
+		uiLogger.debug('attaching click handler on table')
+
 		// Single click to edit (for editTrigger = 'click')
 		table.addEventListener('click', (e: Event) => {
+			const target = e.target as HTMLElement
+			uiLogger.debug('CLICK fired | target:', target.tagName, target.className, '| connected:', target.isConnected)
+
+			// Tree chevron toggle — handle first so we don't fall through to edit/select logic
+			const chevron = target.closest('.wg__tree-chevron[data-tree-toggle]') as HTMLElement
+			if (chevron) {
+				e.preventDefault()
+				e.stopPropagation()
+				const path = chevron.getAttribute('data-tree-toggle')
+				uiLogger.debug('chevron click:', path, '| target:', target.tagName, target.className)
+				if (path !== null) {
+					this.grid.toggleExpandedPath(path)
+				}
+				return
+			}
+
+
 			// Try pipeline first
 			if (this.pipelineAdapter?.tryHandleClick(e as MouseEvent)) {
 				return
 			}
 
-			const target = e.target as HTMLElement
 			const cell = target.closest('.wg__cell') as HTMLElement
 			if (cell && !cell.classList.contains('wg__cell--editing')) {
 				const rowIndex = parseInt(cell.dataset.row || '0', 10)
@@ -1813,6 +1880,53 @@ export class GridElement<T = unknown> extends HTMLElement implements GridContext
 		table.addEventListener('mousedown', (e: Event) => {
 			const target = e.target as HTMLElement
 			const mouseEvent = e as MouseEvent
+			uiLogger.debug('MOUSEDOWN fired | target:', target.tagName, target.className, '| connected:', target.isConnected, '| detail:', mouseEvent.detail, '| button:', mouseEvent.button)
+
+			// Tree chevron — let click handler do its work; suppress focus/selection side effects
+			if (target.closest('.wg__tree-chevron[data-tree-toggle]')) {
+				uiLogger.debug('chevron mousedown intercepted (suppress focus/selection)')
+				e.preventDefault()
+				e.stopPropagation()
+				return
+			}
+
+			// Tree column second-click handling — detect via MouseEvent.detail (the
+			// browser's own click counter). The native dblclick event is unreliable
+			// here because the cell's innerHTML gets re-rendered between clicks, so
+			// we route both "double-click toggles tree" and "double-click starts edit"
+			// through this single path.
+			if (mouseEvent.detail === 2 && mouseEvent.button === 0 && this.grid.isTreeMode) {
+				const cellEl = target.closest('.wg__cell') as HTMLElement
+				if (cellEl && !target.closest('.wg__tree-chevron')) {
+					const colIdx = parseInt(cellEl.dataset.col || '-1', 10)
+					const rowIdx = parseInt(cellEl.dataset.row || '-1', 10)
+					const col = colIdx >= 0 ? this.grid.columns[colIdx] : null
+					if (col?.isTree && rowIdx >= 0) {
+						// Tree toggle takes priority over edit when enabled
+						if (this.grid.treeDoubleClickBehavior === 'toggle') {
+							const item = this.grid.displayItems[rowIdx]
+							const info = item ? this.grid.getRowTreeInfo(item) : null
+							if (info?.hasChildren) {
+								uiLogger.debug('tree dblclick (mousedown.detail=2) toggle:', info.path)
+								e.preventDefault()
+								e.stopPropagation()
+								this.grid.toggleExpandedPath(info.path)
+								return
+							}
+						}
+						// Otherwise, if the column is editable with dblclick/navigate trigger, start edit
+						const trigger = col.editTrigger || this.grid.editTrigger
+						if ((trigger === 'dblclick' || trigger === 'navigate') && this.grid.canEditCell(rowIdx, String(col.field))) {
+							const cursorPos = getCursorPositionFromClick(mouseEvent, cellEl)
+							uiLogger.debug('tree dblclick (mousedown.detail=2) start edit:', String(col.field), '| trigger:', trigger)
+							e.preventDefault()
+							e.stopPropagation()
+							tryStartEdit(this, rowIdx, colIdx, { cursorPosition: cursorPos ?? undefined })
+							return
+						}
+					}
+				}
+			}
 
 			// Try pipeline first for 'always' mode cells (handles cell clicks and toggle clicks)
 			if (this.pipelineAdapter?.tryHandleMouseDown(mouseEvent)) {

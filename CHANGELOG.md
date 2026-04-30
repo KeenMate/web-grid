@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-04-30 [PUBLISHED]
+
+### Added
+
+- **Tree / hierarchy mode**: Render tree-structured data using ltree-style path strings (e.g. `"1.2.3"`, `"/a/b/c"`, `"C:\\Win\\Sys"` — separator auto-detected from the first row). Mark one column with `isTree: true` to add depth-based indentation and an expand/collapse chevron. Levels and parent paths are derived from the path string by default; provide `treeLevelMember` / `treeParentMember` if your DB already computes them. Sort is sibling-aware (parents always above their children); filter auto-expands ancestors of matches; pagination operates on currently-visible (post-collapse) rows. New props: `treePathMember`, `treeLevelMember`, `treeParentMember`, `treeSeparator`, `treeDataSorted`, `expandedPaths` (mutable Set), `defaultExpandDepth`, `treeDoubleClickBehavior`, `treeExpandedGlyph`, `treeCollapsedGlyph`, `treeChevronCallback`. Per-column flag: `isTree`. Methods: `isPathExpanded`, `toggleExpandedPath`, `expandAll`, `collapseAll`, `getRowTreeInfo`. Event: `onexpandedpathschange`. Two demo pages: **Tree / Hierarchy** (org chart + filesystem with Font Awesome icons + grouped-aggregate sort) and **Tree + Virtual / Infinite Scroll** (test view stressing 12k+ row trees with virtual scroll and lazy-loaded subtrees).
+- **`treeChevronCallback` per-row icon override**: Receives `{ expanded, hasChildren, row, level, path }`, returns HTML for the chevron's inner content. Result is cached per `(row, expanded, hasChildren)` so the callback fires at most a handful of times per row across re-renders. Cache invalidated automatically when items or the callback are replaced.
+- **`treeDoubleClickBehavior`**: `'none'` (default) or `'toggle'`. When set to `'toggle'`, double-clicking a tree-column cell expands/collapses the node. Detection uses `MouseEvent.detail === 2` on mousedown (not native `dblclick`) because the cell's innerHTML gets re-rendered between clicks, which suppresses the browser's dblclick event.
+
+### Fixed
+
+- **Spurious `onrowchange` events when entering edit mode and exiting via arrow keys**: `commitEdit` fired `onrowchange` unconditionally on every commit, even when `finalValue === oldValue`. This produced "X → X" change events when a user opened the editor in navigate mode (Excel-like) and pressed up/down without typing. Now `onrowchange` only fires when the value actually changed, or when validation failed (callers may want to know about the latter even with no value diff). Same fix applied to `updateDraftValue` (used by checkbox repeat-toggle).
+- **Pathological filler-cell width with absolutely-positioned editors**: `.wg__table` had `min-width: max-content` which asks the browser for the table's intrinsic max-content size, computed recursively through all cell contents. With `overflow: auto` ancestors plus absolutely-positioned `.wg__editor` children, this computation could balloon — Firefox especially, but reproducible in Chromium too. Removed the `min-width: max-content` line; `table-layout: fixed` already causes the table to extend past the container when explicit column widths sum exceeds the container, so the min-width was redundant.
+- **Logger leaking `%c` formatter codes into the console**: The colored-prefix logic in `logger.ts` checked `args[0].includes('%c')` before the prefix plugin had prepended its `%c`-laden prefix, so the corresponding CSS color args never got injected and the raw codes leaked through (e.g. `[GRID:UI]%c message`). Replaced the colored prefix with plain text (`[time] [LEVEL] [name]`) — the visual benefit of colored logs was marginal and not worth the breakage.
+
+### Docs
+
+- **Product-search custom-editor demo**: New `examples-product-search.html` with a full custom-editor dialog showing keyboard navigation, highlighted query matches, and a catalog-lookup formatter — a richer reference for `cellEditCallback` patterns than the minimal snippet in the editors page.
+- **Fill-handle demo updated to current `cellEditCallback` signature**: The star-rating example in `examples-fill-handle.html` was using the older positional signature and silently never fired. Ported to the current single-context signature with `editor: 'custom'`.
+- **Examples landing page grouped into categories**: `docs/index.html` now organizes examples into "Library" and "Practical Examples" rather than a flat list.
+- **README refresh**: Updated the package README with current API surface and feature highlights (~250 lines reworked).
+
 ## [1.0.5] - 2026-04-21
 
 ### Fixed

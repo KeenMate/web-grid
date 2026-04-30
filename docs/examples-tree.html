@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGrid - Tree / Hierarchy</title>
+    <link rel="stylesheet" href="examples-shared.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
+    <style>
+        .column-toggles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: #f7fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1rem;
+        }
+        .column-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.6rem;
+            background: white;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            user-select: none;
+        }
+        .column-toggle:hover { border-color: #667eea; }
+        .column-toggle input { margin: 0; }
+        .column-toggle.hidden { opacity: 0.6; background: #f3f4f6; text-decoration: line-through; }
+        .column-toggle.is-tree { border-left: 3px solid #f4c430; padding-left: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">← Back to Examples</a>
+            <h1>🌲 Tree / Hierarchy</h1>
+            <p class="subtitle">Render hierarchical data using an ltree-style path string. Mark one column with <code>isTree: true</code> to add depth-based indentation and an expand/collapse chevron.</p>
+        </header>
+
+        <div class="card">
+            <h2>Organizations</h2>
+            <p>Each row carries a <code>path</code> like <code>"1.2.3"</code>. Levels and parent paths are derived automatically; provide <code>treeLevelMember</code> / <code>treeParentMember</code> if your DB already computes them.</p>
+            <p><strong>Sorting in tree mode</strong> is sibling-aware: clicking a header sorts each parent's children among themselves (e.g., "sort each department's sub-teams by Annual Budget"). The hierarchy stays intact — parents always appear above their children.</p>
+            <p>For <strong>custom sort logic</strong> (e.g., sort departments by total budget aggregated over all descendants), set <code>treeDataSorted: true</code>, listen to <code>ondatarequest</code>, sort the items yourself, and push them back via <code>grid.items = …</code>. The grid will trust your order completely and skip its internal sibling sort.</p>
+
+            <div class="controls">
+                <label>
+                    <input type="checkbox" id="editable"> Editable (tree column)
+                </label>
+                <label>
+                    <input type="checkbox" id="dblToggle" checked> Double-click toggles node
+                </label>
+                <label>
+                    <input type="checkbox" id="dataSorted" checked> Data already sorted (parents-first)
+                </label>
+                <label>
+                    Default expand depth:
+                    <select id="depth">
+                        <option value="">all expanded</option>
+                        <option value="0">0 (only roots)</option>
+                        <option value="1">1 (roots + children)</option>
+                        <option value="2" selected>2 (through grandchildren)</option>
+                        <option value="99">99 (everything)</option>
+                    </select>
+                </label>
+                <button type="button" id="expandAll">Expand all</button>
+                <button type="button" id="collapseAll">Collapse all</button>
+            </div>
+
+            <web-grid id="grid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
+
+            <div style="margin-top: 1rem; color: #555;">
+                <strong>Expanded paths:</strong>
+                <span id="expanded">—</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Column Visibility (Tree mode)</h2>
+            <p>Toggle column visibility while in tree mode — same <code>isHidden</code> + <code>headerContextMenu</code> wiring as a flat grid. <strong>The interesting case:</strong> hide the tree column itself and see what happens (the chevrons go with it).</p>
+
+            <div style="margin-bottom: 0.75rem; display: flex; gap: 0.5rem; align-items: center;">
+                <button type="button" id="cvShowAll">Show All</button>
+                <button type="button" id="cvHideAll" class="secondary">Hide All</button>
+                <span style="margin-left: auto; color: #718096; font-size: 0.9rem;" id="cvVisibleCount"></span>
+            </div>
+
+            <div class="column-toggles" id="cvToggles"></div>
+
+            <p style="font-size: 0.85rem; color: #718096; margin: 0 0 0.75rem;">
+                <span style="border-left: 3px solid #f4c430; padding-left: 0.5rem;">Yellow border = tree column</span>. You can also right-click any header for the context menu (<em>Hide Column</em> / <em>Column Visibility</em>).
+            </p>
+
+            <web-grid id="cvGrid" style="max-width: 100%; max-height: 420px; border: 1px solid #e2e8f0;"></web-grid>
+
+            <div style="margin-top: 0.75rem; color: #666; font-size: 0.9rem;">
+                <strong>What to look for:</strong>
+                <ul>
+                    <li>Hiding non-tree columns: the tree column behaves normally, indent + chevron unchanged</li>
+                    <li>Hiding the tree column itself: chevrons disappear (no other column shows the indent — depth becomes invisible)</li>
+                    <li>Toggling expand/collapse still works via double-click on a remaining column? <em>It shouldn't</em> — <code>treeDoubleClickBehavior</code> only fires on the tree column</li>
+                    <li>Showing the tree column again: chevrons restore with the previous expanded state intact</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Custom Sort: Grouped Aggregate</h2>
+            <p>When you want to sort siblings by an <strong>aggregate over their descendants</strong> (e.g. "sort departments by total budget across all sub-teams"), set <code>treeDataSorted: true</code> and own the order yourself. The grid will fire <code>ondatarequest</code> when sort changes, you compute the aggregate, sort, and push items back. The grid never re-sorts internally in this mode.</p>
+
+            <web-grid id="aggGrid" style="max-width: 100%; max-height: 500px; border: 1px solid #e2e8f0;"></web-grid>
+
+            <p style="margin-top: 1rem; color: #555; font-size: 0.9rem;">
+                <strong>Try it:</strong> Click <em>Headcount</em> or <em>Annual Budget</em>. Acme's sub-orgs reorder by their <em>total</em> headcount/budget — Engineering rises because its subtree is the largest. Without aggregation (the first grid above), the same click would only reorder by each row's own value.
+            </p>
+
+            <h3 style="margin-top: 1.5rem;">How it works</h3>
+            <pre style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>aggGrid.treeDataSorted = true              // grid won't re-sort
+aggGrid.expandedPaths = new Set(allPaths)  // own expansion too, so re-setting items keeps it stable
+
+aggGrid.ondatarequest = ({ sort }) =&gt; {
+    if (!sort.length) {
+        aggGrid.items = [...originalData]
+        return
+    }
+    const { column, direction } = sort[0]
+    const sign = direction === 'asc' ? 1 : -1
+
+    // Build path → row and parent → children maps
+    const byPath = new Map(originalData.map(r =&gt; [r.path, r]))
+    const childrenOf = new Map()
+    const roots = []
+    for (const r of originalData) {
+        const idx = r.path.lastIndexOf('.')
+        const parent = idx &gt;= 0 ? r.path.slice(0, idx) : null
+        if (parent &amp;&amp; byPath.has(parent)) {
+            (childrenOf.get(parent) ?? childrenOf.set(parent, []).get(parent)).push(r.path)
+        } else {
+            roots.push(r.path)
+        }
+    }
+
+    // Compute aggregate (self + all descendants) for the sort column
+    const agg = new Map()
+    const compute = (p) =&gt; {
+        if (agg.has(p)) return agg.get(p)
+        let sum = byPath.get(p)[column] ?? 0
+        for (const kid of childrenOf.get(p) ?? []) sum += compute(kid)
+        agg.set(p, sum); return sum
+    }
+    roots.forEach(compute)
+
+    // Walk depth-first, sort siblings by aggregate
+    const result = []
+    const walk = (paths) =&gt; {
+        ;[...paths].sort((a, b) =&gt; sign * (agg.get(a) - agg.get(b))).forEach(p =&gt; {
+            result.push(byPath.get(p))
+            walk(childrenOf.get(p) ?? [])
+        })
+    }
+    walk(roots)
+
+    aggGrid.items = result
+}</code></pre>
+        </div>
+
+        <div class="card">
+            <h2>Other Path Formats + Custom Chevron Icons</h2>
+            <p>The grid auto-detects the separator — the same data shape works with <code>/</code> (filesystem) or <code>\</code> (Windows) paths. This grid also swaps the default <code>▼ / ▶</code> glyphs for Font Awesome icons via <code>treeChevronCallback</code>.</p>
+
+            <web-grid id="files" style="max-width: 100%; max-height: 360px; border: 1px solid #e2e8f0;"></web-grid>
+
+            <h3 style="margin-top: 1.5rem;">How the Font Awesome icons are wired up</h3>
+            <ol>
+                <li>Add the Font Awesome stylesheet to the page <code>&lt;head&gt;</code> — once it's loaded, the <code>@font-face</code> is registered globally and reachable from inside the grid's shadow DOM.</li>
+                <li>Class definitions (<code>.fa-folder::before { content: '\f07b' }</code> etc.) live in the document and don't pierce the shadow DOM — re-declare just the ones you use via <code>customStylesCallback</code>.</li>
+                <li>Return the icon HTML from <code>treeChevronCallback({ expanded, hasChildren, row, level, path })</code>. Result is cached per <code>(row, expanded, hasChildren)</code>, so the callback fires at most a handful of times per row.</li>
+            </ol>
+            <pre style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;"><code>&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css"&gt;
+
+files.customStylesCallback = () =&gt; `
+    .fa-solid { font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+    .fa-folder::before      { content: '\f07b'; }
+    .fa-folder-open::before { content: '\f07c'; }
+    .fa-file::before        { content: '\f15b'; }
+    .fa-folder, .fa-folder-open { color: #f4c430; }
+`
+
+files.treeChevronCallback = ({ expanded, hasChildren }) =&gt; {
+    if (!hasChildren) return '&lt;i class="fa-solid fa-file"&gt;&lt;/i&gt;'
+    return expanded
+        ? '&lt;i class="fa-solid fa-folder-open"&gt;&lt;/i&gt;'
+        : '&lt;i class="fa-solid fa-folder"&gt;&lt;/i&gt;'
+}</code></pre>
+        </div>
+
+        <footer>
+            <p>WebGrid Component by <a href="https://github.com/keenmate">Keenmate</a></p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import '@keenmate/web-grid'
+
+        // -----------------------------------------------------------------
+        // Org chart: 5 properties + path
+        // -----------------------------------------------------------------
+        const orgData = [
+            // Path '1' — Acme Corp (root)
+            { path: '1', name: 'Acme Corp', headcount: 412, budget: 18_500_000, location: 'Global', founded: 1998, status: 'Active' },
+
+            // Path '1.1' — Engineering
+            { path: '1.1', name: 'Engineering', headcount: 184, budget: 9_200_000, location: 'San Francisco', founded: 1999, status: 'Active' },
+            { path: '1.1.1', name: 'Platform Team', headcount: 24, budget: 1_400_000, location: 'San Francisco', founded: 2014, status: 'Active' },
+            { path: '1.1.1.1', name: 'Infrastructure', headcount: 9, budget: 580_000, location: 'San Francisco', founded: 2017, status: 'Active' },
+            { path: '1.1.1.2', name: 'Build Tooling', headcount: 6, budget: 320_000, location: 'San Francisco', founded: 2018, status: 'Active' },
+            { path: '1.1.2', name: 'Product Apps', headcount: 92, budget: 4_800_000, location: 'San Francisco', founded: 2010, status: 'Active' },
+            { path: '1.1.2.1', name: 'Web', headcount: 36, budget: 1_900_000, location: 'San Francisco', founded: 2011, status: 'Active' },
+            { path: '1.1.2.2', name: 'Mobile', headcount: 28, budget: 1_500_000, location: 'San Francisco', founded: 2013, status: 'Active' },
+            { path: '1.1.2.3', name: 'API', headcount: 28, budget: 1_400_000, location: 'San Francisco', founded: 2012, status: 'Active' },
+            { path: '1.1.3', name: 'Data Science', headcount: 18, budget: 1_200_000, location: 'New York', founded: 2019, status: 'Active' },
+
+            // Path '1.2' — Sales
+            { path: '1.2', name: 'Sales', headcount: 96, budget: 4_100_000, location: 'New York', founded: 2000, status: 'Active' },
+            { path: '1.2.1', name: 'Enterprise', headcount: 42, budget: 2_300_000, location: 'New York', founded: 2005, status: 'Active' },
+            { path: '1.2.2', name: 'SMB', headcount: 38, budget: 1_400_000, location: 'New York', founded: 2008, status: 'Active' },
+            { path: '1.2.3', name: 'Channel', headcount: 16, budget: 400_000, location: 'New York', founded: 2015, status: 'Reorganizing' },
+
+            // Path '1.3' — Marketing
+            { path: '1.3', name: 'Marketing', headcount: 54, budget: 2_700_000, location: 'Los Angeles', founded: 2002, status: 'Active' },
+            { path: '1.3.1', name: 'Brand', headcount: 18, budget: 1_100_000, location: 'Los Angeles', founded: 2002, status: 'Active' },
+            { path: '1.3.2', name: 'Demand Gen', headcount: 22, budget: 1_200_000, location: 'Los Angeles', founded: 2007, status: 'Active' },
+            { path: '1.3.3', name: 'Content', headcount: 14, budget: 400_000, location: 'Remote', founded: 2014, status: 'Active' },
+
+            // Path '1.4' — Operations
+            { path: '1.4', name: 'Operations', headcount: 78, budget: 2_500_000, location: 'Chicago', founded: 1999, status: 'Active' },
+            { path: '1.4.1', name: 'Finance', headcount: 22, budget: 900_000, location: 'Chicago', founded: 1999, status: 'Active' },
+            { path: '1.4.2', name: 'HR', headcount: 18, budget: 700_000, location: 'Chicago', founded: 1999, status: 'Active' },
+            { path: '1.4.3', name: 'Legal', headcount: 8, budget: 600_000, location: 'Chicago', founded: 2001, status: 'Active' },
+            { path: '1.4.4', name: 'IT', headcount: 30, budget: 300_000, location: 'Chicago', founded: 2003, status: 'Frozen' }
+        ]
+
+        const orgColumns = [
+            { field: 'name', title: 'Organization', width: '300px', isTree: true, isSortable: true, editor: 'text' },
+            { field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right', isSortable: true,
+                formatCallback: v => v != null ? v.toLocaleString() : '' },
+            { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right', isSortable: true,
+                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+            { field: 'location', title: 'Location', width: '160px', isSortable: true },
+            { field: 'founded', title: 'Founded', width: '110px', horizontalAlign: 'center', isSortable: true },
+            { field: 'status', title: 'Status', width: '140px', isSortable: true,
+                cellClassCallback: v => v === 'Active' ? null : 'status-warn' }
+        ]
+
+        const grid = document.getElementById('grid')
+        grid.items = orgData
+        grid.columns = orgColumns
+        grid.treePathMember = 'path'
+        grid.defaultExpandDepth = 2
+        grid.treeDataSorted = true
+        grid.treeDoubleClickBehavior = 'toggle'
+        grid.sortMode = 'single'
+        grid.isFilterable = true
+        grid.isHoverable = true
+        grid.isStriped = true
+
+        grid.customStylesCallback = () => `
+            .status-warn { color: #b54708; font-weight: 500; }
+        `
+
+        const expandedEl = document.getElementById('expanded')
+        const renderExpanded = () => {
+            const paths = [...grid.expandedPaths].sort()
+            expandedEl.textContent = paths.length === 0 ? '(none — all collapsed)' : paths.join(', ')
+        }
+        grid.onexpandedpathschange = renderExpanded
+        renderExpanded()
+
+        // Controls
+        document.getElementById('editable').addEventListener('change', e => {
+            grid.isEditable = e.target.checked
+        })
+        document.getElementById('dblToggle').addEventListener('change', e => {
+            grid.treeDoubleClickBehavior = e.target.checked ? 'toggle' : 'none'
+        })
+        document.getElementById('dataSorted').addEventListener('change', e => {
+            grid.treeDataSorted = e.target.checked
+        })
+        document.getElementById('depth').addEventListener('change', e => {
+            const v = e.target.value
+            grid.defaultExpandDepth = v === '' ? null : parseInt(v, 10)
+            renderExpanded()
+        })
+        document.getElementById('expandAll').addEventListener('click', () => {
+            grid.expandAll()
+            renderExpanded()
+        })
+        document.getElementById('collapseAll').addEventListener('click', () => {
+            grid.collapseAll()
+            renderExpanded()
+        })
+
+        // -----------------------------------------------------------------
+        // Custom sort by grouped aggregate (treeDataSorted=true + ondatarequest)
+        // -----------------------------------------------------------------
+        const aggGrid = document.getElementById('aggGrid')
+        const aggColumns = [
+            { field: 'name', title: 'Organization', width: '280px', isTree: true },
+            { field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right',
+                isSortable: true,
+                formatCallback: v => v != null ? v.toLocaleString() : '' },
+            { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right',
+                isSortable: true,
+                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' }
+        ]
+
+        // Pre-compute the path → row and parent → children maps once.
+        // Using `.` as the path separator (matches orgData).
+        const aggByPath = new Map(orgData.map(r => [r.path, r]))
+        const aggChildrenOf = new Map()
+        const aggRoots = []
+        for (const r of orgData) {
+            const idx = r.path.lastIndexOf('.')
+            const parent = idx >= 0 ? r.path.slice(0, idx) : null
+            if (parent && aggByPath.has(parent)) {
+                if (!aggChildrenOf.has(parent)) aggChildrenOf.set(parent, [])
+                aggChildrenOf.get(parent).push(r.path)
+            } else {
+                aggRoots.push(r.path)
+            }
+        }
+
+        // Compute aggregate for the given column (sum of self + all descendants),
+        // then walk depth-first sorting siblings by that aggregate.
+        const computeGroupedSort = (column, direction) => {
+            const sign = direction === 'asc' ? 1 : -1
+            const agg = new Map()
+            const compute = (p) => {
+                if (agg.has(p)) return agg.get(p)
+                let sum = aggByPath.get(p)[column] ?? 0
+                for (const kid of aggChildrenOf.get(p) ?? []) sum += compute(kid)
+                agg.set(p, sum)
+                return sum
+            }
+            aggRoots.forEach(compute)
+
+            const result = []
+            const walk = (paths) => {
+                ;[...paths].sort((a, b) => sign * (agg.get(a) - agg.get(b))).forEach(p => {
+                    result.push(aggByPath.get(p))
+                    walk(aggChildrenOf.get(p) ?? [])
+                })
+            }
+            walk(aggRoots)
+            return result
+        }
+
+        // Own the expanded set so re-supplying items doesn't reset expansion
+        const aggExpanded = new Set(orgData.map(r => r.path))
+        aggGrid.expandedPaths = aggExpanded
+
+        aggGrid.items = orgData
+        aggGrid.columns = aggColumns
+        aggGrid.treePathMember = 'path'
+        aggGrid.treeDataSorted = true
+        aggGrid.sortMode = 'single'
+        aggGrid.isHoverable = true
+        aggGrid.isStriped = true
+
+        // Re-supply pre-sorted items whenever sort changes
+        aggGrid.ondatarequest = ({ sort }) => {
+            if (!sort || sort.length === 0) {
+                aggGrid.items = [...orgData]
+                return
+            }
+            const { column, direction } = sort[0]
+            if (column === 'headcount' || column === 'budget') {
+                aggGrid.items = computeGroupedSort(column, direction)
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // Column Visibility (tree mode)
+        // Same wiring as examples-column-visibility.html, but the grid is in
+        // tree mode so we can see how visibility interacts with the tree column.
+        // -----------------------------------------------------------------
+        const cvGrid = document.getElementById('cvGrid')
+        // Fresh column instances (own isHidden state, separate from other grids)
+        const cvColumns = [
+            { field: 'name', title: 'Organization', width: '280px', isTree: true, isSortable: true },
+            { field: 'headcount', title: 'Headcount', width: '110px', horizontalAlign: 'right', isSortable: true,
+                formatCallback: v => v != null ? v.toLocaleString() : '' },
+            { field: 'budget', title: 'Annual Budget', width: '160px', horizontalAlign: 'right', isSortable: true,
+                formatCallback: v => v != null ? `$${(v / 1_000_000).toFixed(1)}M` : '' },
+            { field: 'location', title: 'Location', width: '160px', isSortable: true },
+            { field: 'founded', title: 'Founded', width: '110px', horizontalAlign: 'center', isSortable: true },
+            { field: 'status', title: 'Status', width: '140px', isSortable: true }
+        ]
+        cvGrid.items = orgData
+        cvGrid.columns = cvColumns
+        cvGrid.treePathMember = 'path'
+        cvGrid.defaultExpandDepth = 2
+        cvGrid.treeDataSorted = true
+        cvGrid.treeDoubleClickBehavior = 'toggle'
+        cvGrid.isHoverable = true
+        cvGrid.isStriped = true
+        cvGrid.headerContextMenu = [
+            'sortAsc',
+            'sortDesc',
+            'clearSort',
+            { dividerBefore: true },
+            'hideColumn',
+            'columnVisibility'
+        ]
+
+        const cvTogglesEl = document.getElementById('cvToggles')
+        const cvVisibleCountEl = document.getElementById('cvVisibleCount')
+
+        function cvRenderToggles() {
+            cvTogglesEl.innerHTML = cvGrid.columns.map(col => `
+                <label class="column-toggle ${col.isHidden ? 'hidden' : ''} ${col.isTree ? 'is-tree' : ''}" data-field="${col.field}">
+                    <input type="checkbox" ${col.isHidden ? '' : 'checked'}>
+                    ${col.title}${col.isTree ? ' (tree)' : ''}
+                </label>
+            `).join('')
+            cvTogglesEl.querySelectorAll('.column-toggle').forEach(el => {
+                const field = el.dataset.field
+                const checkbox = el.querySelector('input')
+                checkbox.addEventListener('change', () => {
+                    const col = cvGrid.columns.find(c => c.field === field)
+                    col.isHidden = !checkbox.checked
+                    cvGrid.columns = [...cvGrid.columns]
+                    cvUpdateState()
+                })
+            })
+        }
+        function cvUpdateState() {
+            const hiddenCount = cvGrid.columns.filter(c => c.isHidden).length
+            const visible = cvGrid.columns.length - hiddenCount
+            cvVisibleCountEl.textContent = `${visible} / ${cvGrid.columns.length} visible`
+            cvRenderToggles()
+        }
+        // No dedicated visibility-changed event — re-sync after any grid click
+        // (catches context-menu actions: Hide Column / Column Visibility submenu)
+        cvGrid.addEventListener('click', () => setTimeout(cvUpdateState, 0))
+
+        document.getElementById('cvShowAll').addEventListener('click', () => {
+            cvGrid.columns.forEach(c => c.isHidden = false)
+            cvGrid.columns = [...cvGrid.columns]
+            cvUpdateState()
+        })
+        document.getElementById('cvHideAll').addEventListener('click', () => {
+            // Keep at least one column visible so the grid isn't empty
+            cvGrid.columns.forEach((c, i) => c.isHidden = i > 0)
+            cvGrid.columns = [...cvGrid.columns]
+            cvUpdateState()
+        })
+        cvUpdateState()
+
+        // -----------------------------------------------------------------
+        // Filesystem-style paths (separator auto-detected)
+        // -----------------------------------------------------------------
+        const fileData = [
+            { path: '/src',                   name: 'src',         size: null, kind: 'folder' },
+            { path: '/src/components',        name: 'components',  size: null, kind: 'folder' },
+            { path: '/src/components/Grid',   name: 'Grid',        size: null, kind: 'folder' },
+            { path: '/src/components/Grid/Grid.tsx',  name: 'Grid.tsx',  size: 12_480, kind: 'file' },
+            { path: '/src/components/Grid/Grid.css',  name: 'Grid.css',  size: 3_120,  kind: 'file' },
+            { path: '/src/components/Header.tsx',     name: 'Header.tsx', size: 2_200, kind: 'file' },
+            { path: '/src/index.ts',          name: 'index.ts',    size: 480,  kind: 'file' },
+            { path: '/src/utils',             name: 'utils',       size: null, kind: 'folder' },
+            { path: '/src/utils/format.ts',   name: 'format.ts',   size: 920,  kind: 'file' },
+            { path: '/src/utils/parse.ts',    name: 'parse.ts',    size: 1_640, kind: 'file' },
+            { path: '/tests',                 name: 'tests',       size: null, kind: 'folder' },
+            { path: '/tests/Grid.test.ts',    name: 'Grid.test.ts', size: 4_200, kind: 'file' },
+            { path: '/package.json',          name: 'package.json', size: 1_240, kind: 'file' },
+        ]
+
+        const fileColumns = [
+            { field: 'name', title: 'Name', width: '280px', isTree: true },
+            { field: 'size', title: 'Size', width: '110px', horizontalAlign: 'right',
+                formatCallback: v => v == null ? '' : `${v.toLocaleString()} B` },
+            { field: 'kind', title: 'Kind', width: '120px' }
+        ]
+
+        const files = document.getElementById('files')
+        files.items = fileData
+        files.columns = fileColumns
+        files.treePathMember = 'path'
+        files.treeDataSorted = true
+        files.defaultExpandDepth = 0
+        files.isHoverable = true
+
+        // Font Awesome's stylesheet doesn't reach into the shadow DOM, but the
+        // @font-face is registered globally once the <link> in <head> loads.
+        // Inject the minimal class→content rules we need so .fa-solid icons render
+        // inside the grid.
+        files.customStylesCallback = () => `
+            .fa-solid {
+                font-family: 'Font Awesome 6 Free';
+                font-weight: 900;
+                font-style: normal;
+                display: inline-block;
+            }
+            .fa-folder::before { content: '\\f07b'; }
+            .fa-folder-open::before { content: '\\f07c'; }
+            .fa-file::before { content: '\\f15b'; }
+            .fa-folder, .fa-folder-open { color: #f4c430; }
+        `
+
+        // Per-row chevron — folder vs file icon. Cached per (row, expanded), so
+        // this fires at most twice per folder and once per file across re-renders.
+        files.treeChevronCallback = ({ expanded, hasChildren }) => {
+            if (!hasChildren) return '<i class="fa-solid fa-file"></i>'
+            return expanded
+                ? '<i class="fa-solid fa-folder-open"></i>'
+                : '<i class="fa-solid fa-folder"></i>'
+        }
+    </script>
+</body>
+</html>

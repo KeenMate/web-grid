@@ -6,6 +6,7 @@
 import type { GridContext } from '../types.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
+import { wrapTreeCell } from './tree-render.js'
 import { renderTriggerButton, getActiveToolbarRowIndex, normalizeToolbarItems } from '../toolbar/index.js'
 
 // Default row number column width (must match CSS: 40px with box-sizing: border-box)
@@ -379,6 +380,11 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 				}
 			}
 
+			const innerHtml = shouldShowEditor
+				? renderCellEditor(ctx, rowIndex, originalIndex, column)
+				: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused, isEditable)
+			const cellInner = wrapTreeCell(ctx, column, item, innerHtml)
+
 			return `
 				<td
 					class="${classes.join(' ')}"
@@ -389,9 +395,7 @@ export function renderDataRows<T>(ctx: GridContext<T>): string {
 					${tabindexAttr}
 					${tooltipAttr}
 				>
-					${shouldShowEditor
-						? renderCellEditor(ctx, rowIndex, originalIndex, column)
-						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused, isEditable)}
+					${cellInner}
 				</td>
 			`
 		}).join('')
@@ -687,6 +691,11 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 				}
 			}
 
+			const innerHtml = shouldShowEditor
+				? renderCellEditor(ctx, rowIndex, originalIndex, column)
+				: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused, isEditable)
+			const cellInner = wrapTreeCell(ctx, column, item, innerHtml)
+
 			return `
 				<td
 					class="${classes.join(' ')}"
@@ -697,9 +706,7 @@ export function renderDataRowsVirtual<T>(ctx: GridContext<T>, params: VirtualScr
 					${tabindexAttr}
 					${tooltipAttr}
 				>
-					${shouldShowEditor
-						? renderCellEditor(ctx, rowIndex, originalIndex, column)
-						: renderCellDisplay(ctx, rowIndex, originalIndex, column, value, isFocused, isEditable)}
+					${cellInner}
 				</td>
 			`
 		}).join('')

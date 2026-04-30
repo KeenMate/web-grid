@@ -214,6 +214,9 @@ export type Column<T> = {
 	fillDirection?: FillDirection
 	// Hidden - column is not rendered but kept in columns array for visibility toggling
 	isHidden?: boolean
+	// Tree column - renders depth-based indentation and expand/collapse chevron
+	// Only one column should be marked isTree per grid; behaves as plain column otherwise.
+	isTree?: boolean
 }
 
 // Context for validation tooltip callback
@@ -573,6 +576,21 @@ export type QuickGridProps<T> = {
 	shouldCopyWithHeaders?: boolean  // Include column headers when copying cell selection to clipboard (default: false)
 	oncellselectionchange?: (detail: CellSelectionChangeDetail) => void  // Fired when cell selection changes
 
+	// Tree / hierarchy (ltree-style path strings: "1.2.3", "/dept/eng/team", "C:\\a\\b")
+	treePathMember?: keyof T | string                  // Required to enable tree mode: field holding the path
+	treeLevelMember?: keyof T | string                 // Optional pre-computed depth (0-based)
+	treeParentMember?: keyof T | string                // Optional pre-computed parent path
+	treeSeparator?: string                             // Path separator (auto-detected from first row when omitted)
+	treeDataSorted?: boolean                           // true = trust caller order completely (grid never re-sorts; pair with ondatarequest for sort changes). false = grid sorts siblings depth-first.
+	expandedPaths?: Set<string>                        // Bindable set of expanded paths (mutated by grid; emits onexpandedpathschange)
+	defaultExpandDepth?: number                        // Tree depth to show initially: 0 = only roots, 1 = roots + their children, etc. (default: all expanded)
+	treeDoubleClickBehavior?: TreeDoubleClickBehavior  // What happens when user double-clicks a tree-column cell (default: 'none')
+	onexpandedpathschange?: (detail: TreeExpandedChangeDetail) => void
+	// Chevron customization (static glyphs are defaults; callback overrides per-row)
+	treeExpandedGlyph?: string                         // HTML/text shown when node is expanded (default: '▼')
+	treeCollapsedGlyph?: string                        // HTML/text shown when node is collapsed (default: '▶')
+	treeChevronCallback?: TreeChevronCallback<T>       // Per-row override; cached per (row, expanded)
+
 	// New empty row (inline data entry) — EXPERIMENTAL: API may change in future releases
 	isNewRowEnabled?: boolean                          // [Experimental] Enable always-visible empty row for data entry (default: false)
 	newRowPosition?: NewRowPosition                    // [Experimental] Position of empty row: 'top' or 'bottom' (default: 'bottom')
@@ -854,3 +872,33 @@ export type PasteDetail<T> = {
 
 /** Callback to create new rows from pasted data */
 export type CreateRowCallback<T> = (pastedData: Record<string, unknown>, rowIndex: number) => T
+
+// =============================================================================
+// Tree / Hierarchy Types
+// =============================================================================
+
+/** What happens when the user double-clicks a tree-column cell */
+export type TreeDoubleClickBehavior = 'none' | 'toggle'
+
+/** Detail passed to onexpandedpathschange when user toggles a tree node */
+export type TreeExpandedChangeDetail = {
+	path: string                  // Path that was toggled
+	expanded: boolean             // New state (true = expanded, false = collapsed)
+	expandedPaths: Set<string>    // Full current set of expanded paths (after toggle)
+}
+
+/** Context passed to treeChevronCallback */
+export type TreeChevronContext<T> = {
+	expanded: boolean             // Whether this node is currently expanded
+	hasChildren: boolean          // Whether this node has children (false = leaf)
+	row: T
+	level: number                 // Depth (0-based)
+	path: string
+}
+
+/**
+ * Callback that returns HTML for the chevron's inner content.
+ * Result is cached per (row, expanded) — the callback is invoked at most twice
+ * per row, once per expanded state. Invalidated when items or the callback change.
+ */
+export type TreeChevronCallback<T> = (context: TreeChevronContext<T>) => string

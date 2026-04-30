@@ -67,7 +67,13 @@ web-grid:not(:defined) {
    ============================================================================== */
 .wg__table {
   width: 100%;
-  min-width: max-content;  /* Expand beyond container if columns are wide */
+  /* `min-width: max-content` was here to force the table to extend past the
+     container when column widths sum > container. But with table-layout: fixed,
+     the explicit column widths from the first row already cause that overflow
+     naturally — the min-width was redundant and triggered pathological
+     intrinsic-size computation in some browsers (Firefox especially) when cells
+     contained absolutely-positioned editors, blowing the filler width up to
+     hundreds of thousands of px. */
   border-collapse: collapse;
   table-layout: fixed;
   background: var(--wg-table-bg);

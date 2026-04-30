@@ -6,6 +6,7 @@
 import type { GridContext } from '../types.js'
 import { renderCellEditor } from '../editing/index.js'
 import { renderCellDisplay } from './display.js'
+import { wrapTreeCell } from './tree-render.js'
 
 export type RenderCellOptions = {
 	/** Focus the editor after rendering (for edit mode) */
@@ -88,7 +89,7 @@ export function renderCell<T>(
 
 	// Update content
 	if (shouldShowEditor) {
-		cell.innerHTML = renderCellEditor(ctx, rowIndex, colIndex, column)
+		cell.innerHTML = wrapTreeCell(ctx, column, item, renderCellEditor(ctx, rowIndex, colIndex, column))
 
 		// Focus editor if requested
 		if (options.focusEditor) {
@@ -96,7 +97,7 @@ export function renderCell<T>(
 		}
 	} else {
 		const value = ctx.grid.getCellValue(item, column, rowIndex)
-		cell.innerHTML = renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused, isEditable)
+		cell.innerHTML = wrapTreeCell(ctx, column, item, renderCellDisplay(ctx, rowIndex, colIndex, column, value, isFocused, isEditable))
 	}
 }
 

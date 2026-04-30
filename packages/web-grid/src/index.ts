@@ -93,6 +93,12 @@ export type {
 	PasteDetail,
 	CreateRowCallback,
 
+	// Tree types
+	TreeExpandedChangeDetail,
+	TreeChevronContext,
+	TreeChevronCallback,
+	TreeDoubleClickBehavior,
+
 	// Internal types (exposed for advanced usage)
 	EditingCell,
 	FocusedCell,

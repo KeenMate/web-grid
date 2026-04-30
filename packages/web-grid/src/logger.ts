@@ -30,59 +30,22 @@ import log from './vendor/loglevel/index.js'
 // @ts-ignore - Vendored library without type definitions
 import prefix from './vendor/loglevel/prefix.js'
 
-// Define color scheme matching original logger
-const COLORS = {
-	debug: '#0ea5e9',  // Blue
-	info: '#10b981',   // Green
-	warn: '#f59e0b',   // Orange
-	error: '#ef4444'   // Red
-}
-
 // Register prefix plugin with the root logger
 prefix.reg(log)
 
-// Configure prefix plugin with color-coded formatting
+// Plain-text prefix. Console color-styling via %c was attempted earlier but the
+// CSS color args were never injected (the methodFactory check ran before the
+// plugin had prepended its %c-laden prefix), so the codes leaked through as
+// literal text. Plain prefix is reliable across browsers and easier to read.
 prefix.apply(log, {
 	format(level: string, name: string | undefined, timestamp: string) {
-		// Get color for the current log level
-		const color = COLORS[level.toLowerCase() as keyof typeof COLORS] || '#666'
-
-		// Return formatted prefix with color styling
-		return `%c[${timestamp}]%c %c[${level}]%c ${name ? `%c[${name}]%c ` : ''}`
+		return `[${timestamp}] [${level}]${name ? ` [${name}]` : ''}`
 	},
 	timestampFormatter(date: Date) {
 		// Format: HH:MM:SS.mmm
 		return date.toTimeString().split(' ')[0] + '.' + date.getMilliseconds().toString().padStart(3, '0')
 	}
 })
-
-// Apply color styling to console output using a custom method factory
-const originalFactory = log.methodFactory
-log.methodFactory = function(methodName: string, logLevel: number, loggerName: string) {
-	const rawMethod = originalFactory(methodName, logLevel, loggerName)
-
-	return function(...args: any[]) {
-		// If first arg contains %c color codes, inject the colors
-		if (args.length > 0 && typeof args[0] === 'string' && args[0].includes('%c')) {
-			const color = COLORS[methodName as keyof typeof COLORS] || '#666'
-			const coloredArgs = [
-				args[0],
-				`color: ${color}; font-weight: bold;`,  // timestamp color
-				'color: inherit;',                        // reset
-				`color: ${color}; font-weight: bold;`,  // level color
-				'color: inherit;',                        // reset
-				...(loggerName ? [
-					`color: ${color}; font-weight: bold;`,  // name color
-					'color: inherit;',                        // reset
-				] : []),
-				...args.slice(1)
-			]
-			rawMethod(...coloredArgs)
-		} else {
-			rawMethod(...args)
-		}
-	}
-}
 
 // Set default log level to silent (production mode)
 log.setLevel('silent')

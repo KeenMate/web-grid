@@ -52,8 +52,25 @@ import type {
 	BeforePasteDetail,
 	PasteDetail,
 	CreateRowCallback,
-	NewRowPosition
+	NewRowPosition,
+	TreeExpandedChangeDetail,
+	TreeChevronCallback,
+	TreeDoubleClickBehavior
 } from './types.js'
+
+// Internal tree index — built from items when treePathMember is set
+type TreeNode = {
+	path: string
+	parent: string | null
+	level: number
+	rowIndex: number
+	childPaths: string[]
+}
+type TreeIndex = {
+	separator: string
+	nodes: Map<string, TreeNode>
+	rootPaths: string[]
+}
 
 // Date formatting utilities for auto-formatting date columns
 import { parseFormat, formatDate } from './modules/datepicker/index.js'
@@ -288,6 +305,25 @@ export class WebGrid<T = unknown> {
 	protected _createEmptyRowCallback: (() => T | Promise<T>) | undefined = undefined
 	protected _emptyRowDraft: T | null = null  // Tracks edits to empty row before commit
 
+	// Tree / hierarchy state
+	protected _treePathMember: string | null = null
+	protected _treeLevelMember: string | null = null
+	protected _treeParentMember: string | null = null
+	protected _treeSeparator: string | null = null  // null = auto-detect
+	protected _treeDataSorted: boolean = false
+	protected _expandedPaths: Set<string> = new Set()       // Active set used for visibility checks
+	protected _expandedPathsExternal: Set<string> | null = null  // Set provided by user (we mutate it directly)
+	protected _defaultExpandDepth: number | null = null
+	protected _treeIndex: TreeIndex | null = null            // Built from items; null when tree mode off
+	protected _onexpandedpathschange: ((detail: TreeExpandedChangeDetail) => void) | undefined
+	protected _treeDoubleClickBehavior: TreeDoubleClickBehavior = 'none'
+	// Chevron customization
+	protected _treeExpandedGlyph: string = '▼'
+	protected _treeCollapsedGlyph: string = '▶'
+	protected _treeChevronCallback: TreeChevronCallback<T> | undefined = undefined
+	// WeakMap<row, Map<state-key, html>>; cleared when callback or items change
+	protected _treeChevronCache: WeakMap<object, Map<string, string>> = new WeakMap()
+
 	// ==========================================================================
 	// Public API - Getters/Setters
 	// ==========================================================================
@@ -296,6 +332,8 @@ export class WebGrid<T = unknown> {
 	set items(value: T[]) {
 		dataLogger.debug('items set:', value.length, 'rows')
 		this._items = value
+		this._treeChevronCache = new WeakMap()  // rows replaced → drop cached glyphs
+		this.rebuildTreeState()
 		this.requestUpdate()
 	}
 
@@ -1190,6 +1228,381 @@ export class WebGrid<T = unknown> {
 		this._createEmptyRowCallback = value
 	}
 
+	// ==========================================================================
+	// Tree / Hierarchy
+	// ==========================================================================
+
+	get treePathMember(): string | null { return this._treePathMember }
+	set treePathMember(value: string | null) {
+		this._treePathMember = value || null
+		this.rebuildTreeState()
+		this.requestUpdate()
+	}
+
+	get treeLevelMember(): string | null { return this._treeLevelMember }
+	set treeLevelMember(value: string | null) {
+		this._treeLevelMember = value || null
+		this.rebuildTreeState()
+		this.requestUpdate()
+	}
+
+	get treeParentMember(): string | null { return this._treeParentMember }
+	set treeParentMember(value: string | null) {
+		this._treeParentMember = value || null
+		this.rebuildTreeState()
+		this.requestUpdate()
+	}
+
+	get treeSeparator(): string | null { return this._treeSeparator }
+	set treeSeparator(value: string | null) {
+		this._treeSeparator = value || null
+		this.rebuildTreeState()
+		this.requestUpdate()
+	}
+
+	get treeDataSorted(): boolean { return this._treeDataSorted }
+	set treeDataSorted(value: boolean) {
+		this._treeDataSorted = value
+		this.requestUpdate()
+	}
+
+	get expandedPaths(): Set<string> { return this._expandedPaths }
+	set expandedPaths(value: Set<string> | null | undefined) {
+		this._expandedPathsExternal = value instanceof Set ? value : null
+		this.rebuildExpandedPaths()
+		this.requestUpdate()
+	}
+
+	get defaultExpandDepth(): number | null { return this._defaultExpandDepth }
+	set defaultExpandDepth(value: number | null) {
+		this._defaultExpandDepth = (typeof value === 'number' && value >= 0) ? value : null
+		// Only re-init if user hasn't given us their own set
+		if (!this._expandedPathsExternal) {
+			this.rebuildExpandedPaths()
+			this.requestUpdate()
+		}
+	}
+
+	get onexpandedpathschange(): ((detail: TreeExpandedChangeDetail) => void) | undefined {
+		return this._onexpandedpathschange
+	}
+	set onexpandedpathschange(value: ((detail: TreeExpandedChangeDetail) => void) | undefined) {
+		this._onexpandedpathschange = value
+	}
+
+	get isTreeMode(): boolean {
+		return !!this._treePathMember && !!this._treeIndex
+	}
+
+	isPathExpanded(path: string): boolean {
+		return this._expandedPaths.has(path)
+	}
+
+	toggleExpandedPath(path: string): void {
+		const wasExpanded = this._expandedPaths.has(path)
+		if (wasExpanded) this._expandedPaths.delete(path)
+		else this._expandedPaths.add(path)
+		interactionLogger.debug('tree toggle:', path, wasExpanded ? 'expanded → collapsed' : 'collapsed → expanded', '| set size now:', this._expandedPaths.size)
+		this._onexpandedpathschange?.({
+			path,
+			expanded: !wasExpanded,
+			expandedPaths: this._expandedPaths
+		})
+		this.requestUpdate()
+	}
+
+	expandAll(): void {
+		if (!this._treeIndex) return
+		this._expandedPaths.clear()
+		for (const p of this._treeIndex.nodes.keys()) this._expandedPaths.add(p)
+		interactionLogger.debug('tree expandAll: size =', this._expandedPaths.size)
+		this.requestUpdate()
+	}
+
+	collapseAll(): void {
+		this._expandedPaths.clear()
+		interactionLogger.debug('tree collapseAll')
+		this.requestUpdate()
+	}
+
+	/** Returns tree info for a row (used by rendering) */
+	getRowTreeInfo(item: T): { path: string; level: number; hasChildren: boolean } | null {
+		if (!this.isTreeMode) return null
+		const path = this.getRowTreePath(item)
+		if (!path) return null
+		const node = this._treeIndex!.nodes.get(path)
+		if (!node) return null
+		return { path, level: node.level, hasChildren: node.childPaths.length > 0 }
+	}
+
+	get treeDoubleClickBehavior(): TreeDoubleClickBehavior { return this._treeDoubleClickBehavior }
+	set treeDoubleClickBehavior(value: TreeDoubleClickBehavior) {
+		this._treeDoubleClickBehavior = value || 'none'
+	}
+
+	get treeExpandedGlyph(): string { return this._treeExpandedGlyph }
+	set treeExpandedGlyph(value: string) {
+		this._treeExpandedGlyph = value ?? '▼'
+		this.requestUpdate()
+	}
+
+	get treeCollapsedGlyph(): string { return this._treeCollapsedGlyph }
+	set treeCollapsedGlyph(value: string) {
+		this._treeCollapsedGlyph = value ?? '▶'
+		this.requestUpdate()
+	}
+
+	get treeChevronCallback(): TreeChevronCallback<T> | undefined { return this._treeChevronCallback }
+	set treeChevronCallback(value: TreeChevronCallback<T> | undefined) {
+		this._treeChevronCallback = value
+		this._treeChevronCache = new WeakMap()  // callback changed → cached results are stale
+		this.requestUpdate()
+	}
+
+	/**
+	 * Resolve the inner HTML for a row's chevron, using callback (cached) or static glyph.
+	 * Cache is keyed per (row reference, expanded). When the row reference changes
+	 * (immutable update) or items are replaced, stale entries are dropped via WeakMap GC
+	 * or explicit cache clear.
+	 */
+	getTreeChevronHtml(item: T, expanded: boolean, hasChildren: boolean, level: number, path: string): string {
+		const cb = this._treeChevronCallback
+		if (!cb) {
+			// Default: leaves render empty (just a spacer); branches show glyph based on state
+			if (!hasChildren) return ''
+			return expanded ? this._treeExpandedGlyph : this._treeCollapsedGlyph
+		}
+		const rowKey = item as unknown as object
+		let perRow = this._treeChevronCache.get(rowKey)
+		if (!perRow) {
+			perRow = new Map()
+			this._treeChevronCache.set(rowKey, perRow)
+		}
+		// Cache key includes hasChildren so leaves and branches don't share an entry
+		const cacheKey = `${expanded ? 'e' : 'c'}|${hasChildren ? '1' : '0'}`
+		let html = perRow.get(cacheKey)
+		if (html === undefined) {
+			html = cb({ expanded, hasChildren, row: item, level, path })
+			perRow.set(cacheKey, html)
+		}
+		return html
+	}
+
+	/** Read the path field from a row */
+	protected getRowTreePath(item: T): string | null {
+		if (!this._treePathMember) return null
+		const v = (item as Record<string, unknown>)[this._treePathMember]
+		if (v === null || v === undefined) return null
+		const s = String(v)
+		return s === '' ? null : s
+	}
+
+	/** Detect separator from a sample path */
+	protected detectTreeSeparator(path: string): string {
+		if (path.includes('/')) return '/'
+		if (path.includes('\\')) return '\\'
+		if (path.includes('.')) return '.'
+		return '.'
+	}
+
+	/** Rebuild _treeIndex from current items */
+	protected rebuildTreeState(): void {
+		if (!this._treePathMember || this._items.length === 0) {
+			this._treeIndex = null
+			this.rebuildExpandedPaths()
+			return
+		}
+		// Detect separator
+		let sep = this._treeSeparator
+		if (!sep) {
+			for (const item of this._items) {
+				const p = this.getRowTreePath(item)
+				if (p) { sep = this.detectTreeSeparator(p); break }
+			}
+			sep = sep || '.'
+		}
+
+		const nodes = new Map<string, TreeNode>()
+		for (let i = 0; i < this._items.length; i++) {
+			const item = this._items[i]
+			const path = this.getRowTreePath(item)
+			if (!path) continue
+
+			// Level: from member or computed from path segments
+			let level = 0
+			if (this._treeLevelMember) {
+				const v = (item as Record<string, unknown>)[this._treeLevelMember]
+				if (typeof v === 'number') level = v
+			} else {
+				level = Math.max(0, path.split(sep).filter(Boolean).length - 1)
+			}
+
+			// Parent: from member or derived by stripping last segment
+			let parent: string | null = null
+			if (this._treeParentMember) {
+				const v = (item as Record<string, unknown>)[this._treeParentMember]
+				parent = (v === null || v === undefined || v === '') ? null : String(v)
+			} else {
+				const trimmed = path.endsWith(sep) ? path.slice(0, -sep.length) : path
+				const idx = trimmed.lastIndexOf(sep)
+				parent = idx < 0 ? null : (trimmed.slice(0, idx) || null)
+			}
+
+			nodes.set(path, { path, parent, level, rowIndex: i, childPaths: [] })
+		}
+
+		// Wire up children, identify roots
+		const rootPaths: string[] = []
+		for (const node of nodes.values()) {
+			if (node.parent && nodes.has(node.parent)) {
+				nodes.get(node.parent)!.childPaths.push(node.path)
+			} else {
+				rootPaths.push(node.path)
+			}
+		}
+
+		this._treeIndex = { separator: sep, nodes, rootPaths }
+		this.rebuildExpandedPaths()
+	}
+
+	/** Re-initialize the active expanded set after items/config changes */
+	protected rebuildExpandedPaths(): void {
+		if (this._expandedPathsExternal) {
+			// User owns the set; we just point at it
+			this._expandedPaths = this._expandedPathsExternal
+			return
+		}
+		const set = new Set<string>()
+		if (this._treeIndex) {
+			if (this._defaultExpandDepth !== null) {
+				// "Show tree to depth N" — a node at level N is visible iff every
+				// ancestor (levels 0..N-1) is expanded. So expand paths with level < N.
+				// depth=0 → nothing expanded, only roots visible.
+				// depth=1 → roots expanded, level-1 visible (no level-2).
+				for (const node of this._treeIndex.nodes.values()) {
+					if (node.level < this._defaultExpandDepth) set.add(node.path)
+				}
+			} else {
+				// Default: everything expanded
+				for (const path of this._treeIndex.nodes.keys()) set.add(path)
+			}
+		}
+		this._expandedPaths = set
+	}
+
+	/** Compare two tree nodes using current sort state, falling back to path */
+	protected compareTreeNodes(a: TreeNode, b: TreeNode): number {
+		const ra = this._items[a.rowIndex] as Record<string, unknown>
+		const rb = this._items[b.rowIndex] as Record<string, unknown>
+		for (const sortState of this._sort) {
+			const aVal = ra[sortState.column]
+			const bVal = rb[sortState.column]
+			if (aVal === bVal) continue
+			let cmp = 0
+			if (typeof aVal === 'string' && typeof bVal === 'string') cmp = aVal.localeCompare(bVal)
+			else if (typeof aVal === 'number' && typeof bVal === 'number') cmp = aVal - bVal
+			else cmp = String(aVal ?? '').localeCompare(String(bVal ?? ''))
+			return sortState.direction === 'asc' ? cmp : -cmp
+		}
+		return a.path.localeCompare(b.path)
+	}
+
+	/** Compute paths matched by current text filters, plus their ancestors */
+	protected getTreeFilterAllowedPaths(): Set<string> | null {
+		if (!this._treeIndex) return null
+		if (!this._isFilterable) return null
+		const filterEntries = Object.entries(this._filters).filter(([, v]) => !!v)
+		if (filterEntries.length === 0) return null
+
+		const matched = new Set<string>()
+		for (const node of this._treeIndex.nodes.values()) {
+			const item = this._items[node.rowIndex] as Record<string, unknown>
+			let ok = true
+			for (const [field, value] of filterEntries) {
+				const cell = String(item[field] ?? '').toLowerCase()
+				if (!cell.includes(value.toLowerCase())) { ok = false; break }
+			}
+			if (ok) matched.add(node.path)
+		}
+
+		// Add ancestors of every match
+		const allowed = new Set<string>(matched)
+		for (const path of matched) {
+			let p: string | null = this._treeIndex.nodes.get(path)?.parent ?? null
+			while (p) {
+				if (allowed.has(p)) break
+				allowed.add(p)
+				p = this._treeIndex.nodes.get(p)?.parent ?? null
+			}
+		}
+		return allowed
+	}
+
+	/** Items in tree-aware sort order (depth-first, sibling-sorted), with filter applied */
+	protected getTreeSortedItems(): T[] {
+		if (!this._treeIndex) return this._items
+		const allowed = this.getTreeFilterAllowedPaths()
+
+		// `treeDataSorted: true` means "trust me, don't re-sort". When the caller
+		// owns the order — either because they want sibling sort handled in JS for
+		// a server-mode simulation, or to compute aggregates like grouped sums —
+		// they'll re-supply items via ondatarequest when sort changes. The grid
+		// never re-walks the tree in this mode.
+		if (this._treeDataSorted) {
+			const result: T[] = []
+			for (let i = 0; i < this._items.length; i++) {
+				const item = this._items[i]
+				const path = this.getRowTreePath(item)
+				if (!path) continue
+				if (allowed && !allowed.has(path)) continue
+				result.push(item)
+			}
+			return result
+		}
+
+		const idx = this._treeIndex
+		const result: T[] = []
+		const walk = (paths: string[]) => {
+			const filtered = allowed
+				? paths.filter(p => allowed.has(p))
+				: [...paths]
+			filtered.sort((a, b) => this.compareTreeNodes(idx.nodes.get(a)!, idx.nodes.get(b)!))
+			for (const p of filtered) {
+				const node = idx.nodes.get(p)!
+				result.push(this._items[node.rowIndex])
+				if (node.childPaths.length > 0) walk(node.childPaths)
+			}
+		}
+		walk(idx.rootPaths)
+		return result
+	}
+
+	/** Items currently visible (post-collapse). When filter is active, ancestors of matches are auto-expanded. */
+	protected getTreeVisibleItems(): T[] {
+		if (!this._treeIndex) return this._items
+		const sorted = this.getTreeSortedItems()
+		const idx = this._treeIndex
+		// When filter is active, ancestors of matches are forced visible regardless of collapse
+		const filterActive = this.getTreeFilterAllowedPaths() !== null
+		const result: T[] = []
+		for (const item of sorted) {
+			const path = this.getRowTreePath(item)
+			if (!path) { result.push(item); continue }
+			const node = idx.nodes.get(path)
+			if (!node) { result.push(item); continue }
+			// Walk ancestor chain; row visible only if every ancestor is expanded
+			let visible = true
+			let p = node.parent
+			while (p) {
+				if (!this.isPathExpanded(p) && !filterActive) { visible = false; break }
+				const pn = idx.nodes.get(p)
+				p = pn ? pn.parent : null
+			}
+			if (visible) result.push(item)
+		}
+		return result
+	}
+
 	selectCellRange(range: CellRange): void {
 		interactionLogger.debug('selectCellRange:', { startRow: range.startRowIndex, startCol: range.startColIndex, endRow: range.endRowIndex, endCol: range.endColIndex })
 		// Clear row and column selection when selecting cells
@@ -1467,6 +1880,11 @@ export class WebGrid<T = unknown> {
 	}
 
 	get sortedItems(): T[] {
+		// Tree mode: depth-first sibling-aware sort, also applies filter
+		if (this.isTreeMode) {
+			return this.getTreeSortedItems()
+		}
+
 		// No sort columns = return filtered items as-is
 		if (this._sort.length === 0) return this.filteredItems
 
@@ -1494,22 +1912,33 @@ export class WebGrid<T = unknown> {
 	}
 
 	get paginatedItems(): T[] {
-		if (!this._isPageable) return this.sortedItems
+		// In tree mode, slice over visible (post-collapse) items, not the full sorted list
+		const baseItems = this.isTreeMode ? this.getTreeVisibleItems() : this.sortedItems
+
+		if (!this._isPageable) return baseItems
 
 		// Server-side pagination: items are already the current page, don't slice
 		if (this._paginationMode === 'server') {
-			return this.sortedItems
+			return baseItems
 		}
 
 		// Client-side pagination: slice the items array
 		const start = (this._currentPage - 1) * this._pageSize
 		const end = start + this._pageSize
-		return this.sortedItems.slice(start, end)
+		return baseItems.slice(start, end)
 	}
 
 	get totalPages(): number {
 		// Use totalItems if provided (server-side pagination), otherwise use local item count
-		const itemCount = this._totalItems !== null ? this._totalItems : this.sortedItems.length
+		// In tree mode, paginate over visible (post-collapse) items
+		let itemCount: number
+		if (this._totalItems !== null) {
+			itemCount = this._totalItems
+		} else if (this.isTreeMode) {
+			itemCount = this.getTreeVisibleItems().length
+		} else {
+			itemCount = this.sortedItems.length
+		}
 		return Math.max(1, Math.ceil(itemCount / this._pageSize))
 	}
 
@@ -2218,17 +2647,23 @@ export class WebGrid<T = unknown> {
 			})
 		}
 
-		// Fire onrowchange (always, with isValid flag)
-		this._onrowchange?.({
-			row: item,
-			draftRow,
-			rowIndex,
-			field,
-			oldValue,
-			newValue: finalValue,
-			isValid,
-			validationError
-		})
+		// Fire onrowchange only when the value actually changed (or validation
+		// failed — callers may want to know about that even with no value diff).
+		// This prevents spurious "X → X" events when a user enters edit mode
+		// and exits via arrow keys without typing.
+		const valueChanged = finalValue !== oldValue
+		if (valueChanged || !isValid) {
+			this._onrowchange?.({
+				row: item,
+				draftRow,
+				rowIndex,
+				field,
+				oldValue,
+				newValue: finalValue,
+				isValid,
+				validationError
+			})
+		}
 
 		// Exit edit mode
 		const prevEditingCell = this._editingCell
@@ -2267,18 +2702,20 @@ export class WebGrid<T = unknown> {
 			(draftRow as Record<string, unknown>)[field] = newValue
 		}
 
-		// Fire onrowchange event
-		const draftRow = this._draftRows.get(rowIndex) || this._emptyRowDraft || item
-		this._onrowchange?.({
-			row: item,
-			draftRow,
-			rowIndex,
-			field,
-			oldValue,
-			newValue,
-			isValid: true,
-			validationError: null
-		})
+		// Fire onrowchange event only when the value actually changed
+		if (newValue !== oldValue) {
+			const draftRow = this._draftRows.get(rowIndex) || this._emptyRowDraft || item
+			this._onrowchange?.({
+				row: item,
+				draftRow,
+				rowIndex,
+				field,
+				oldValue,
+				newValue,
+				isValid: true,
+				validationError: null
+			})
+		}
 
 		// NOTE: Do NOT clear _editingCell - stay in edit mode
 	}
